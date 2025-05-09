@@ -3,9 +3,12 @@ module github.com/donutnomad/eths
 go 1.23.6
 
 require (
+	github.com/davecgh/go-spew v1.1.1
+	github.com/donutnomad/blockchain-alg v0.1.4
 	github.com/ethereum/go-ethereum v1.15.11
 	github.com/pkg/errors v0.9.1
 	github.com/samber/lo v1.50.0
+	github.com/shopspring/decimal v1.4.0
 )
 
 require (
