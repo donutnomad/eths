@@ -1,0 +1,45 @@
+package createx
+
+import (
+	"crypto/rand"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/samber/lo"
+	"math/big"
+	"slices"
+)
+
+// GenSaltZeroAddressRedeployProtection
+// senderBytes == SenderBytes.ZeroAddress && redeployProtectionFlag == RedeployProtectionFlag.True
+func GenSaltZeroAddressRedeployProtection(chainID *big.Int) (pre, post [32]byte) {
+	var preSalt = buildSalt(common.Address{}, true)
+
+	var chainIDBytes32 [32]byte
+	fillRight(chainIDBytes32[:], chainID)
+
+	afterSalt := [32]byte(crypto.Keccak256(slices.Concat(chainIDBytes32[:], preSalt[:])))
+	return preSalt, afterSalt
+}
+
+func genSaltZeroAddressRedeployProtection(preSalt [32]byte, chainID *big.Int) (pre, post [32]byte) {
+	var chainIDBytes32 [32]byte
+	fillRight(chainIDBytes32[:], chainID)
+
+	afterSalt := [32]byte(crypto.Keccak256(slices.Concat(chainIDBytes32[:], preSalt[:])))
+	return preSalt, afterSalt
+}
+
+func fillRight(input []byte, value *big.Int) {
+	bs := value.Bytes()
+	copy(input[32-len(bs):], bs)
+}
+
+func buildSalt(sender common.Address, protection bool) [32]byte {
+	var salt [32]byte
+	copy(salt[0:20], sender[:])
+	if protection {
+		salt[20] = 0x1
+	}
+	lo.Must1(rand.Read(salt[21:]))
+	return salt
+}
