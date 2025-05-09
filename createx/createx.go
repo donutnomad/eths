@@ -10,6 +10,10 @@ import (
 	"slices"
 )
 
+// Address hardhat createX's address
+// https://etherscan.io/address/0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed
+var Address = common.HexToAddress("0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed")
+
 // GenSaltZeroAddressRedeployProtection
 // senderBytes == SenderBytes.ZeroAddress && redeployProtectionFlag == RedeployProtectionFlag.True
 func GenSaltZeroAddressRedeployProtection(chainID *big.Int) (pre, post [32]byte) {
