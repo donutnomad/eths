@@ -2,6 +2,7 @@ package createx
 
 import (
 	"crypto/rand"
+	"github.com/donutnomad/eths/contracts_pack"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/samber/lo"
@@ -19,6 +20,14 @@ func GenSaltZeroAddressRedeployProtection(chainID *big.Int) (pre, post [32]byte)
 
 	afterSalt := [32]byte(crypto.Keccak256(slices.Concat(chainIDBytes32[:], preSalt[:])))
 	return preSalt, afterSalt
+}
+
+func Create2(salt [32]byte, initCode []byte) []byte {
+	return contracts_pack.NewCreatex().PackDeployCreate2(salt, initCode)
+}
+
+func Create2WithoutSalt(initCode []byte) []byte {
+	return contracts_pack.NewCreatex().PackDeployCreate20(initCode)
 }
 
 func genSaltZeroAddressRedeployProtection(preSalt [32]byte, chainID *big.Int) (pre, post [32]byte) {
