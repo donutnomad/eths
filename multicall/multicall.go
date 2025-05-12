@@ -5,6 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// Address Multicall3: https://www.multicall3.com/abi#ethers-js
 var Address = common.HexToAddress("0xcA11bde05977b3631167028862bE2a173976CA11")
 
 type Multicall3Call3 = contracts_pack.Multicall3Call3

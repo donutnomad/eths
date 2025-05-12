@@ -517,6 +517,10 @@ func CALLN[Struct any](
 		}
 		result := results[i]
 		rv := reflect.ValueOf(result)
+		if !rv.IsValid() { // result == nil
+			field.Set(reflect.Zero(field.Type()))
+			continue
+		}
 		if rv.Type().AssignableTo(field.Type()) {
 			field.Set(rv)
 		} else if rv.Type().ConvertibleTo(field.Type()) {
