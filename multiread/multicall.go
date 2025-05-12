@@ -1,6 +1,7 @@
 package multiread
 
 import (
+	"fmt"
 	"github.com/donutnomad/eths/contracts_pack"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
@@ -526,7 +527,7 @@ func CALLN[Struct any](
 		} else if rv.Type().ConvertibleTo(field.Type()) {
 			field.Set(rv.Convert(field.Type()))
 		} else {
-			return nil, errors.New("cannot assign result type to struct field: " + v.Type().Field(i).Name)
+			return nil, fmt.Errorf("cannot assign result type %s to struct field: %s (%s)", rv.Type().String(), v.Type().Field(i).Name, field.Type().String())
 		}
 	}
 
@@ -575,17 +576,25 @@ func callN1(
 
 	out0 := *abi.ConvertType(outputs[0], new([]Multicall3Result)).(*[]Multicall3Result)
 	for idx := range returns {
+		ele, err := functions[idx](out0[idx].ReturnData)
 		if out0[idx].Success && len(out0[idx].ReturnData) > 0 {
-			ele, err := functions[idx](out0[idx].ReturnData)
 			if err != nil {
 				return err
 			}
 			returns[idx] = ele
 		} else {
-			returns[idx] = nil
+			returns[idx] = makeNilPtr(reflect.TypeOf(ele))
 		}
 	}
 	return nil
+}
+
+func makeNilPtr(typ reflect.Type) interface{} {
+	if typ.Kind() == reflect.Ptr {
+		return reflect.Zero(typ).Interface()
+	}
+	ptrType := reflect.PointerTo(typ)
+	return reflect.Zero(ptrType).Interface()
 }
 
 func prepareMultiCallArg[T any](input func() (common.Address, []byte, func([]byte) (T, error))) (Multicall3Call3, func([]byte) (any, error)) {
