@@ -522,12 +522,40 @@ func CALLN[Struct any](
 			field.Set(reflect.Zero(field.Type()))
 			continue
 		}
-		if rv.Type().AssignableTo(field.Type()) {
+
+		fieldType := field.Type()
+
+		// if the field is a pointer type
+		if fieldType.Kind() == reflect.Ptr {
+			// 1) Result type if it can be assigned directly to a pointer field (usually of the same pointer type), assign it directly
+			if rv.Type().AssignableTo(fieldType) {
+				field.Set(rv)
+				continue
+			}
+			// 2) The result is non-pointer, try to assign to the type pointed to by the pointer
+			elemType := fieldType.Elem()
+			if rv.Type().AssignableTo(elemType) {
+				ptr := reflect.New(elemType)
+				ptr.Elem().Set(rv)
+				field.Set(ptr)
+				continue
+			} else if rv.Type().ConvertibleTo(elemType) {
+				ptr := reflect.New(elemType)
+				ptr.Elem().Set(rv.Convert(elemType))
+				field.Set(ptr)
+				continue
+			}
+			// 3) Other cases, e.g. if the pointer does not match, throw an error
+			return nil, fmt.Errorf("cannot assign result type %s to struct pointer field: %s (%s)",
+				rv.Type(), v.Type().Field(i).Name, fieldType)
+		}
+
+		if rv.Type().AssignableTo(fieldType) {
 			field.Set(rv)
-		} else if rv.Type().ConvertibleTo(field.Type()) {
-			field.Set(rv.Convert(field.Type()))
+		} else if rv.Type().ConvertibleTo(fieldType) {
+			field.Set(rv.Convert(fieldType))
 		} else {
-			return nil, fmt.Errorf("cannot assign result type %s to struct field: %s (%s)", rv.Type().String(), v.Type().Field(i).Name, field.Type().String())
+			return nil, fmt.Errorf("cannot assign result type %s to struct field: %s (%s)", rv.Type(), v.Type().Field(i).Name, fieldType)
 		}
 	}
 
