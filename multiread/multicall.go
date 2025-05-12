@@ -11,6 +11,7 @@ import (
 	"github.com/samber/lo"
 	"math/big"
 	"reflect"
+	"sync"
 )
 
 type Multicall3Call3 = contracts_pack.Multicall3Call3
@@ -562,16 +563,19 @@ func CALLN[Struct any](
 	return &out, nil
 }
 
-var _cacheABI *abi.ABI
+var (
+	_cacheABI *abi.ABI
+	_once     sync.Once
+)
 
 func getMultiABI() *abi.ABI {
-	if _cacheABI == nil {
+	_once.Do(func() {
 		var err error
 		_cacheABI, err = contracts_pack.MulticallMetaData.ParseABI()
 		if err != nil {
 			panic(err)
 		}
-	}
+	})
 	return _cacheABI
 }
 
