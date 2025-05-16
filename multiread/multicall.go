@@ -58,6 +58,46 @@ func GetBlockNumber() func() (common.Address, []byte, func([]byte) (*big.Int, er
 	return One(multicallAddress, multiCallPack.PackGetBlockNumber(), multiCallPack.UnpackGetBlockNumber)
 }
 
+func GetCurrentBlockTimestamp() func() (common.Address, []byte, func([]byte) (*big.Int, error)) {
+	return One(multicallAddress, multiCallPack.PackGetCurrentBlockTimestamp(), multiCallPack.UnpackGetCurrentBlockTimestamp)
+}
+
+func GetCurrentBlockGasLimit() func() (common.Address, []byte, func([]byte) (*big.Int, error)) {
+	return One(multicallAddress, multiCallPack.PackGetCurrentBlockGasLimit(), multiCallPack.UnpackGetCurrentBlockGasLimit)
+}
+
+func GetCurrentBlockDifficulty() func() (common.Address, []byte, func([]byte) (*big.Int, error)) {
+	return One(multicallAddress, multiCallPack.PackGetCurrentBlockDifficulty(), multiCallPack.UnpackGetCurrentBlockDifficulty)
+}
+
+func GetCurrentBlockCoinbase() func() (common.Address, []byte, func([]byte) (common.Address, error)) {
+	return One(multicallAddress, multiCallPack.PackGetCurrentBlockCoinbase(), multiCallPack.UnpackGetCurrentBlockCoinbase)
+}
+
+func GetEthBalance(addr common.Address) func() (common.Address, []byte, func([]byte) (*big.Int, error)) {
+	return One(multicallAddress, multiCallPack.PackGetEthBalance(addr), multiCallPack.UnpackGetEthBalance)
+}
+
+func GetBlockHash(blockNumber *big.Int) func() (common.Address, []byte, func([]byte) (common.Hash, error)) {
+	return One(multicallAddress, multiCallPack.PackGetBlockHash(blockNumber), func(bytes []byte) (common.Hash, error) {
+		ret, err := multiCallPack.UnpackGetBlockHash(bytes)
+		if err != nil {
+			return common.Hash{}, err
+		}
+		return ret, nil
+	})
+}
+
+func GetLastBlockHash() func() (common.Address, []byte, func([]byte) (common.Hash, error)) {
+	return One(multicallAddress, multiCallPack.PackGetLastBlockHash(), func(bytes []byte) (common.Hash, error) {
+		ret, err := multiCallPack.UnpackGetLastBlockHash(bytes)
+		if err != nil {
+			return common.Hash{}, err
+		}
+		return ret, nil
+	})
+}
+
 func AllSuccess(args ...any) bool {
 	for _, item := range args {
 		if lo.IsNil(item) {

@@ -11,7 +11,16 @@ import (
 )
 
 // Address hardhat createX's address
+// Ethereum:
 // https://etherscan.io/address/0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed
+// https://sepolia.etherscan.io/address/0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed
+// https://hoodi.etherscan.io/address/0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed
+// Arbitrum:
+// https://arbiscan.io/address/0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed
+// https://sepolia.arbiscan.io/address/0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed
+// https://nova.arbiscan.io/address/0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed
+// BSC:
+// https://bscscan.com/address/0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed#code
 var Address = common.HexToAddress("0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed")
 
 // GenSaltZeroAddressRedeployProtection
