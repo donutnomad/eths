@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/donutnomad/blockchain-alg/xecdsa"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -33,29 +32,50 @@ func SendTx(
 	chainId *big.Int,
 	data []byte,
 	to common.Address,
-	payer *xecdsa.PrivateKey,
+	payer ISigner,
 	gasManager *CallManager,
 	beforeSend func(tx *ethTypes.Transaction) error,
 ) (*ethTypes.Transaction, error) {
 	txBuilder := NewTxBuilder(ctx, chainId).
-		SetFromByKey(payer.PublicKey).
+		SetFromByKey(payer.PublicKey()).
 		SetTo(to, true).
 		SetData(data).
 		SetNonceBy(gasManager.NonceManager).
 		SetGasPriceBy(gasManager.GasPricer).
 		SetGasLimitBy(gasManager.GasEstimate).
 		Check(client, gasManager.GasValidator)
-	return SendTxBuilder(ctx, txBuilder, client, payer, beforeSend)
+	return SendTxBuilder(ctx, txBuilder, client, payer, false, beforeSend)
+}
+
+func NoSendTx(
+	ctx context.Context,
+	client *ethclient.Client,
+	chainId *big.Int,
+	data []byte,
+	to common.Address,
+	payer ISigner,
+	gasManager *CallManager,
+) (*ethTypes.Transaction, error) {
+	txBuilder := NewTxBuilder(ctx, chainId).
+		SetFromByKey(payer.PublicKey()).
+		SetTo(to, true).
+		SetData(data).
+		SetNonceBy(gasManager.NonceManager).
+		SetGasPriceBy(gasManager.GasPricer).
+		SetGasLimitBy(gasManager.GasEstimate).
+		Check(client, gasManager.GasValidator)
+	return SendTxBuilder(ctx, txBuilder, client, payer, true, nil)
 }
 
 func SendTxBuilder(
 	ctx context.Context,
 	txBuilder *TxBuilder,
 	client *ethclient.Client,
-	payer *xecdsa.PrivateKey,
+	payer ISigner,
+	noSend bool,
 	beforeSend func(tx *ethTypes.Transaction) error,
 ) (*ethTypes.Transaction, error) {
-	txWrapper, err := txBuilder.SetFromByKey(payer.PublicKey).Build()
+	txWrapper, err := txBuilder.SetFromByKey(payer.PublicKey()).Build()
 	if err != nil {
 		return nil, err
 	}
@@ -65,6 +85,9 @@ func SendTxBuilder(
 		if err != nil {
 			return nil, err
 		}
+	}
+	if noSend {
+		return tx, nil
 	}
 	err = client.SendTransaction(ctx, tx)
 	if err != nil {

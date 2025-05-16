@@ -301,7 +301,7 @@ func (w *TxWrapper) SetSignatureValues(v, r, s *big.Int) *TxWrapper {
 	return w
 }
 
-func (w *TxWrapper) Sign(privateKey *xecdsa.PrivateKey) *TxWrapper {
+func (w *TxWrapper) Sign(privateKey ISigner) *TxWrapper {
 	txHashForSign := ethTypes.NewLondonSigner(w.chainID).Hash(w.ToTransaction()).Bytes() // not txHash
 	sig := lo.Must1(privateKey.Sign(txHashForSign)).(*xecdsa.RSVSignature)               // safe
 	w.SetSignatureValues(big.NewInt(int64(sig.V()-27)), sig.R(), sig.S())
