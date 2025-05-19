@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/donutnomad/blockchain-alg/xecdsa"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -55,7 +54,7 @@ func (e *EthClientEnhance) CallContract(_ context.Context, call ethereum.CallMsg
 	return e.client.CallContract(ctx, call, blockNumber)
 }
 
-func SendTxAndWait(ctx context.Context, client *ethclient.Client, chainId *big.Int, contract common.Address, payer *xecdsa.PrivateKey, data []byte, blockConfirmations uint64, callManager *CallManager, beforeSend func(tx *types.Transaction) error) error {
+func SendTxAndWait(ctx context.Context, client *ethclient.Client, chainId *big.Int, contract common.Address, payer ISigner, data []byte, blockConfirmations uint64, callManager *CallManager, beforeSend func(tx *types.Transaction) error) error {
 	tx, err := SendTx(ctx, client, chainId, data, contract, payer, callManager, beforeSend)
 	if err != nil {
 		return err
