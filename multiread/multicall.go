@@ -117,7 +117,7 @@ func AllSuccess(args ...any) bool {
 func CALLAny[A1 any](
 	client *ethclient.Client,
 	unpack func([]byte) (A1, error),
-	inputs ...func() (common.Address, []byte),
+	inputs ...Func2,
 ) ([]*A1, error) {
 	if len(inputs) == 0 {
 		panic("invalid inputs")
@@ -676,7 +676,7 @@ func makeNilPtr(typ reflect.Type) interface{} {
 	return reflect.Zero(ptrType).Interface()
 }
 
-func prepareMultiCallArg[T any](input func() (common.Address, []byte, func([]byte) (T, error))) (Multicall3Call3, func([]byte) (any, error)) {
+func prepareMultiCallArg[T any](input Func1[T]) (Multicall3Call3, func([]byte) (any, error)) {
 	a1, a2, a3 := input()
 	return Multicall3Call3{
 			Target:       a1,
