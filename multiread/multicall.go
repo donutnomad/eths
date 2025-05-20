@@ -17,22 +17,29 @@ import (
 type Multicall3Call3 = contracts_pack.Multicall3Call3
 type Multicall3Result = contracts_pack.Multicall3Result
 
-// Multicall3: https://www.multicall3.com/abi#ethers-js
-var multicallAddress = common.HexToAddress("0xcA11bde05977b3631167028862bE2a173976CA11")
+// Address Multicall3: https://www.multicall3.com/abi#ethers-js
+var Address = common.HexToAddress("0xcA11bde05977b3631167028862bE2a173976CA11")
 
 var multiCallPack = contracts_pack.NewMulticall()
 
-func SetMulticallAddress(address common.Address) {
-	multicallAddress = address
+type ReturnUnPackFunc[T any] = func([]byte) (T, error)
+type Func1[T any] func() (common.Address, []byte, func([]byte) (T, error))
+type Func2 func() (common.Address, []byte)
+
+func (t Func1[T]) Downcast() Func2 {
+	return func() (common.Address, []byte) {
+		a, b, _ := t()
+		return a, b
+	}
 }
 
-func One[T any](contractAddress common.Address, callData []byte, returnUnpack func([]byte) (T, error)) func() (common.Address, []byte, func([]byte) (T, error)) {
+func One[T any](contractAddress common.Address, callData []byte, returnUnpack ReturnUnPackFunc[T]) Func1[T] {
 	return func() (common.Address, []byte, func([]byte) (T, error)) {
 		return contractAddress, callData, returnUnpack
 	}
 }
 
-func Any[T any](contractAddress common.Address, callData []byte, returnUnpack func([]byte) (T, error)) func() (common.Address, []byte, func([]byte) (any, error)) {
+func Any[T any](contractAddress common.Address, callData []byte, returnUnpack ReturnUnPackFunc[T]) Func1[any] {
 	return func() (common.Address, []byte, func([]byte) (any, error)) {
 		return contractAddress, callData, func(bytes []byte) (any, error) {
 			return returnUnpack(bytes)
@@ -40,46 +47,46 @@ func Any[T any](contractAddress common.Address, callData []byte, returnUnpack fu
 	}
 }
 
-func One2(contractAddress common.Address, callData []byte) func() (common.Address, []byte) {
+func One2(contractAddress common.Address, callData []byte) Func2 {
 	return func() (common.Address, []byte) {
 		return contractAddress, callData
 	}
 }
 
-func GetChainID() func() (common.Address, []byte, func([]byte) (*big.Int, error)) {
-	return One(multicallAddress, multiCallPack.PackGetChainId(), multiCallPack.UnpackGetChainId)
+func GetChainID() Func1[*big.Int] {
+	return One(Address, multiCallPack.PackGetChainId(), multiCallPack.UnpackGetChainId)
 }
 
-func GetBaseFee() func() (common.Address, []byte, func([]byte) (*big.Int, error)) {
-	return One(multicallAddress, multiCallPack.PackGetBasefee(), multiCallPack.UnpackGetBasefee)
+func GetBaseFee() Func1[*big.Int] {
+	return One(Address, multiCallPack.PackGetBasefee(), multiCallPack.UnpackGetBasefee)
 }
 
-func GetBlockNumber() func() (common.Address, []byte, func([]byte) (*big.Int, error)) {
-	return One(multicallAddress, multiCallPack.PackGetBlockNumber(), multiCallPack.UnpackGetBlockNumber)
+func GetBlockNumber() Func1[*big.Int] {
+	return One(Address, multiCallPack.PackGetBlockNumber(), multiCallPack.UnpackGetBlockNumber)
 }
 
-func GetCurrentBlockTimestamp() func() (common.Address, []byte, func([]byte) (*big.Int, error)) {
-	return One(multicallAddress, multiCallPack.PackGetCurrentBlockTimestamp(), multiCallPack.UnpackGetCurrentBlockTimestamp)
+func GetCurrentBlockTimestamp() Func1[*big.Int] {
+	return One(Address, multiCallPack.PackGetCurrentBlockTimestamp(), multiCallPack.UnpackGetCurrentBlockTimestamp)
 }
 
-func GetCurrentBlockGasLimit() func() (common.Address, []byte, func([]byte) (*big.Int, error)) {
-	return One(multicallAddress, multiCallPack.PackGetCurrentBlockGasLimit(), multiCallPack.UnpackGetCurrentBlockGasLimit)
+func GetCurrentBlockGasLimit() Func1[*big.Int] {
+	return One(Address, multiCallPack.PackGetCurrentBlockGasLimit(), multiCallPack.UnpackGetCurrentBlockGasLimit)
 }
 
-func GetCurrentBlockDifficulty() func() (common.Address, []byte, func([]byte) (*big.Int, error)) {
-	return One(multicallAddress, multiCallPack.PackGetCurrentBlockDifficulty(), multiCallPack.UnpackGetCurrentBlockDifficulty)
+func GetCurrentBlockDifficulty() Func1[*big.Int] {
+	return One(Address, multiCallPack.PackGetCurrentBlockDifficulty(), multiCallPack.UnpackGetCurrentBlockDifficulty)
 }
 
-func GetCurrentBlockCoinbase() func() (common.Address, []byte, func([]byte) (common.Address, error)) {
-	return One(multicallAddress, multiCallPack.PackGetCurrentBlockCoinbase(), multiCallPack.UnpackGetCurrentBlockCoinbase)
+func GetCurrentBlockCoinbase() Func1[common.Address] {
+	return One(Address, multiCallPack.PackGetCurrentBlockCoinbase(), multiCallPack.UnpackGetCurrentBlockCoinbase)
 }
 
-func GetEthBalance(addr common.Address) func() (common.Address, []byte, func([]byte) (*big.Int, error)) {
-	return One(multicallAddress, multiCallPack.PackGetEthBalance(addr), multiCallPack.UnpackGetEthBalance)
+func GetEthBalance(addr common.Address) Func1[*big.Int] {
+	return One(Address, multiCallPack.PackGetEthBalance(addr), multiCallPack.UnpackGetEthBalance)
 }
 
-func GetBlockHash(blockNumber *big.Int) func() (common.Address, []byte, func([]byte) (common.Hash, error)) {
-	return One(multicallAddress, multiCallPack.PackGetBlockHash(blockNumber), func(bytes []byte) (common.Hash, error) {
+func GetBlockHash(blockNumber *big.Int) Func1[common.Hash] {
+	return One(Address, multiCallPack.PackGetBlockHash(blockNumber), func(bytes []byte) (common.Hash, error) {
 		ret, err := multiCallPack.UnpackGetBlockHash(bytes)
 		if err != nil {
 			return common.Hash{}, err
@@ -88,8 +95,8 @@ func GetBlockHash(blockNumber *big.Int) func() (common.Address, []byte, func([]b
 	})
 }
 
-func GetLastBlockHash() func() (common.Address, []byte, func([]byte) (common.Hash, error)) {
-	return One(multicallAddress, multiCallPack.PackGetLastBlockHash(), func(bytes []byte) (common.Hash, error) {
+func GetLastBlockHash() Func1[common.Hash] {
+	return One(Address, multiCallPack.PackGetLastBlockHash(), func(bytes []byte) (common.Hash, error) {
 		ret, err := multiCallPack.UnpackGetLastBlockHash(bytes)
 		if err != nil {
 			return common.Hash{}, err
@@ -641,7 +648,7 @@ func callN1(
 	}
 
 	var outputs []any
-	caller := bind.NewBoundContract(multicallAddress, *getMultiABI(), client, client, client)
+	caller := bind.NewBoundContract(Address, *getMultiABI(), client, client, client)
 	if err := caller.Call(opts, &outputs, method, args); err != nil {
 		return err
 	}

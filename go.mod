@@ -1,6 +1,6 @@
 module github.com/donutnomad/eths
 
-go 1.23.1
+go 1.24.3
 
 require (
 	github.com/davecgh/go-spew v1.1.1

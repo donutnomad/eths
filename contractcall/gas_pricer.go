@@ -43,24 +43,3 @@ func (p *GasPricerDefault) GetGasPrice(ctx context.Context, chainId *big.Int) (*
 		return NewGasPriceLegacy(gasPrice), nil
 	}
 }
-
-func isUseDynamicTx(ctx context.Context, chainId *big.Int, client IHeaderByNumber) (bool, error) {
-	if ok := isUseDynamicTx1(chainId); ok {
-		return true, nil
-	}
-	// Only query for basefee if gasPrice not specified
-	head, err := client.HeaderByNumber(ctx, nil)
-	if err != nil {
-		return false, errors.Wrap(EthereumRPCErr, err.Error())
-	}
-	return head.BaseFee != nil, nil
-}
-
-func isUseDynamicTx1(chainId *big.Int) bool {
-	// Optimism: 10 (OP Mainnet)
-	// Ethereum: 1, Sepolia(11155111)
-	// Arbitrum One: 42161
-	// Arbitrum Nova: 42170
-	chainIDUint64 := chainId.Uint64()
-	return chainIDUint64 == 1 || chainIDUint64 == 10 || chainIDUint64 == 11155111 || chainIDUint64 == 42161 || chainIDUint64 == 42170
-}
