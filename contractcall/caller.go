@@ -10,18 +10,6 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-type IMyClient interface {
-	IHeaderByNumber
-	gasCaller
-	ethereum.GasEstimator
-	INonceAt
-}
-
-type ISendTxClient interface {
-	ethereum.TransactionSender
-	ICodeAt
-}
-
 type CallManager struct {
 	GasValidator IGasPriceValidator
 	GasPricer    IGasPricer

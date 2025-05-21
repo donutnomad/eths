@@ -2,15 +2,32 @@ package contractcall
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum"
 	"github.com/pkg/errors"
 	"math/big"
 )
 
-type gasCaller interface {
-	IHeaderByNumber
-	ethereum.GasPricer
-	ethereum.GasPricer1559
+// GasPrice represents the gas price configuration
+type GasPrice struct {
+	LegacyGas  *LegacyGas
+	DynamicGas *DynamicGas
+}
+
+func NewGasPriceLegacy(price *big.Int) *GasPrice {
+	return &GasPrice{LegacyGas: &LegacyGas{GasPrice: price}}
+}
+func NewGasPrice(maxPriorityFeePerGas, maxFeePerGas *big.Int) *GasPrice {
+	return &GasPrice{DynamicGas: &DynamicGas{MaxPriorityFeePerGas: maxPriorityFeePerGas, MaxFeePerGas: maxFeePerGas}}
+}
+
+// LegacyGas represents traditional gas price
+type LegacyGas struct {
+	GasPrice *big.Int
+}
+
+// DynamicGas represents EIP-1559 gas price
+type DynamicGas struct {
+	MaxPriorityFeePerGas *big.Int
+	MaxFeePerGas         *big.Int
 }
 
 type GasPricerDefault struct {

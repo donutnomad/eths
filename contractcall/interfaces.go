@@ -2,36 +2,29 @@ package contractcall
 
 import (
 	"context"
-	"math/big"
-
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
-
-	"github.com/ethereum/go-ethereum"
+	"math/big"
 )
 
-// GasPrice represents the gas price configuration
-type GasPrice struct {
-	LegacyGas  *LegacyGas
-	DynamicGas *DynamicGas
+type gasCaller interface {
+	IHeaderByNumber
+	ethereum.GasPricer
+	ethereum.GasPricer1559
 }
 
-func NewGasPriceLegacy(price *big.Int) *GasPrice {
-	return &GasPrice{LegacyGas: &LegacyGas{GasPrice: price}}
-}
-func NewGasPrice(maxPriorityFeePerGas, maxFeePerGas *big.Int) *GasPrice {
-	return &GasPrice{DynamicGas: &DynamicGas{MaxPriorityFeePerGas: maxPriorityFeePerGas, MaxFeePerGas: maxFeePerGas}}
-}
-
-// LegacyGas represents traditional gas price
-type LegacyGas struct {
-	GasPrice *big.Int
+type IMyClient interface {
+	IHeaderByNumber
+	ethereum.GasPricer
+	ethereum.GasPricer1559
+	ethereum.GasEstimator
+	INonceAt
 }
 
-// DynamicGas represents EIP-1559 gas price
-type DynamicGas struct {
-	MaxPriorityFeePerGas *big.Int
-	MaxFeePerGas         *big.Int
+type ISendTxClient interface {
+	ethereum.TransactionSender
+	ICodeAt
 }
 
 type IGasPricer interface {
@@ -57,7 +50,4 @@ type IGetNonce interface {
 
 type IHeaderByNumber interface {
 	HeaderByNumber(ctx context.Context, number *big.Int) (*ethTypes.Header, error)
-}
-type IPendingNonceAt interface {
-	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
 }
