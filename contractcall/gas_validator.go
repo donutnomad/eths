@@ -4,17 +4,16 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 )
 
 // DefaultGasValidator implements IGasPriceValidator
 type DefaultGasValidator struct {
-	client *ethclient.Client
+	client IHeaderByNumber
 }
 
-func NewDefaultGasValidator(client *ethclient.Client) *DefaultGasValidator {
+func NewDefaultGasValidator(client IHeaderByNumber) *DefaultGasValidator {
 	return &DefaultGasValidator{client: client}
 }
 

@@ -3,12 +3,24 @@ package contractcall
 import (
 	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
+
+type IMyClient interface {
+	IHeaderByNumber
+	gasCaller
+	ethereum.GasEstimator
+	INonceAt
+}
+
+type ISendTxClient interface {
+	ethereum.TransactionSender
+	ICodeAt
+}
 
 type CallManager struct {
 	GasValidator IGasPriceValidator
@@ -17,7 +29,7 @@ type CallManager struct {
 	NonceManager IGetNonce
 }
 
-func NewDefaultCallManager(client *ethclient.Client, logger ILogger) *CallManager {
+func NewDefaultCallManager(client IMyClient, logger ILogger) *CallManager {
 	return &CallManager{
 		GasValidator: NewDefaultGasValidator(client),
 		GasPricer:    NewGasPricerDefault(client),
@@ -28,7 +40,7 @@ func NewDefaultCallManager(client *ethclient.Client, logger ILogger) *CallManage
 
 func SendTx(
 	ctx context.Context,
-	client *ethclient.Client,
+	client ISendTxClient,
 	chainId *big.Int,
 	data []byte,
 	to common.Address,
@@ -49,7 +61,7 @@ func SendTx(
 
 func NoSendTx(
 	ctx context.Context,
-	client *ethclient.Client,
+	client ISendTxClient,
 	chainId *big.Int,
 	data []byte,
 	to common.Address,
@@ -70,7 +82,7 @@ func NoSendTx(
 func SendTxBuilder(
 	ctx context.Context,
 	txBuilder *TxBuilder,
-	client *ethclient.Client,
+	client ethereum.TransactionSender,
 	payer ISigner,
 	noSend bool,
 	beforeSend func(tx *ethTypes.Transaction) error,

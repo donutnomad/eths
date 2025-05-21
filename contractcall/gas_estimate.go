@@ -3,16 +3,15 @@ package contractcall
 import (
 	"context"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"math/big"
 )
 
 type GasEstimateImpl struct {
-	client *ethclient.Client
+	client ethereum.GasEstimator
 	logger ILogger
 }
 
-func NewGasEstimateImpl(client *ethclient.Client, logger ILogger) *GasEstimateImpl {
+func NewGasEstimateImpl(client ethereum.GasEstimator, logger ILogger) *GasEstimateImpl {
 	return &GasEstimateImpl{client: client, logger: logger}
 }
 

@@ -209,9 +209,7 @@ func (b *TxBuilder) SetGasLimitBy(estimator IEstimateGas) *TxBuilder {
 	return b
 }
 
-func (b *TxBuilder) Check(transactor interface {
-	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
-}, gasPriceValidator IGasPriceValidator) *TxBuilder {
+func (b *TxBuilder) Check(transactor ICodeAt, gasPriceValidator IGasPriceValidator) *TxBuilder {
 	if b.to != nil && b.checkContract {
 		// Gas estimation cannot succeed without code for method invocations.
 		if code, err := transactor.PendingCodeAt(b.ctx, *b.to); err != nil {

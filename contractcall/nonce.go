@@ -2,16 +2,26 @@ package contractcall
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-type DefaultNonceManager struct {
-	client *ethclient.Client
+type INonceAt interface {
+	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
+	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
 }
 
-func NewDefaultNonceManager(client *ethclient.Client) *DefaultNonceManager {
+type ICodeAt interface {
+	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
+	CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error)
+}
+
+type DefaultNonceManager struct {
+	client INonceAt
+}
+
+func NewDefaultNonceManager(client INonceAt) *DefaultNonceManager {
 	return &DefaultNonceManager{client: client}
 }
 

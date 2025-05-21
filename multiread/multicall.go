@@ -6,7 +6,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	"math/big"
@@ -115,7 +114,7 @@ func AllSuccess(args ...any) bool {
 }
 
 func CALLAny[A1 any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	unpack func([]byte) (A1, error),
 	inputs ...Func2,
 ) ([]*A1, error) {
@@ -149,7 +148,7 @@ func CALLAny[A1 any](
 }
 
 func CALL1[A1 any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
 ) (*A1, error) {
 	a, r := prepareMultiCallArg(a1)
@@ -165,7 +164,7 @@ func CALL1[A1 any](
 }
 
 func CALL2[A1 any, A2 any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
 	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
 ) (rr1 *A1, rr2 *A2, _ error) {
@@ -186,7 +185,7 @@ func CALL2[A1 any, A2 any](
 }
 
 func CALL3[A1 any, A2 any, A3 any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
 	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
 	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
@@ -212,7 +211,7 @@ func CALL3[A1 any, A2 any, A3 any](
 }
 
 func CALL4[A1 any, A2 any, A3 any, A4 any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
 	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
 	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
@@ -243,7 +242,7 @@ func CALL4[A1 any, A2 any, A3 any, A4 any](
 }
 
 func CALL5[A1 any, A2 any, A3 any, A4 any, A5 any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
 	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
 	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
@@ -279,7 +278,7 @@ func CALL5[A1 any, A2 any, A3 any, A4 any, A5 any](
 }
 
 func CALL6[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
 	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
 	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
@@ -320,7 +319,7 @@ func CALL6[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any](
 }
 
 func CALL7[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
 	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
 	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
@@ -366,7 +365,7 @@ func CALL7[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any](
 }
 
 func CALL8[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any, A8 any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
 	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
 	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
@@ -417,7 +416,7 @@ func CALL8[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any, A8 any](
 }
 
 func CALL9[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any, A8 any, A9 any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
 	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
 	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
@@ -473,7 +472,7 @@ func CALL9[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any, A8 any, A9 an
 }
 
 func CALL10[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any, A8 any, A9 any, A10 any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
 	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
 	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
@@ -534,7 +533,7 @@ func CALL10[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any, A8 any, A9 a
 }
 
 func CALLN[Struct any](
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	slices ...func() (common.Address, []byte, func([]byte) (any, error)),
 ) (*Struct, error) {
 	var args []Multicall3Call3
@@ -627,7 +626,7 @@ func getMultiABI() *abi.ABI {
 }
 
 func callN(
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	args []Multicall3Call3,
 	functions []func([]byte) (any, error),
 	returns []any,
@@ -638,7 +637,7 @@ func callN(
 func callN1(
 	opts *bind.CallOpts,
 	method string,
-	client *ethclient.Client,
+	client bind.ContractCaller,
 	args []Multicall3Call3,
 	functions []func([]byte) (any, error),
 	returns []any,
@@ -648,7 +647,7 @@ func callN1(
 	}
 
 	var outputs []any
-	caller := bind.NewBoundContract(Address, *getMultiABI(), client, client, client)
+	caller := bind.NewBoundContract(Address, *getMultiABI(), client, nil, nil)
 	if err := caller.Call(opts, &outputs, method, args); err != nil {
 		return err
 	}
