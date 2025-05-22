@@ -9,17 +9,16 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 )
 
 type EthClientEnhance struct {
-	client  *ethclient.Client
+	client  IEthereumRPC
 	ctx     context.Context
 	timeout time.Duration
 }
 
-func NewEthClientEnhance(client *ethclient.Client, ctx context.Context, timeout time.Duration) *EthClientEnhance {
+func NewEthClientEnhance(client IEthereumRPC, ctx context.Context, timeout time.Duration) *EthClientEnhance {
 	if timeout == 0 {
 		timeout = 10 * time.Second
 	}
@@ -54,7 +53,12 @@ func (e *EthClientEnhance) CallContract(_ context.Context, call ethereum.CallMsg
 	return e.client.CallContract(ctx, call, blockNumber)
 }
 
-func SendTxAndWait(ctx context.Context, client *ethclient.Client, chainId *big.Int, contract common.Address, payer ISigner, data []byte, blockConfirmations uint64, callManager *CallManager, beforeSend func(tx *types.Transaction) error) error {
+func SendTxAndWait[C interface {
+	ethereum.TransactionReader
+	ethereum.BlockNumberReader
+	ethereum.TransactionSender
+	ICodeAt
+}](ctx context.Context, client C, chainId *big.Int, contract common.Address, payer ISigner, data []byte, blockConfirmations uint64, callManager *CallManager, beforeSend func(tx *types.Transaction) error) error {
 	tx, err := SendTx(ctx, client, chainId, data, contract, payer, callManager, beforeSend)
 	if err != nil {
 		return err
@@ -62,11 +66,17 @@ func SendTxAndWait(ctx context.Context, client *ethclient.Client, chainId *big.I
 	return Wait(ctx, client, tx.Hash(), blockConfirmations, nil)
 }
 
-func Wait(ctx context.Context, client *ethclient.Client, txHash common.Hash, blockConfirmations uint64, outReceipt *types.Receipt) error {
+func Wait[C interface {
+	ethereum.TransactionReader
+	ethereum.BlockNumberReader
+}](ctx context.Context, client C, txHash common.Hash, blockConfirmations uint64, outReceipt *types.Receipt) error {
 	return WaitRetry(ctx, client, txHash, 10, blockConfirmations, outReceipt)
 }
 
-func WaitRetry(ctx context.Context, client *ethclient.Client, txHash common.Hash, retryTimes int, blockConfirmations uint64, outReceipt *types.Receipt) error {
+func WaitRetry[C interface {
+	ethereum.TransactionReader
+	ethereum.BlockNumberReader
+}](ctx context.Context, client C, txHash common.Hash, retryTimes int, blockConfirmations uint64, outReceipt *types.Receipt) error {
 	var receipt *types.Receipt
 	// wait receipt
 	for i := 0; i < retryTimes; i++ {

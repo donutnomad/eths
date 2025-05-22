@@ -8,6 +8,24 @@ import (
 	"math/big"
 )
 
+type IEthereumRPC interface {
+	ethereum.ChainIDReader
+	ethereum.BlockNumberReader
+	ethereum.ContractCaller
+	ethereum.PendingContractCaller
+	ethereum.GasEstimator
+	ethereum.PendingStateReader
+	ethereum.GasPricer
+	ethereum.GasPricer1559
+
+	ethereum.TransactionSender
+	ethereum.LogFilterer
+
+	ethereum.TransactionReader
+	ethereum.ChainStateReader
+	ethereum.ChainReader
+}
+
 type gasCaller interface {
 	IHeaderByNumber
 	ethereum.GasPricer
