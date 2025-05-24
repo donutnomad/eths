@@ -76,7 +76,7 @@ func EstimateTxE(
 	to common.Address,
 	gasManager *CallManager,
 	toIsContract bool,
-) (*big.Int, error) {
+) (*GasPrice, *big.Int, error) {
 	txBuilder := NewTxBuilder(ctx, chainId).
 		SetFrom(from).
 		SetTo(to, toIsContract).
@@ -85,7 +85,7 @@ func EstimateTxE(
 		SetNonceBy(gasManager.NonceManager).
 		SetGasPriceBy(gasManager.GasPricer).
 		SetGasLimitBy(gasManager.GasEstimate)
-	return txBuilder.gasLimit, txBuilder.err
+	return txBuilder.gasPrice, txBuilder.gasLimit, txBuilder.err
 }
 
 func SendTxBuilder(
