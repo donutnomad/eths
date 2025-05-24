@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
-	"github.com/donutnomad/blockchain-alg/xecdsa"
 	"github.com/donutnomad/blockchain-alg/xsecp256k1"
 	"github.com/samber/lo"
 
@@ -299,11 +298,14 @@ func (w *TxWrapper) SetSignatureValues(v, r, s *big.Int) *TxWrapper {
 	return w
 }
 
-func (w *TxWrapper) Sign(privateKey ISigner) *TxWrapper {
+func (w *TxWrapper) Sign(privateKey ISigner) (*TxWrapper, error) {
 	txHashForSign := ethTypes.NewLondonSigner(w.chainID).Hash(w.ToTransaction()).Bytes() // not txHash
-	sig := lo.Must1(privateKey.Sign(txHashForSign)).(*xecdsa.RSVSignature)               // safe
+	sig, err := privateKey.Sign(txHashForSign)
+	if err != nil {
+		return nil, err
+	}
 	w.SetSignatureValues(big.NewInt(int64(sig.V()-27)), sig.R(), sig.S())
-	return w
+	return w, nil
 }
 
 func (w *TxWrapper) ToJSON() []byte {

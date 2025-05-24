@@ -67,6 +67,27 @@ func SendTxE(
 	return _send(ctx, client, chainId, value, data, to, payer, gasManager, beforeSend, noSend, toIsContract)
 }
 
+func EstimateTxE(
+	ctx context.Context,
+	chainId *big.Int,
+	value *big.Int,
+	data []byte,
+	from common.Address,
+	to common.Address,
+	gasManager *CallManager,
+	toIsContract bool,
+) (*big.Int, error) {
+	txBuilder := NewTxBuilder(ctx, chainId).
+		SetFrom(from).
+		SetTo(to, toIsContract).
+		SetValue(value).
+		SetData(data).
+		SetNonceBy(gasManager.NonceManager).
+		SetGasPriceBy(gasManager.GasPricer).
+		SetGasLimitBy(gasManager.GasEstimate)
+	return txBuilder.gasLimit, txBuilder.err
+}
+
 func SendTxBuilder(
 	ctx context.Context,
 	txBuilder *TxBuilder,
@@ -79,7 +100,11 @@ func SendTxBuilder(
 	if err != nil {
 		return nil, err
 	}
-	tx := txWrapper.Sign(payer).ToTransaction()
+	txWrapper, err = txWrapper.Sign(payer)
+	if err != nil {
+		return nil, err
+	}
+	tx := txWrapper.ToTransaction()
 	if beforeSend != nil {
 		err = beforeSend(tx)
 		if err != nil {

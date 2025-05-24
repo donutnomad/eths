@@ -3,11 +3,25 @@ package contractcall
 import (
 	"crypto/ecdsa"
 	"github.com/donutnomad/blockchain-alg/xecdsa"
+	"math/big"
 )
 
 type ISigner interface {
 	PublicKey() ecdsa.PublicKey
-	Sign(msg []byte) (xecdsa.ISignature, error)
+	Sign(msg []byte) (*xecdsa.RSVSignature, error)
+}
+
+type NoOpSigner struct {
+	key ecdsa.PublicKey
+}
+
+func (s *NoOpSigner) PublicKey() ecdsa.PublicKey {
+	return s.key
+}
+
+func (s *NoOpSigner) Sign(_ []byte) (*xecdsa.RSVSignature, error) {
+	v := byte(27)
+	return xecdsa.NewSignature(big.NewInt(0), big.NewInt(0), &v).(*xecdsa.RSVSignature), nil
 }
 
 type EcdsaPrivateKeySigner struct {
@@ -22,6 +36,10 @@ func (s *EcdsaPrivateKeySigner) PublicKey() ecdsa.PublicKey {
 	return s.privateKey.PublicKey
 }
 
-func (s *EcdsaPrivateKeySigner) Sign(msg []byte) (xecdsa.ISignature, error) {
-	return s.privateKey.Sign(msg)
+func (s *EcdsaPrivateKeySigner) Sign(msg []byte) (*xecdsa.RSVSignature, error) {
+	sig, err := s.privateKey.Sign(msg)
+	if err != nil {
+		return nil, err
+	}
+	return sig.(*xecdsa.RSVSignature), nil
 }
