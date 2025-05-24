@@ -23,3 +23,17 @@ func (i *GasEstimateImpl) EstimateGas(ctx context.Context, chainId *big.Int, msg
 	}
 	return new(big.Int).SetUint64(gas), nil
 }
+
+type FixedGasLimit struct {
+	Value *big.Int
+}
+
+func (i *FixedGasLimit) EstimateGas(_ context.Context, _ *big.Int, _ ethereum.CallMsg) (*big.Int, error) {
+	return i.Value, nil
+}
+
+type GasEstimateFuncImpl func(ctx context.Context, chainId *big.Int, msg ethereum.CallMsg) (*big.Int, error)
+
+func (i GasEstimateFuncImpl) EstimateGas(ctx context.Context, chainId *big.Int, msg ethereum.CallMsg) (*big.Int, error) {
+	return i(ctx, chainId, msg)
+}

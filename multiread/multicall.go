@@ -32,6 +32,15 @@ func (t Func1[T]) Downcast() Func2 {
 	}
 }
 
+func (t Func1[T]) Any() Func1[any] {
+	return func() (common.Address, []byte, func([]byte) (any, error)) {
+		a, b, c := t()
+		return a, b, func(bytes []byte) (any, error) {
+			return c(bytes)
+		}
+	}
+}
+
 func One[T any](contractAddress common.Address, callData []byte, returnUnpack ReturnUnPackFunc[T]) Func1[T] {
 	return func() (common.Address, []byte, func([]byte) (T, error)) {
 		return contractAddress, callData, returnUnpack
