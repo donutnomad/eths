@@ -15,8 +15,8 @@ type GasPrice struct {
 func NewGasPriceLegacy(price *big.Int) *GasPrice {
 	return &GasPrice{LegacyGas: &LegacyGas{GasPrice: price}}
 }
-func NewGasPrice(maxPriorityFeePerGas, maxFeePerGas *big.Int) *GasPrice {
-	return &GasPrice{DynamicGas: &DynamicGas{MaxPriorityFeePerGas: maxPriorityFeePerGas, MaxFeePerGas: maxFeePerGas}}
+func NewGasPrice(baseFee, maxPriorityFeePerGas, maxFeePerGas *big.Int) *GasPrice {
+	return &GasPrice{DynamicGas: &DynamicGas{BaseFee: baseFee, MaxPriorityFeePerGas: maxPriorityFeePerGas, MaxFeePerGas: maxFeePerGas}}
 }
 
 // LegacyGas represents traditional gas price
@@ -28,6 +28,7 @@ type LegacyGas struct {
 type DynamicGas struct {
 	MaxPriorityFeePerGas *big.Int
 	MaxFeePerGas         *big.Int
+	BaseFee              *big.Int
 }
 
 type GasPricerDefault struct {
@@ -51,7 +52,7 @@ func (p *GasPricerDefault) GetGasPrice(ctx context.Context, chainId *big.Int) (*
 			return nil, errors.Wrap(EthereumRPCErr, err.Error())
 		}
 		gasFeeCap := new(big.Int).Add(tip, new(big.Int).Mul(head.BaseFee, big.NewInt(p.BaseFeeWiggleMultiplier)))
-		return NewGasPrice(tip, gasFeeCap), nil
+		return NewGasPrice(head.BaseFee, tip, gasFeeCap), nil
 	} else {
 		gasPrice, err := p.client.SuggestGasPrice(ctx)
 		if err != nil {
