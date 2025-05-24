@@ -36,15 +36,7 @@ func SendTx(
 	gasManager *CallManager,
 	beforeSend func(tx *ethTypes.Transaction) error,
 ) (*ethTypes.Transaction, error) {
-	txBuilder := NewTxBuilder(ctx, chainId).
-		SetFromByKey(payer.PublicKey()).
-		SetTo(to, true).
-		SetData(data).
-		SetNonceBy(gasManager.NonceManager).
-		SetGasPriceBy(gasManager.GasPricer).
-		SetGasLimitBy(gasManager.GasEstimate).
-		Check(client, gasManager.GasValidator)
-	return SendTxBuilder(ctx, txBuilder, client, payer, false, beforeSend)
+	return _send(ctx, client, chainId, nil, data, to, payer, gasManager, beforeSend, false, true)
 }
 
 func NoSendTx(
@@ -56,15 +48,23 @@ func NoSendTx(
 	payer ISigner,
 	gasManager *CallManager,
 ) (*ethTypes.Transaction, error) {
-	txBuilder := NewTxBuilder(ctx, chainId).
-		SetFromByKey(payer.PublicKey()).
-		SetTo(to, true).
-		SetData(data).
-		SetNonceBy(gasManager.NonceManager).
-		SetGasPriceBy(gasManager.GasPricer).
-		SetGasLimitBy(gasManager.GasEstimate).
-		Check(client, gasManager.GasValidator)
-	return SendTxBuilder(ctx, txBuilder, client, payer, true, nil)
+	return _send(ctx, client, chainId, nil, data, to, payer, gasManager, nil, true, true)
+}
+
+func SendTxE(
+	ctx context.Context,
+	client ISendTxClient,
+	chainId *big.Int,
+	value *big.Int,
+	data []byte,
+	to common.Address,
+	payer ISigner,
+	gasManager *CallManager,
+	beforeSend func(tx *ethTypes.Transaction) error,
+	noSend bool,
+	toIsContract bool,
+) (*ethTypes.Transaction, error) {
+	return _send(ctx, client, chainId, value, data, to, payer, gasManager, beforeSend, noSend, toIsContract)
 }
 
 func SendTxBuilder(
@@ -98,4 +98,29 @@ func SendTxBuilder(
 		return nil, fmt.Errorf("ethereum send transaction failed: %w,%w", errSend, EthereumRPCErr)
 	}
 	return tx, nil
+}
+
+func _send(
+	ctx context.Context,
+	client ISendTxClient,
+	chainId *big.Int,
+	value *big.Int,
+	data []byte,
+	to common.Address,
+	payer ISigner,
+	gasManager *CallManager,
+	beforeSend func(tx *ethTypes.Transaction) error,
+	noSend bool,
+	checkContract bool,
+) (*ethTypes.Transaction, error) {
+	txBuilder := NewTxBuilder(ctx, chainId).
+		SetFromByKey(payer.PublicKey()).
+		SetTo(to, checkContract).
+		SetValue(value).
+		SetData(data).
+		SetNonceBy(gasManager.NonceManager).
+		SetGasPriceBy(gasManager.GasPricer).
+		SetGasLimitBy(gasManager.GasEstimate).
+		Check(client, gasManager.GasValidator)
+	return SendTxBuilder(ctx, txBuilder, client, payer, noSend, beforeSend)
 }
