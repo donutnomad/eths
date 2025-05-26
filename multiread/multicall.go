@@ -2,15 +2,16 @@ package multiread
 
 import (
 	"fmt"
+	"math/big"
+	"reflect"
+	"sync"
+
 	"github.com/donutnomad/eths/contracts_pack"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
-	"math/big"
-	"reflect"
-	"sync"
 )
 
 type Multicall3Call3 = contracts_pack.Multicall3Call3
@@ -47,17 +48,17 @@ func One[T any](contractAddress common.Address, callData []byte, returnUnpack Re
 	}
 }
 
+func One2(contractAddress common.Address, callData []byte) Func2 {
+	return func() (common.Address, []byte) {
+		return contractAddress, callData
+	}
+}
+
 func Any[T any](contractAddress common.Address, callData []byte, returnUnpack ReturnUnPackFunc[T]) Func1[any] {
 	return func() (common.Address, []byte, func([]byte) (any, error)) {
 		return contractAddress, callData, func(bytes []byte) (any, error) {
 			return returnUnpack(bytes)
 		}
-	}
-}
-
-func One2(contractAddress common.Address, callData []byte) Func2 {
-	return func() (common.Address, []byte) {
-		return contractAddress, callData
 	}
 }
 
@@ -127,8 +128,16 @@ func CALLAny[A1 any](
 	unpack func([]byte) (A1, error),
 	inputs ...Func2,
 ) ([]*A1, error) {
+	return CALLSlice[A1](client, unpack, inputs...)
+}
+
+func CALLSlice[A1 any](
+	client bind.ContractCaller,
+	unpack func([]byte) (A1, error),
+	inputs ...Func2,
+) ([]*A1, error) {
 	if len(inputs) == 0 {
-		panic("invalid inputs")
+		panic("[multiread] invalid inputs")
 	}
 	var args []Multicall3Call3
 	var functions []func([]byte) (any, error)
@@ -543,7 +552,7 @@ func CALL10[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any, A8 any, A9 a
 
 func CALLN[Struct any](
 	client bind.ContractCaller,
-	slices ...func() (common.Address, []byte, func([]byte) (any, error)),
+	slices ...Func1[any],
 ) (*Struct, error) {
 	var args []Multicall3Call3
 	var functions []func([]byte) (any, error)
@@ -562,15 +571,15 @@ func CALLN[Struct any](
 	var out Struct
 	v := reflect.ValueOf(&out).Elem()
 	if v.Kind() != reflect.Struct {
-		return nil, errors.New("generic type Struct must be a struct type")
+		return nil, errors.New("[multiread] generic type Struct must be a struct type")
 	}
 	if v.NumField() != len(results) {
-		return nil, errors.New("field count of struct does not match number of results")
+		return nil, errors.New("[multiread] field count of struct does not match number of results")
 	}
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		if !field.CanSet() {
-			return nil, errors.New("cannot set field " + v.Type().Field(i).Name)
+			return nil, errors.New("[multiread] cannot set field " + v.Type().Field(i).Name)
 		}
 		result := results[i]
 		rv := reflect.ValueOf(result)
@@ -602,7 +611,7 @@ func CALLN[Struct any](
 				continue
 			}
 			// 3) Other cases, e.g. if the pointer does not match, throw an error
-			return nil, fmt.Errorf("cannot assign result type %s to struct pointer field: %s (%s)",
+			return nil, fmt.Errorf("[multiread] cannot assign result type %s to struct pointer field: %s (%s)",
 				rv.Type(), v.Type().Field(i).Name, fieldType)
 		}
 
@@ -611,7 +620,52 @@ func CALLN[Struct any](
 		} else if rv.Type().ConvertibleTo(fieldType) {
 			field.Set(rv.Convert(fieldType))
 		} else {
-			return nil, fmt.Errorf("cannot assign result type %s to struct field: %s (%s)", rv.Type(), v.Type().Field(i).Name, fieldType)
+			return nil, fmt.Errorf("[multiread] cannot assign result type %s to struct field: %s (%s)", rv.Type(), v.Type().Field(i).Name, fieldType)
+		}
+	}
+
+	return &out, nil
+}
+
+// CALLNE is an enhanced version of CALLN that can parse array fields in structs
+// It can handle array fields of fixed size or slices and assign values based on type compatibility
+//
+//	type Example struct {
+//		Bools1      [2]*bool
+//		Bools2      [2]*bool
+//		Addresses   [1]*common.Address
+//		Addresses2  []*common.Address
+//		BlockNumber *big.Int
+//		BlockTime   *big.Int
+//	}
+func CALLNE[Struct any](
+	client bind.ContractCaller,
+	slices ...Func1[any],
+) (*Struct, error) {
+	results, err := prepareMultiCallArgs(client, slices)
+	if err != nil {
+		return nil, err
+	}
+	var out Struct
+	v := reflect.ValueOf(&out).Elem()
+	if v.Kind() != reflect.Struct {
+		return nil, errors.New("[multiread] generic type Struct must be a struct type")
+	}
+
+	// Mark which results have been assigned
+	assigned := make([]bool, len(results))
+
+	// Step 1: Process non-array fields
+	assignNonArrayFields(v, results, assigned)
+
+	// Step 2: Process array and slice fields (by type matching)
+	assignArrayFields(v, results, assigned)
+
+	// Check unassigned results
+	for i, wasAssigned := range assigned {
+		if !wasAssigned && !lo.IsNil(results[i]) {
+			return nil, fmt.Errorf("[multiread] result at index %d of type %v could not be assigned to any field in the struct",
+				i, reflect.TypeOf(results[i]))
 		}
 	}
 
@@ -652,7 +706,7 @@ func callN1(
 	returns []any,
 ) error {
 	if len(args) != len(returns) || len(args) != len(functions) {
-		panic("invalid arguments")
+		panic("[multiread] invalid arguments")
 	}
 
 	var outputs []any
@@ -697,4 +751,245 @@ func prepareMultiCallArg[T any](input Func1[T]) (Multicall3Call3, func([]byte) (
 
 func defSlice[T any](items ...T) []T {
 	return items
+}
+
+// Helper function: Prepare multi-call arguments
+func prepareMultiCallArgs(client bind.ContractCaller, slices []Func1[any]) ([]any, error) {
+	var args []Multicall3Call3
+	var functions []func([]byte) (any, error)
+	for _, item := range slices {
+		a, r := prepareMultiCallArg(item)
+		args = append(args, a)
+		functions = append(functions, r)
+	}
+
+	var results = make([]any, len(slices))
+	err := callN(client, args, functions, results)
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+// Helper function: Check if result can be assigned to field
+func isAssignableTo(result any, field reflect.Value) (reflect.Value, bool) {
+	if lo.IsNil(result) {
+		return reflect.Value{}, false
+	}
+
+	rv := reflect.ValueOf(result)
+	fieldType := field.Type()
+
+	// Directly assignable
+	if rv.Type().AssignableTo(fieldType) {
+		return rv, true
+	}
+
+	// Handle pointer type
+	if fieldType.Kind() == reflect.Ptr {
+		elemType := fieldType.Elem()
+		if rv.Type().AssignableTo(elemType) {
+			ptr := reflect.New(elemType)
+			ptr.Elem().Set(rv)
+			return ptr, true
+		} else if rv.Type().ConvertibleTo(elemType) {
+			ptr := reflect.New(elemType)
+			ptr.Elem().Set(rv.Convert(elemType))
+			return ptr, true
+		}
+	} else if rv.Type().ConvertibleTo(fieldType) {
+		return rv.Convert(fieldType), true
+	}
+
+	return reflect.Value{}, false
+}
+
+// Helper function: Process non-array fields
+func assignNonArrayFields(v reflect.Value, results []any, assigned []bool) {
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldName := v.Type().Field(i).Name
+		if !field.CanSet() {
+			continue
+		}
+
+		fieldType := field.Type()
+		// Skip array fields
+		if fieldType.Kind() == reflect.Array || fieldType.Kind() == reflect.Slice {
+			continue
+		}
+
+		// For regular fields, try to find matching results
+		for j := 0; j < len(results); j++ {
+			if assigned[j] {
+				continue
+			}
+
+			if value, ok := isAssignableTo(results[j], field); ok {
+				field.Set(value)
+				assigned[j] = true
+				fmt.Printf("Assigned result %d to field %s\n", j, fieldName)
+				break
+			}
+		}
+	}
+}
+
+// Helper function: Process array and slice fields
+func assignArrayFields(v reflect.Value, results []any, assigned []bool) {
+	// Step 1: Collect all array and slice fields with their type information
+	type ArrayFieldInfo struct {
+		Field        reflect.Value
+		FieldName    string
+		ElementType  reflect.Type // Array element type
+		IsFixedArray bool         // Whether it's a fixed-size array
+		MaxSize      int          // Maximum capacity (fixed array)
+	}
+
+	var arrayFields []ArrayFieldInfo
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldName := v.Type().Field(i).Name
+		fieldType := field.Type()
+
+		if !field.CanSet() {
+			continue
+		}
+
+		// Process array and slice fields
+		if fieldType.Kind() == reflect.Array || fieldType.Kind() == reflect.Slice {
+			elemType := fieldType.Elem() // Get element type
+
+			info := ArrayFieldInfo{
+				Field:        field,
+				FieldName:    fieldName,
+				ElementType:  elemType,
+				IsFixedArray: fieldType.Kind() == reflect.Array,
+				MaxSize:      0,
+			}
+
+			if info.IsFixedArray {
+				info.MaxSize = fieldType.Len()
+			}
+
+			arrayFields = append(arrayFields, info)
+		}
+	}
+
+	// Step 2: Assign all unassigned results to appropriate array fields by type
+	for _, info := range arrayFields {
+		elemType := info.ElementType
+		fieldName := info.FieldName
+		field := info.Field
+
+		// Find matching results
+		var matchedResults []any
+		var matchedIndices []int
+
+		for i := 0; i < len(results); i++ {
+			if assigned[i] || lo.IsNil(results[i]) {
+				continue
+			}
+
+			result := results[i]
+			resultVal := reflect.ValueOf(result)
+			resultType := resultVal.Type()
+
+			// Check type compatibility
+			canAssign := false
+
+			// Direct match
+			if resultType.AssignableTo(elemType) {
+				canAssign = true
+			} else if elemType.Kind() == reflect.Ptr {
+				// Element is pointer type
+				ptrElemType := elemType.Elem()
+				if resultType.AssignableTo(ptrElemType) || resultType.ConvertibleTo(ptrElemType) {
+					canAssign = true
+				}
+			} else if resultType.ConvertibleTo(elemType) {
+				canAssign = true
+			}
+
+			if canAssign {
+				matchedResults = append(matchedResults, result)
+				matchedIndices = append(matchedIndices, i)
+
+				// If fixed size array and already full, stop
+				if info.IsFixedArray && len(matchedResults) >= info.MaxSize {
+					break
+				}
+			}
+		}
+
+		// Assign matched results to array/slice
+		if len(matchedResults) > 0 {
+			if info.IsFixedArray {
+				// Fixed size array
+				arrayLen := info.MaxSize
+				for i := 0; i < len(matchedResults) && i < arrayLen; i++ {
+					result := matchedResults[i]
+					resultVal := reflect.ValueOf(result)
+					resultType := resultVal.Type()
+
+					// Set array element
+					setArrayElement(field.Index(i), elemType, resultVal, resultType)
+
+					// Mark as assigned
+					assigned[matchedIndices[i]] = true
+					fmt.Printf("Assigned result %d to array field %s[%d]\n",
+						matchedIndices[i], fieldName, i)
+				}
+			} else {
+				// Dynamic slice
+				sliceValue := reflect.MakeSlice(field.Type(), len(matchedResults), len(matchedResults))
+				for i := 0; i < len(matchedResults); i++ {
+					result := matchedResults[i]
+					resultVal := reflect.ValueOf(result)
+					resultType := resultVal.Type()
+
+					// Set slice element
+					setArrayElement(sliceValue.Index(i), elemType, resultVal, resultType)
+
+					// Mark as assigned
+					assigned[matchedIndices[i]] = true
+					fmt.Printf("Assigned result %d to slice field %s[%d]\n",
+						matchedIndices[i], fieldName, i)
+				}
+				field.Set(sliceValue)
+			}
+		}
+	}
+}
+
+// Helper function: Set array/slice element
+func setArrayElement(dest reflect.Value, destType reflect.Type, src reflect.Value, srcType reflect.Type) {
+	// Directly assignable
+	if srcType.AssignableTo(destType) {
+		dest.Set(src)
+		return
+	}
+
+	// Destination is pointer type
+	if destType.Kind() == reflect.Ptr {
+		ptrElemType := destType.Elem()
+
+		// Create new pointer
+		ptr := reflect.New(ptrElemType)
+
+		// Source can be assigned to pointer's element type
+		if srcType.AssignableTo(ptrElemType) {
+			ptr.Elem().Set(src)
+		} else if srcType.ConvertibleTo(ptrElemType) {
+			// Source can be converted to pointer's element type
+			ptr.Elem().Set(src.Convert(ptrElemType))
+		}
+
+		dest.Set(ptr)
+	} else if srcType.ConvertibleTo(destType) {
+		// Source can be converted to destination type
+		dest.Set(src.Convert(destType))
+	}
 }
