@@ -807,9 +807,8 @@ func isAssignableTo(result any, field reflect.Value) (reflect.Value, bool) {
 
 // Helper function: Process non-array fields
 func assignNonArrayFields(v reflect.Value, results []any, assigned []bool) {
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		field := v.Field(i)
-		fieldName := v.Type().Field(i).Name
 		if !field.CanSet() {
 			continue
 		}
@@ -821,7 +820,7 @@ func assignNonArrayFields(v reflect.Value, results []any, assigned []bool) {
 		}
 
 		// For regular fields, try to find matching results
-		for j := 0; j < len(results); j++ {
+		for j := range results {
 			if assigned[j] {
 				continue
 			}
@@ -829,7 +828,6 @@ func assignNonArrayFields(v reflect.Value, results []any, assigned []bool) {
 			if value, ok := isAssignableTo(results[j], field); ok {
 				field.Set(value)
 				assigned[j] = true
-				fmt.Printf("Assigned result %d to field %s\n", j, fieldName)
 				break
 			}
 		}
@@ -849,7 +847,7 @@ func assignArrayFields(v reflect.Value, results []any, assigned []bool) {
 
 	var arrayFields []ArrayFieldInfo
 
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		field := v.Field(i)
 		fieldName := v.Type().Field(i).Name
 		fieldType := field.Type()
@@ -881,14 +879,13 @@ func assignArrayFields(v reflect.Value, results []any, assigned []bool) {
 	// Step 2: Assign all unassigned results to appropriate array fields by type
 	for _, info := range arrayFields {
 		elemType := info.ElementType
-		fieldName := info.FieldName
 		field := info.Field
 
 		// Find matching results
 		var matchedResults []any
 		var matchedIndices []int
 
-		for i := 0; i < len(results); i++ {
+		for i := range results {
 			if assigned[i] || lo.IsNil(results[i]) {
 				continue
 			}
@@ -939,8 +936,6 @@ func assignArrayFields(v reflect.Value, results []any, assigned []bool) {
 
 					// Mark as assigned
 					assigned[matchedIndices[i]] = true
-					fmt.Printf("Assigned result %d to array field %s[%d]\n",
-						matchedIndices[i], fieldName, i)
 				}
 			} else {
 				// Dynamic slice
@@ -955,8 +950,6 @@ func assignArrayFields(v reflect.Value, results []any, assigned []bool) {
 
 					// Mark as assigned
 					assigned[matchedIndices[i]] = true
-					fmt.Printf("Assigned result %d to slice field %s[%d]\n",
-						matchedIndices[i], fieldName, i)
 				}
 				field.Set(sliceValue)
 			}
