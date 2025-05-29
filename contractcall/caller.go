@@ -69,6 +69,7 @@ func SendTxE(
 
 func EstimateTxE(
 	ctx context.Context,
+	client ICodeAt,
 	chainId *big.Int,
 	value *big.Int,
 	data []byte,
@@ -84,7 +85,8 @@ func EstimateTxE(
 		SetData(data).
 		SetNonceBy(gasManager.NonceManager).
 		SetGasPriceBy(gasManager.GasPricer).
-		SetGasLimitBy(gasManager.GasEstimate)
+		SetGasLimitBy(gasManager.GasEstimate).
+		Check(client, nil)
 	return txBuilder.gasPrice, txBuilder.gasLimit, txBuilder.err
 }
 
