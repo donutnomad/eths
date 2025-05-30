@@ -33,6 +33,17 @@ func (t Func1[T]) Downcast() Func2 {
 	}
 }
 
+func (t Func1[T]) prepareMultiCallArg() (Multicall3Call3, ReturnUnPackFunc[any]) {
+	a1, a2, a3 := t()
+	return Multicall3Call3{
+			Target:       a1,
+			AllowFailure: true,
+			CallData:     a2,
+		}, func(bytes []byte) (any, error) {
+			return a3(bytes)
+		}
+}
+
 func (t Func1[T]) Any() Func1[any] {
 	return func() (common.Address, []byte, func([]byte) (any, error)) {
 		a, b, c := t()
@@ -123,14 +134,6 @@ func AllSuccess(args ...any) bool {
 	return true
 }
 
-func CALLAny[A1 any](
-	client bind.ContractCaller,
-	unpack func([]byte) (A1, error),
-	inputs ...Func2,
-) ([]*A1, error) {
-	return CALLSlice[A1](client, unpack, inputs...)
-}
-
 func CALLSlice[A1 any](
 	client bind.ContractCaller,
 	unpack func([]byte) (A1, error),
@@ -140,7 +143,7 @@ func CALLSlice[A1 any](
 		panic("[multiread] invalid inputs")
 	}
 	var args []Multicall3Call3
-	var functions []func([]byte) (any, error)
+	var functions []ReturnUnPackFunc[any]
 	for _, input := range inputs {
 		a1, a2 := input()
 		args = append(args, Multicall3Call3{
@@ -165,389 +168,110 @@ func CALLSlice[A1 any](
 	return result, nil
 }
 
-func CALL1[A1 any](
-	client bind.ContractCaller,
-	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
-) (*A1, error) {
-	a, r := prepareMultiCallArg(a1)
-	var results = make([]any, 1)
-	err := callN(client, defSlice(a), defSlice(r), results)
+// CALL (direct) without multicall
+func CALL[A1 any](client bind.ContractCaller, a1 Func1[A1]) (*A1, error) {
+	target, calldata, unpack := a1()
+	caller := bind.NewBoundContract(target, abi.ABI{}, client, nil, nil)
+	response, err := caller.CallRaw(&bind.CallOpts{}, calldata)
 	if err != nil {
 		return nil, err
 	}
-	if !lo.IsNil(results[0]) {
-		return lo.ToPtr(results[0].(A1)), nil
+	ret, err := unpack(response)
+	if err != nil {
+		return nil, err
 	}
-	return nil, nil
+	return &ret, nil
+}
+
+func CALL1[A1 any](client bind.ContractCaller, a1 Func1[A1]) (r1 *A1, err error) {
+	r1, _, _, _, _, _, _, _, _, _, err = callGeneric(
+		client, a1, fnil, fnil, fnil, fnil, fnil, fnil, fnil, fnil, fnil,
+	)
+	return
 }
 
 func CALL2[A1 any, A2 any](
-	client bind.ContractCaller,
-	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
-	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
-) (rr1 *A1, rr2 *A2, _ error) {
-	z1, r1 := prepareMultiCallArg(a1)
-	z2, r2 := prepareMultiCallArg(a2)
-	var results = make([]any, 2)
-	err := callN(client, defSlice(z1, z2), defSlice(r1, r2), results)
-	if err != nil {
-		return nil, nil, err
-	}
-	if !lo.IsNil(results[0]) {
-		rr1 = lo.ToPtr(results[0].(A1))
-	}
-	if !lo.IsNil(results[1]) {
-		rr2 = lo.ToPtr(results[1].(A2))
-	}
+	client bind.ContractCaller, a1 Func1[A1], a2 Func1[A2],
+) (r1 *A1, r2 *A2, err error) {
+	r1, r2, _, _, _, _, _, _, _, _, err = callGeneric(
+		client, a1, a2, fnil, fnil, fnil, fnil, fnil, fnil, fnil, fnil,
+	)
 	return
 }
 
 func CALL3[A1 any, A2 any, A3 any](
-	client bind.ContractCaller,
-	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
-	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
-	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
-) (rr1 *A1, rr2 *A2, rr3 *A3, _ error) {
-	z1, r1 := prepareMultiCallArg(a1)
-	z2, r2 := prepareMultiCallArg(a2)
-	z3, r3 := prepareMultiCallArg(a3)
-	var results = make([]any, 3)
-	err := callN(client, defSlice(z1, z2, z3), defSlice(r1, r2, r3), results)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	if !lo.IsNil(results[0]) {
-		rr1 = lo.ToPtr(results[0].(A1))
-	}
-	if !lo.IsNil(results[1]) {
-		rr2 = lo.ToPtr(results[1].(A2))
-	}
-	if !lo.IsNil(results[2]) {
-		rr3 = lo.ToPtr(results[2].(A3))
-	}
+	client bind.ContractCaller, a1 Func1[A1], a2 Func1[A2], a3 Func1[A3],
+) (r1 *A1, r2 *A2, r3 *A3, err error) {
+	r1, r2, r3, _, _, _, _, _, _, _, err = callGeneric(
+		client, a1, a2, a3, fnil, fnil, fnil, fnil, fnil, fnil, fnil,
+	)
 	return
 }
 
 func CALL4[A1 any, A2 any, A3 any, A4 any](
-	client bind.ContractCaller,
-	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
-	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
-	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
-	a4 func() (common.Address, []byte, func([]byte) (A4, error)),
-) (rr1 *A1, rr2 *A2, rr3 *A3, rr4 *A4, _ error) {
-	z1, r1 := prepareMultiCallArg(a1)
-	z2, r2 := prepareMultiCallArg(a2)
-	z3, r3 := prepareMultiCallArg(a3)
-	z4, r4 := prepareMultiCallArg(a4)
-	var results = make([]any, 4)
-	err := callN(client, defSlice(z1, z2, z3, z4), defSlice(r1, r2, r3, r4), results)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if !lo.IsNil(results[0]) {
-		rr1 = lo.ToPtr(results[0].(A1))
-	}
-	if !lo.IsNil(results[1]) {
-		rr2 = lo.ToPtr(results[1].(A2))
-	}
-	if !lo.IsNil(results[2]) {
-		rr3 = lo.ToPtr(results[2].(A3))
-	}
-	if !lo.IsNil(results[3]) {
-		rr4 = lo.ToPtr(results[3].(A4))
-	}
+	client bind.ContractCaller, a1 Func1[A1], a2 Func1[A2], a3 Func1[A3], a4 Func1[A4],
+) (r1 *A1, r2 *A2, r3 *A3, r4 *A4, err error) {
+	r1, r2, r3, r4, _, _, _, _, _, _, err = callGeneric(
+		client, a1, a2, a3, a4, fnil, fnil, fnil, fnil, fnil, fnil,
+	)
 	return
 }
 
 func CALL5[A1 any, A2 any, A3 any, A4 any, A5 any](
-	client bind.ContractCaller,
-	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
-	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
-	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
-	a4 func() (common.Address, []byte, func([]byte) (A4, error)),
-	a5 func() (common.Address, []byte, func([]byte) (A5, error)),
-) (rr1 *A1, rr2 *A2, rr3 *A3, rr4 *A4, rr5 *A5, _ error) {
-	z1, r1 := prepareMultiCallArg(a1)
-	z2, r2 := prepareMultiCallArg(a2)
-	z3, r3 := prepareMultiCallArg(a3)
-	z4, r4 := prepareMultiCallArg(a4)
-	z5, r5 := prepareMultiCallArg(a5)
-	var results = make([]any, 5)
-	err := callN(client, defSlice(z1, z2, z3, z4, z5), defSlice(r1, r2, r3, r4, r5), results)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	if !lo.IsNil(results[0]) {
-		rr1 = lo.ToPtr(results[0].(A1))
-	}
-	if !lo.IsNil(results[1]) {
-		rr2 = lo.ToPtr(results[1].(A2))
-	}
-	if !lo.IsNil(results[2]) {
-		rr3 = lo.ToPtr(results[2].(A3))
-	}
-	if !lo.IsNil(results[3]) {
-		rr4 = lo.ToPtr(results[3].(A4))
-	}
-	if !lo.IsNil(results[4]) {
-		rr5 = lo.ToPtr(results[4].(A5))
-	}
+	client bind.ContractCaller, a1 Func1[A1], a2 Func1[A2], a3 Func1[A3], a4 Func1[A4], a5 Func1[A5],
+) (r1 *A1, r2 *A2, r3 *A3, r4 *A4, r5 *A5, err error) {
+	r1, r2, r3, r4, r5, _, _, _, _, _, err = callGeneric(
+		client, a1, a2, a3, a4, a5, fnil, fnil, fnil, fnil, fnil,
+	)
 	return
 }
 
 func CALL6[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any](
 	client bind.ContractCaller,
-	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
-	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
-	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
-	a4 func() (common.Address, []byte, func([]byte) (A4, error)),
-	a5 func() (common.Address, []byte, func([]byte) (A5, error)),
-	a6 func() (common.Address, []byte, func([]byte) (A6, error)),
-) (rr1 *A1, rr2 *A2, rr3 *A3, rr4 *A4, rr5 *A5, rr6 *A6, _ error) {
-	z1, r1 := prepareMultiCallArg(a1)
-	z2, r2 := prepareMultiCallArg(a2)
-	z3, r3 := prepareMultiCallArg(a3)
-	z4, r4 := prepareMultiCallArg(a4)
-	z5, r5 := prepareMultiCallArg(a5)
-	z6, r6 := prepareMultiCallArg(a6)
-	var results = make([]any, 6)
-	err := callN(client, defSlice(z1, z2, z3, z4, z5, z6), defSlice(r1, r2, r3, r4, r5, r6), results)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, err
-	}
-	if !lo.IsNil(results[0]) {
-		rr1 = lo.ToPtr(results[0].(A1))
-	}
-	if !lo.IsNil(results[1]) {
-		rr2 = lo.ToPtr(results[1].(A2))
-	}
-	if !lo.IsNil(results[2]) {
-		rr3 = lo.ToPtr(results[2].(A3))
-	}
-	if !lo.IsNil(results[3]) {
-		rr4 = lo.ToPtr(results[3].(A4))
-	}
-	if !lo.IsNil(results[4]) {
-		rr5 = lo.ToPtr(results[4].(A5))
-	}
-	if !lo.IsNil(results[5]) {
-		rr6 = lo.ToPtr(results[5].(A6))
-	}
+	a1 Func1[A1], a2 Func1[A2], a3 Func1[A3], a4 Func1[A4], a5 Func1[A5], a6 Func1[A6],
+) (r1 *A1, r2 *A2, r3 *A3, r4 *A4, r5 *A5, r6 *A6, err error) {
+	r1, r2, r3, r4, r5, r6, _, _, _, _, err = callGeneric(
+		client, a1, a2, a3, a4, a5, a6, fnil, fnil, fnil, fnil,
+	)
 	return
 }
 
 func CALL7[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any](
 	client bind.ContractCaller,
-	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
-	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
-	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
-	a4 func() (common.Address, []byte, func([]byte) (A4, error)),
-	a5 func() (common.Address, []byte, func([]byte) (A5, error)),
-	a6 func() (common.Address, []byte, func([]byte) (A6, error)),
-	a7 func() (common.Address, []byte, func([]byte) (A7, error)),
-) (rr1 *A1, rr2 *A2, rr3 *A3, rr4 *A4, rr5 *A5, rr6 *A6, rr7 *A7, _ error) {
-	z1, r1 := prepareMultiCallArg(a1)
-	z2, r2 := prepareMultiCallArg(a2)
-	z3, r3 := prepareMultiCallArg(a3)
-	z4, r4 := prepareMultiCallArg(a4)
-	z5, r5 := prepareMultiCallArg(a5)
-	z6, r6 := prepareMultiCallArg(a6)
-	z7, r7 := prepareMultiCallArg(a7)
-	var results = make([]any, 7)
-	err := callN(client, defSlice(z1, z2, z3, z4, z5, z6, z7), defSlice(r1, r2, r3, r4, r5, r6, r7), results)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, err
-	}
-	if !lo.IsNil(results[0]) {
-		rr1 = lo.ToPtr(results[0].(A1))
-	}
-	if !lo.IsNil(results[1]) {
-		rr2 = lo.ToPtr(results[1].(A2))
-	}
-	if !lo.IsNil(results[2]) {
-		rr3 = lo.ToPtr(results[2].(A3))
-	}
-	if !lo.IsNil(results[3]) {
-		rr4 = lo.ToPtr(results[3].(A4))
-	}
-	if !lo.IsNil(results[4]) {
-		rr5 = lo.ToPtr(results[4].(A5))
-	}
-	if !lo.IsNil(results[5]) {
-		rr6 = lo.ToPtr(results[5].(A6))
-	}
-	if !lo.IsNil(results[6]) {
-		rr7 = lo.ToPtr(results[6].(A7))
-	}
+	a1 Func1[A1], a2 Func1[A2], a3 Func1[A3], a4 Func1[A4], a5 Func1[A5], a6 Func1[A6], a7 Func1[A7],
+) (r1 *A1, r2 *A2, r3 *A3, r4 *A4, r5 *A5, r6 *A6, r7 *A7, err error) {
+	r1, r2, r3, r4, r5, r6, r7, _, _, _, err = callGeneric(
+		client, a1, a2, a3, a4, a5, a6, a7, fnil, fnil, fnil,
+	)
 	return
 }
 
 func CALL8[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any, A8 any](
 	client bind.ContractCaller,
-	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
-	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
-	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
-	a4 func() (common.Address, []byte, func([]byte) (A4, error)),
-	a5 func() (common.Address, []byte, func([]byte) (A5, error)),
-	a6 func() (common.Address, []byte, func([]byte) (A6, error)),
-	a7 func() (common.Address, []byte, func([]byte) (A7, error)),
-	a8 func() (common.Address, []byte, func([]byte) (A8, error)),
-) (rr1 *A1, rr2 *A2, rr3 *A3, rr4 *A4, rr5 *A5, rr6 *A6, rr7 *A7, rr8 *A8, _ error) {
-	z1, r1 := prepareMultiCallArg(a1)
-	z2, r2 := prepareMultiCallArg(a2)
-	z3, r3 := prepareMultiCallArg(a3)
-	z4, r4 := prepareMultiCallArg(a4)
-	z5, r5 := prepareMultiCallArg(a5)
-	z6, r6 := prepareMultiCallArg(a6)
-	z7, r7 := prepareMultiCallArg(a7)
-	z8, r8 := prepareMultiCallArg(a8)
-	var results = make([]any, 8)
-	err := callN(client, defSlice(z1, z2, z3, z4, z5, z6, z7, z8), defSlice(r1, r2, r3, r4, r5, r6, r7, r8), results)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, err
-	}
-	if !lo.IsNil(results[0]) {
-		rr1 = lo.ToPtr(results[0].(A1))
-	}
-	if !lo.IsNil(results[1]) {
-		rr2 = lo.ToPtr(results[1].(A2))
-	}
-	if !lo.IsNil(results[2]) {
-		rr3 = lo.ToPtr(results[2].(A3))
-	}
-	if !lo.IsNil(results[3]) {
-		rr4 = lo.ToPtr(results[3].(A4))
-	}
-	if !lo.IsNil(results[4]) {
-		rr5 = lo.ToPtr(results[4].(A5))
-	}
-	if !lo.IsNil(results[5]) {
-		rr6 = lo.ToPtr(results[5].(A6))
-	}
-	if !lo.IsNil(results[6]) {
-		rr7 = lo.ToPtr(results[6].(A7))
-	}
-	if !lo.IsNil(results[7]) {
-		rr8 = lo.ToPtr(results[7].(A8))
-	}
+	a1 Func1[A1], a2 Func1[A2], a3 Func1[A3], a4 Func1[A4], a5 Func1[A5], a6 Func1[A6], a7 Func1[A7], a8 Func1[A8],
+) (r1 *A1, r2 *A2, r3 *A3, r4 *A4, r5 *A5, r6 *A6, r7 *A7, r8 *A8, err error) {
+	r1, r2, r3, r4, r5, r6, r7, r8, _, _, err = callGeneric(
+		client, a1, a2, a3, a4, a5, a6, a7, a8, fnil, fnil,
+	)
 	return
 }
 
 func CALL9[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any, A8 any, A9 any](
 	client bind.ContractCaller,
-	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
-	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
-	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
-	a4 func() (common.Address, []byte, func([]byte) (A4, error)),
-	a5 func() (common.Address, []byte, func([]byte) (A5, error)),
-	a6 func() (common.Address, []byte, func([]byte) (A6, error)),
-	a7 func() (common.Address, []byte, func([]byte) (A7, error)),
-	a8 func() (common.Address, []byte, func([]byte) (A8, error)),
-	a9 func() (common.Address, []byte, func([]byte) (A9, error)),
-) (rr1 *A1, rr2 *A2, rr3 *A3, rr4 *A4, rr5 *A5, rr6 *A6, rr7 *A7, rr8 *A8, rr9 *A9, _ error) {
-	z1, r1 := prepareMultiCallArg(a1)
-	z2, r2 := prepareMultiCallArg(a2)
-	z3, r3 := prepareMultiCallArg(a3)
-	z4, r4 := prepareMultiCallArg(a4)
-	z5, r5 := prepareMultiCallArg(a5)
-	z6, r6 := prepareMultiCallArg(a6)
-	z7, r7 := prepareMultiCallArg(a7)
-	z8, r8 := prepareMultiCallArg(a8)
-	z9, r9 := prepareMultiCallArg(a9)
-	var results = make([]any, 9)
-	err := callN(client, defSlice(z1, z2, z3, z4, z5, z6, z7, z8, z9), defSlice(r1, r2, r3, r4, r5, r6, r7, r8, r9), results)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, nil, err
-	}
-	if !lo.IsNil(results[0]) {
-		rr1 = lo.ToPtr(results[0].(A1))
-	}
-	if !lo.IsNil(results[1]) {
-		rr2 = lo.ToPtr(results[1].(A2))
-	}
-	if !lo.IsNil(results[2]) {
-		rr3 = lo.ToPtr(results[2].(A3))
-	}
-	if !lo.IsNil(results[3]) {
-		rr4 = lo.ToPtr(results[3].(A4))
-	}
-	if !lo.IsNil(results[4]) {
-		rr5 = lo.ToPtr(results[4].(A5))
-	}
-	if !lo.IsNil(results[5]) {
-		rr6 = lo.ToPtr(results[5].(A6))
-	}
-	if !lo.IsNil(results[6]) {
-		rr7 = lo.ToPtr(results[6].(A7))
-	}
-	if !lo.IsNil(results[7]) {
-		rr8 = lo.ToPtr(results[7].(A8))
-	}
-	if !lo.IsNil(results[8]) {
-		rr9 = lo.ToPtr(results[8].(A9))
-	}
+	a1 Func1[A1], a2 Func1[A2], a3 Func1[A3], a4 Func1[A4], a5 Func1[A5], a6 Func1[A6], a7 Func1[A7], a8 Func1[A8], a9 Func1[A9],
+) (r1 *A1, r2 *A2, r3 *A3, r4 *A4, r5 *A5, r6 *A6, r7 *A7, r8 *A8, r9 *A9, err error) {
+	r1, r2, r3, r4, r5, r6, r7, r8, r9, _, err = callGeneric(
+		client, a1, a2, a3, a4, a5, a6, a7, a8, a9, fnil,
+	)
 	return
 }
 
 func CALL10[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any, A8 any, A9 any, A10 any](
 	client bind.ContractCaller,
-	a1 func() (common.Address, []byte, func([]byte) (A1, error)),
-	a2 func() (common.Address, []byte, func([]byte) (A2, error)),
-	a3 func() (common.Address, []byte, func([]byte) (A3, error)),
-	a4 func() (common.Address, []byte, func([]byte) (A4, error)),
-	a5 func() (common.Address, []byte, func([]byte) (A5, error)),
-	a6 func() (common.Address, []byte, func([]byte) (A6, error)),
-	a7 func() (common.Address, []byte, func([]byte) (A7, error)),
-	a8 func() (common.Address, []byte, func([]byte) (A8, error)),
-	a9 func() (common.Address, []byte, func([]byte) (A9, error)),
-	a10 func() (common.Address, []byte, func([]byte) (A10, error)),
-) (rr1 *A1, rr2 *A2, rr3 *A3, rr4 *A4, rr5 *A5, rr6 *A6, rr7 *A7, rr8 *A8, rr9 *A9, rr10 *A10, _ error) {
-	z1, r1 := prepareMultiCallArg(a1)
-	z2, r2 := prepareMultiCallArg(a2)
-	z3, r3 := prepareMultiCallArg(a3)
-	z4, r4 := prepareMultiCallArg(a4)
-	z5, r5 := prepareMultiCallArg(a5)
-	z6, r6 := prepareMultiCallArg(a6)
-	z7, r7 := prepareMultiCallArg(a7)
-	z8, r8 := prepareMultiCallArg(a8)
-	z9, r9 := prepareMultiCallArg(a9)
-	z10, r10 := prepareMultiCallArg(a10)
-	var results = make([]any, 10)
-	err := callN(client, defSlice(z1, z2, z3, z4, z5, z6, z7, z8, z9, z10), defSlice(r1, r2, r3, r4, r5, r6, r7, r8, r9, r10), results)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
-	}
-	if !lo.IsNil(results[0]) {
-		rr1 = lo.ToPtr(results[0].(A1))
-	}
-	if !lo.IsNil(results[1]) {
-		rr2 = lo.ToPtr(results[1].(A2))
-	}
-	if !lo.IsNil(results[2]) {
-		rr3 = lo.ToPtr(results[2].(A3))
-	}
-	if !lo.IsNil(results[3]) {
-		rr4 = lo.ToPtr(results[3].(A4))
-	}
-	if !lo.IsNil(results[4]) {
-		rr5 = lo.ToPtr(results[4].(A5))
-	}
-	if !lo.IsNil(results[5]) {
-		rr6 = lo.ToPtr(results[5].(A6))
-	}
-	if !lo.IsNil(results[6]) {
-		rr7 = lo.ToPtr(results[6].(A7))
-	}
-	if !lo.IsNil(results[7]) {
-		rr8 = lo.ToPtr(results[7].(A8))
-	}
-	if !lo.IsNil(results[8]) {
-		rr9 = lo.ToPtr(results[8].(A9))
-	}
-	if !lo.IsNil(results[9]) {
-		rr10 = lo.ToPtr(results[9].(A10))
-	}
-	return
+	a1 Func1[A1], a2 Func1[A2], a3 Func1[A3], a4 Func1[A4], a5 Func1[A5],
+	a6 Func1[A6], a7 Func1[A7], a8 Func1[A8], a9 Func1[A9], a10 Func1[A10],
+) (r1 *A1, r2 *A2, r3 *A3, r4 *A4, r5 *A5, r6 *A6, r7 *A7, r8 *A8, r9 *A9, r10 *A10, err error) {
+	return callGeneric(client, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
 }
 
 func CALLN[Struct any](
@@ -555,9 +279,9 @@ func CALLN[Struct any](
 	slices ...Func1[any],
 ) (*Struct, error) {
 	var args []Multicall3Call3
-	var functions []func([]byte) (any, error)
+	var functions []ReturnUnPackFunc[any]
 	for _, item := range slices {
-		a, r := prepareMultiCallArg(item)
+		a, r := item.prepareMultiCallArg()
 		args = append(args, a)
 		functions = append(functions, r)
 	}
@@ -576,7 +300,7 @@ func CALLN[Struct any](
 	if v.NumField() != len(results) {
 		return nil, errors.New("[multiread] field count of struct does not match number of results")
 	}
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		field := v.Field(i)
 		if !field.CanSet() {
 			return nil, errors.New("[multiread] cannot set field " + v.Type().Field(i).Name)
@@ -672,6 +396,152 @@ func CALLNE[Struct any](
 	return &out, nil
 }
 
+var fnil Func1[any] = nil
+
+func callGeneric[A1 any, A2 any, A3 any, A4 any, A5 any, A6 any, A7 any, A8 any, A9 any, A10 any](
+	client bind.ContractCaller,
+	a1 Func1[A1], a2 Func1[A2], a3 Func1[A3], a4 Func1[A4], a5 Func1[A5],
+	a6 Func1[A6], a7 Func1[A7], a8 Func1[A8], a9 Func1[A9], a10 Func1[A10],
+) (rr1 *A1, rr2 *A2, rr3 *A3, rr4 *A4, rr5 *A5, rr6 *A6, rr7 *A7, rr8 *A8, rr9 *A9, rr10 *A10, _ error) {
+	var args []Multicall3Call3
+	var functions []ReturnUnPackFunc[any]
+	var count int
+
+	if a1 != nil {
+		z1, r1 := a1.prepareMultiCallArg()
+		args = append(args, z1)
+		functions = append(functions, r1)
+		count++
+	}
+	if a2 != nil {
+		z2, r2 := a2.prepareMultiCallArg()
+		args = append(args, z2)
+		functions = append(functions, r2)
+		count++
+	}
+	if a3 != nil {
+		z3, r3 := a3.prepareMultiCallArg()
+		args = append(args, z3)
+		functions = append(functions, r3)
+		count++
+	}
+	if a4 != nil {
+		z4, r4 := a4.prepareMultiCallArg()
+		args = append(args, z4)
+		functions = append(functions, r4)
+		count++
+	}
+	if a5 != nil {
+		z5, r5 := a5.prepareMultiCallArg()
+		args = append(args, z5)
+		functions = append(functions, r5)
+		count++
+	}
+	if a6 != nil {
+		z6, r6 := a6.prepareMultiCallArg()
+		args = append(args, z6)
+		functions = append(functions, r6)
+		count++
+	}
+	if a7 != nil {
+		z7, r7 := a7.prepareMultiCallArg()
+		args = append(args, z7)
+		functions = append(functions, r7)
+		count++
+	}
+	if a8 != nil {
+		z8, r8 := a8.prepareMultiCallArg()
+		args = append(args, z8)
+		functions = append(functions, r8)
+		count++
+	}
+	if a9 != nil {
+		z9, r9 := a9.prepareMultiCallArg()
+		args = append(args, z9)
+		functions = append(functions, r9)
+		count++
+	}
+	if a10 != nil {
+		z10, r10 := a10.prepareMultiCallArg()
+		args = append(args, z10)
+		functions = append(functions, r10)
+		count++
+	}
+
+	if count == 0 {
+		panic("[multiread] no valid inputs")
+	}
+
+	var results = make([]any, count)
+	err := callN(client, args, functions, results)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
+	}
+
+	var resultIndex int
+	if a1 != nil {
+		if !lo.IsNil(results[resultIndex]) {
+			rr1 = lo.ToPtr(results[resultIndex].(A1))
+		}
+		resultIndex++
+	}
+	if a2 != nil {
+		if !lo.IsNil(results[resultIndex]) {
+			rr2 = lo.ToPtr(results[resultIndex].(A2))
+		}
+		resultIndex++
+	}
+	if a3 != nil {
+		if !lo.IsNil(results[resultIndex]) {
+			rr3 = lo.ToPtr(results[resultIndex].(A3))
+		}
+		resultIndex++
+	}
+	if a4 != nil {
+		if !lo.IsNil(results[resultIndex]) {
+			rr4 = lo.ToPtr(results[resultIndex].(A4))
+		}
+		resultIndex++
+	}
+	if a5 != nil {
+		if !lo.IsNil(results[resultIndex]) {
+			rr5 = lo.ToPtr(results[resultIndex].(A5))
+		}
+		resultIndex++
+	}
+	if a6 != nil {
+		if !lo.IsNil(results[resultIndex]) {
+			rr6 = lo.ToPtr(results[resultIndex].(A6))
+		}
+		resultIndex++
+	}
+	if a7 != nil {
+		if !lo.IsNil(results[resultIndex]) {
+			rr7 = lo.ToPtr(results[resultIndex].(A7))
+		}
+		resultIndex++
+	}
+	if a8 != nil {
+		if !lo.IsNil(results[resultIndex]) {
+			rr8 = lo.ToPtr(results[resultIndex].(A8))
+		}
+		resultIndex++
+	}
+	if a9 != nil {
+		if !lo.IsNil(results[resultIndex]) {
+			rr9 = lo.ToPtr(results[resultIndex].(A9))
+		}
+		resultIndex++
+	}
+	if a10 != nil {
+		if !lo.IsNil(results[resultIndex]) {
+			rr10 = lo.ToPtr(results[resultIndex].(A10))
+		}
+	}
+
+	return
+}
+
 var (
 	_cacheABI *abi.ABI
 	_once     sync.Once
@@ -691,7 +561,7 @@ func getMultiABI() *abi.ABI {
 func callN(
 	client bind.ContractCaller,
 	args []Multicall3Call3,
-	functions []func([]byte) (any, error),
+	functions []ReturnUnPackFunc[any],
 	returns []any,
 ) error {
 	return callN1(nil, "aggregate3", client, args, functions, returns)
@@ -702,7 +572,7 @@ func callN1(
 	method string,
 	client bind.ContractCaller,
 	args []Multicall3Call3,
-	functions []func([]byte) (any, error),
+	functions []ReturnUnPackFunc[any],
 	returns []any,
 ) error {
 	if len(args) != len(returns) || len(args) != len(functions) {
@@ -738,27 +608,12 @@ func makeNilPtr(typ reflect.Type) interface{} {
 	return reflect.Zero(ptrType).Interface()
 }
 
-func prepareMultiCallArg[T any](input Func1[T]) (Multicall3Call3, func([]byte) (any, error)) {
-	a1, a2, a3 := input()
-	return Multicall3Call3{
-			Target:       a1,
-			AllowFailure: true,
-			CallData:     a2,
-		}, func(bytes []byte) (any, error) {
-			return a3(bytes)
-		}
-}
-
-func defSlice[T any](items ...T) []T {
-	return items
-}
-
 // Helper function: Prepare multi-call arguments
 func prepareMultiCallArgs(client bind.ContractCaller, slices []Func1[any]) ([]any, error) {
 	var args []Multicall3Call3
-	var functions []func([]byte) (any, error)
+	var functions []ReturnUnPackFunc[any]
 	for _, item := range slices {
-		a, r := prepareMultiCallArg(item)
+		a, r := item.prepareMultiCallArg()
 		args = append(args, a)
 		functions = append(functions, r)
 	}

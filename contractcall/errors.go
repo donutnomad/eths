@@ -1,11 +1,10 @@
 package contractcall
 
 import (
+	"errors"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"net/url"
 	"reflect"
-
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/pkg/errors"
 )
 
 var EthereumRPCErr = errors.New("ethereum rpc error")
@@ -22,6 +21,17 @@ func (e *SendTransactionError) Error() string {
 	return e.Err.Error()
 }
 func (e *SendTransactionError) Unwrap() error {
+	return e.Err
+}
+
+type EstimateGasError struct {
+	Err error
+}
+
+func (e *EstimateGasError) Error() string {
+	return e.Err.Error()
+}
+func (e *EstimateGasError) Unwrap() error {
 	return e.Err
 }
 
@@ -45,4 +55,9 @@ type EthereumCallError struct {
 	// node: NewJWTAuth
 	// "failed to create JWT token: %w"
 	CreateJWTTokenFailed *struct{ Err error }
+}
+
+func IsEstimateGasError(err error) bool {
+	var estimateGasError *EstimateGasError
+	return errors.As(err, &estimateGasError)
 }

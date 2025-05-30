@@ -201,7 +201,7 @@ func (b *TxBuilder) SetGasLimitBy(estimator IEstimateGas) *TxBuilder {
 
 	gasLimit, err := estimator.EstimateGas(b.ctx, b.chainId, msg)
 	if err != nil {
-		b.err = err
+		b.err = &EstimateGasError{Err: err}
 		return b
 	}
 	b.gasLimit = gasLimit
