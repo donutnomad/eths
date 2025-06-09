@@ -1,27 +1,36 @@
 package contractcall
 
 import (
-	"crypto/ecdsa"
 	"github.com/donutnomad/blockchain-alg/xecdsa"
-	"math/big"
+	"github.com/donutnomad/blockchain-alg/xsecp256k1"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type ISigner interface {
-	PublicKey() ecdsa.PublicKey
+	Address() common.Address
 	Sign(msg []byte) (*xecdsa.RSVSignature, error)
 }
 
 type NoOpSigner struct {
-	key ecdsa.PublicKey
+	address common.Address
+	signFn  func(data []byte)
 }
 
-func (s *NoOpSigner) PublicKey() ecdsa.PublicKey {
-	return s.key
+func NewNoOpSigner(address common.Address, signFn func(data []byte)) *NoOpSigner {
+	return &NoOpSigner{address: address, signFn: signFn}
 }
 
-func (s *NoOpSigner) Sign(_ []byte) (*xecdsa.RSVSignature, error) {
-	v := byte(27)
-	return xecdsa.NewSignature(big.NewInt(0), big.NewInt(0), &v).(*xecdsa.RSVSignature), nil
+func (s *NoOpSigner) Address() common.Address {
+	return s.address
+}
+
+func (s *NoOpSigner) Sign(data []byte) (*xecdsa.RSVSignature, error) {
+	if s.signFn != nil {
+		s.signFn(data)
+	}
+	return nil, nil
+	//v := byte(27)
+	//return xecdsa.NewSignature(big.NewInt(0), big.NewInt(0), &v).(*xecdsa.RSVSignature), nil
 }
 
 type EcdsaPrivateKeySigner struct {
@@ -32,8 +41,8 @@ func NewEcdsaPrivateKeySigner(privateKey *xecdsa.PrivateKey) *EcdsaPrivateKeySig
 	return &EcdsaPrivateKeySigner{privateKey: privateKey}
 }
 
-func (s *EcdsaPrivateKeySigner) PublicKey() ecdsa.PublicKey {
-	return s.privateKey.PublicKey
+func (s *EcdsaPrivateKeySigner) Address() common.Address {
+	return common.Address(xsecp256k1.NewPublicKeyFromEcdsa(&s.privateKey.PublicKey).Address())
 }
 
 func (s *EcdsaPrivateKeySigner) Sign(msg []byte) (*xecdsa.RSVSignature, error) {

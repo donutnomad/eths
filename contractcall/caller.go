@@ -36,7 +36,7 @@ func SendTx(
 	gasManager *CallManager,
 	beforeSend func(tx *ethTypes.Transaction) error,
 ) (*ethTypes.Transaction, error) {
-	return _send(ctx, client, chainId, nil, data, to, payer, gasManager, beforeSend, false, true)
+	return _send(ctx, client, chainId, nil, data, &to, payer, gasManager, beforeSend, false, true)
 }
 
 func NoSendTx(
@@ -48,7 +48,7 @@ func NoSendTx(
 	payer ISigner,
 	gasManager *CallManager,
 ) (*ethTypes.Transaction, error) {
-	return _send(ctx, client, chainId, nil, data, to, payer, gasManager, nil, true, true)
+	return _send(ctx, client, chainId, nil, data, &to, payer, gasManager, nil, true, true)
 }
 
 func SendTxE(
@@ -57,7 +57,7 @@ func SendTxE(
 	chainId *big.Int,
 	value *big.Int,
 	data []byte,
-	to common.Address,
+	to *common.Address,
 	payer ISigner,
 	gasManager *CallManager,
 	beforeSend func(tx *ethTypes.Transaction) error,
@@ -74,13 +74,16 @@ func EstimateTxE(
 	value *big.Int,
 	data []byte,
 	from common.Address,
-	to common.Address,
+	to *common.Address,
 	gasManager *CallManager,
 	toIsContract bool,
 ) (*GasPrice, *big.Int, error) {
-	txBuilder := NewTxBuilder(ctx, chainId).
+	txBuilder := NewTxBuilder(ctx, chainId)
+	if to != nil {
+		txBuilder = txBuilder.SetTo(*to, toIsContract)
+	}
+	txBuilder.
 		SetFrom(from).
-		SetTo(to, toIsContract).
 		SetValue(value).
 		SetData(data).
 		SetNonceBy(gasManager.NonceManager).
@@ -98,7 +101,7 @@ func SendTxBuilder(
 	noSend bool,
 	beforeSend func(tx *ethTypes.Transaction) error,
 ) (*ethTypes.Transaction, error) {
-	txWrapper, err := txBuilder.SetFromByKey(payer.PublicKey()).Build()
+	txWrapper, err := txBuilder.SetFrom(payer.Address()).Build()
 	if err != nil {
 		return nil, err
 	}
@@ -133,16 +136,19 @@ func _send(
 	chainId *big.Int,
 	value *big.Int,
 	data []byte,
-	to common.Address,
+	to *common.Address,
 	payer ISigner,
 	gasManager *CallManager,
 	beforeSend func(tx *ethTypes.Transaction) error,
 	noSend bool,
 	checkContract bool,
 ) (*ethTypes.Transaction, error) {
-	txBuilder := NewTxBuilder(ctx, chainId).
-		SetFromByKey(payer.PublicKey()).
-		SetTo(to, checkContract).
+	txBuilder := NewTxBuilder(ctx, chainId)
+	if to != nil {
+		txBuilder = txBuilder.SetTo(*to, checkContract)
+	}
+	txBuilder.
+		SetFrom(payer.Address()).
 		SetValue(value).
 		SetData(data).
 		SetNonceBy(gasManager.NonceManager).
