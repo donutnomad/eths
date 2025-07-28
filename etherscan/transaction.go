@@ -3,37 +3,8 @@ package etherscan
 import (
 	"fmt"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/samber/mo"
 )
-
-// TransactionClient 提供对 Etherscan Transaction API 的访问
-type TransactionClient struct {
-	client  *resty.Client
-	apiKey  string
-	baseURL string
-}
-
-// NewTransactionClient 创建一个新的 TransactionClient 实例
-func NewTransactionClient(apiKey string) *TransactionClient {
-	return &TransactionClient{
-		client:  resty.New(),
-		apiKey:  apiKey,
-		baseURL: "https://api.etherscan.io/v2/api",
-	}
-}
-
-func NewTransactionClientWith(baseUrl, apiKey string, client *resty.Client) *TransactionClient {
-	return &TransactionClient{
-		client:  client,
-		apiKey:  apiKey,
-		baseURL: baseUrl,
-	}
-}
-
-func (c *TransactionClient) SetClient(client *resty.Client) {
-	c.client = client
-}
 
 // ContractExecutionStatusResult 表示合约执行状态结果
 type ContractExecutionStatusResult struct {
@@ -94,7 +65,7 @@ func (r TransactionReceiptStatusResult) HasError() bool {
 
 // GetContractExecutionStatus 获取合约执行状态
 // 返回合约执行的状态码，用于检查智能合约交易是否成功执行
-func (c *TransactionClient) GetContractExecutionStatus(opts GetContractExecutionStatusOptions) (*ContractExecutionStatusResponse, error) {
+func (c *EtherscanClient) GetContractExecutionStatus(opts GetContractExecutionStatusOptions) (*ContractExecutionStatusResponse, error) {
 	if opts.TxHash == "" {
 		return nil, fmt.Errorf("txhash parameter is required")
 	}
@@ -135,7 +106,7 @@ func (c *TransactionClient) GetContractExecutionStatus(opts GetContractExecution
 
 // GetTransactionReceiptStatus 获取交易收据状态
 // 返回交易执行的状态码，仅适用于拜占庭分叉后的交易
-func (c *TransactionClient) GetTransactionReceiptStatus(opts GetTransactionReceiptStatusOptions) (*TransactionReceiptStatusResponse, error) {
+func (c *EtherscanClient) GetTransactionReceiptStatus(opts GetTransactionReceiptStatusOptions) (*TransactionReceiptStatusResponse, error) {
 	if opts.TxHash == "" {
 		return nil, fmt.Errorf("txhash parameter is required")
 	}

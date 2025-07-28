@@ -75,13 +75,13 @@ func createTransactionMockServer(responseData interface{}, statusCode int) *http
 
 // createTransactionClientWithMockServer 创建使用模拟服务器的交易客户端
 func createTransactionClientWithMockServer(server *httptest.Server) *TransactionClient {
-	client := NewTransactionClient("test-api-key")
+	client := NewEtherscanClient("test-api-key")
 	client.baseURL = server.URL
 	return client
 }
 
 func TestNewTransactionClient(t *testing.T) {
-	client := NewTransactionClient("test-api-key")
+	client := NewEtherscanClient("test-api-key")
 
 	assert.NotNil(t, client)
 	assert.Equal(t, "test-api-key", client.apiKey)
@@ -160,7 +160,7 @@ func TestTransactionClient_GetContractExecutionStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.expectedError == "txhash parameter is required" {
-				client := NewTransactionClient("test-api-key")
+				client := NewEtherscanClient("test-api-key")
 				result, err := client.GetContractExecutionStatus(tt.options)
 
 				assert.Nil(t, result)
@@ -249,7 +249,7 @@ func TestTransactionClient_GetTransactionReceiptStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.expectedError == "txhash parameter is required" {
-				client := NewTransactionClient("test-api-key")
+				client := NewEtherscanClient("test-api-key")
 				result, err := client.GetTransactionReceiptStatus(tt.options)
 
 				assert.Nil(t, result)
@@ -367,7 +367,7 @@ func TestTransactionClient_Integration(t *testing.T) {
 	t.Skip("跳过集成测试，需要真实的 API 密钥")
 
 	apiKey := "YOUR_REAL_API_KEY" // 替换为真实的 API 密钥
-	client := NewTransactionClient(apiKey)
+	client := NewEtherscanClient(apiKey)
 
 	// 测试合约执行状态
 	result1, err := client.GetContractExecutionStatus(GetContractExecutionStatusOptions{

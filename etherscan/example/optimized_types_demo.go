@@ -11,14 +11,14 @@ import (
 
 func main() {
 	// 创建 Logs 客户端
-	client := etherscan.NewLogsClient("YourApiKeyToken")
+	client := etherscan.NewEtherscanClient("YourApiKeyToken")
 
 	// 示例: 根据地址获取事件日志并展示解析后的数据类型
 	fmt.Println("=== 优化后的数据类型示例 ===")
 	opts := etherscan.GetLogsByAddressOptions{
 		Address:   "0xbd3531da5cf5857e7cfaa92426877b022e612cf8",
-		FromBlock: mo.Some(12878196),
-		ToBlock:   mo.Some(12878196),
+		FromBlock: mo.Some(uint64(12878196)),
+		ToBlock:   mo.Some(uint64(12878196)),
 		Page:      mo.Some(1),
 		Offset:    mo.Some(10),
 	}

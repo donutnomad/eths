@@ -10,7 +10,7 @@ import (
 
 func main() {
 	// 创建交易客户端
-	client := etherscan.NewTransactionClient("YourApiKeyToken")
+	client := etherscan.NewEtherscanClient("YourApiKeyToken")
 
 	fmt.Println("=== Etherscan 交易状态 API 示例 ===")
 
