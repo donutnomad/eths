@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/samber/mo"
+	"github.com/spf13/cast"
 )
 
 type LogEntrySlice []LogEntry
@@ -222,20 +223,76 @@ func (c *EtherscanClient) buildQueryParams(params map[string]any) map[string]str
 			if v != "" {
 				queryParams[key] = v
 			}
-		case int:
-			queryParams[key] = strconv.Itoa(v)
 		case mo.Option[string]:
 			if v.IsPresent() {
 				queryParams[key] = v.MustGet()
 			}
 		case mo.Option[int]:
 			if v.IsPresent() {
-				queryParams[key] = strconv.Itoa(v.MustGet())
+				queryParams[key] = cast.ToString(v.MustGet())
+			}
+		case mo.Option[uint]:
+			if v.IsPresent() {
+				queryParams[key] = cast.ToString(v.MustGet())
+			}
+		case mo.Option[uint32]:
+			if v.IsPresent() {
+				queryParams[key] = cast.ToString(v.MustGet())
+			}
+		case mo.Option[int32]:
+			if v.IsPresent() {
+				queryParams[key] = cast.ToString(v.MustGet())
+			}
+		case mo.Option[uint64]:
+			if v.IsPresent() {
+				queryParams[key] = cast.ToString(v.MustGet())
+			}
+		case mo.Option[int64]:
+			if v.IsPresent() {
+				queryParams[key] = cast.ToString(v.MustGet())
+			}
+		case mo.Option[uint16]:
+			if v.IsPresent() {
+				queryParams[key] = cast.ToString(v.MustGet())
+			}
+		case mo.Option[int16]:
+			if v.IsPresent() {
+				queryParams[key] = cast.ToString(v.MustGet())
+			}
+		default:
+			k := typToString(value)
+			if k != "" {
+				queryParams[key] = k
 			}
 		}
 	}
 
 	return queryParams
+}
+
+func typToString(input any) string {
+	switch v := input.(type) {
+	case string:
+		return v
+	case int:
+		return cast.ToString(v)
+	case int16:
+		return cast.ToString(v)
+	case int32:
+		return cast.ToString(v)
+	case int64:
+		return cast.ToString(v)
+	case uint:
+		return cast.ToString(v)
+	case uint16:
+		return cast.ToString(v)
+	case uint32:
+		return cast.ToString(v)
+	case uint64:
+		return cast.ToString(v)
+	default:
+		return ""
+	}
 }
 
 // GetLogsByAddress 根据地址获取事件日志

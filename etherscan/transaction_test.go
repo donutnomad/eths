@@ -74,7 +74,7 @@ func createTransactionMockServer(responseData interface{}, statusCode int) *http
 }
 
 // createTransactionClientWithMockServer 创建使用模拟服务器的交易客户端
-func createTransactionClientWithMockServer(server *httptest.Server) *TransactionClient {
+func createTransactionClientWithMockServer(server *httptest.Server) *EtherscanClient {
 	client := NewEtherscanClient("test-api-key")
 	client.baseURL = server.URL
 	return client

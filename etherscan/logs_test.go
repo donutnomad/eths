@@ -82,14 +82,14 @@ func createMockServer(responseData interface{}, statusCode int) *httptest.Server
 }
 
 // createClientWithMockServer 创建使用模拟服务器的客户端
-func createClientWithMockServer(server *httptest.Server) *LogsClient {
-	client := NewLogsClient("test-api-key")
+func createClientWithMockServer(server *httptest.Server) *EtherscanClient {
+	client := NewEtherscanClient("test-api-key")
 	client.baseURL = server.URL
 	return client
 }
 
 func TestNewLogsClient(t *testing.T) {
-	client := NewLogsClient("test-api-key")
+	client := NewEtherscanClient("test-api-key")
 
 	assert.NotNil(t, client)
 	assert.Equal(t, "test-api-key", client.apiKey)
@@ -118,11 +118,11 @@ func TestLogsClient_GetLogsByAddress(t *testing.T) {
 			name: "成功获取日志 - 包含所有可选参数",
 			options: GetLogsByAddressOptions{
 				Address:   "0xbd3531da5cf5857e7cfaa92426877b022e612cf8",
-				FromBlock: mo.Some(12878196),
-				ToBlock:   mo.Some(12878196),
+				FromBlock: mo.Some(uint64(12878196)),
+				ToBlock:   mo.Some(uint64(12878196)),
 				Page:      mo.Some(1),
 				Offset:    mo.Some(1000),
-				ChainID:   mo.Some(1),
+				ChainID:   mo.Some(uint64(1)),
 			},
 			mockResponse:   mockLogResponse,
 			mockStatusCode: 200,
@@ -161,7 +161,7 @@ func TestLogsClient_GetLogsByAddress(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.expectedError == "address parameter is required" {
 				// 对于参数验证错误，不需要启动服务器
-				client := NewLogsClient("test-api-key")
+				client := NewEtherscanClient("test-api-key")
 				result, err := client.GetLogsByAddress(tt.options)
 
 				assert.Nil(t, result)
@@ -323,7 +323,7 @@ func TestLogsClient_GetLogsByAddressAndTopics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.expectedError == "address parameter is required" {
-				client := NewLogsClient("test-api-key")
+				client := NewEtherscanClient("test-api-key")
 				result, err := client.GetLogsByAddressAndTopics(tt.options)
 
 				assert.Nil(t, result)
@@ -354,7 +354,7 @@ func TestLogsClient_GetLogsByAddressAndTopics(t *testing.T) {
 }
 
 func TestLogsClient_buildQueryParams(t *testing.T) {
-	client := NewLogsClient("test-api-key")
+	client := NewEtherscanClient("test-api-key")
 
 	tests := []struct {
 		name     string
@@ -440,8 +440,8 @@ func TestRequestParameterValidation(t *testing.T) {
 	// 测试地址查询的参数
 	_, err := client.GetLogsByAddress(GetLogsByAddressOptions{
 		Address:   "0xbd3531da5cf5857e7cfaa92426877b022e612cf8",
-		FromBlock: mo.Some(12878196),
-		ToBlock:   mo.Some(12878196),
+		FromBlock: mo.Some(uint64(12878196)),
+		ToBlock:   mo.Some(uint64(12878196)),
 		Page:      mo.Some(1),
 		Offset:    mo.Some(1000),
 	})
@@ -471,16 +471,16 @@ func TestLogsClient_Integration(t *testing.T) {
 	t.Skip("跳过集成测试，需要真实的 API 密钥")
 
 	apiKey := "api-key" // 替换为真实的 API 密钥
-	client := NewLogsClient(apiKey)
+	client := NewEtherscanClient(apiKey)
 
 	// 测试真实的 API 调用
 	result, err := client.GetLogsByAddress(GetLogsByAddressOptions{
 		Address:   "0x4d7aE0515784BB40E44551f68c3EFd81C00B085B",
-		FromBlock: mo.Some(8205123),
-		ToBlock:   mo.Some(8216953),
+		FromBlock: mo.Some(uint64(8205123)),
+		ToBlock:   mo.Some(uint64(8216953)),
 		Page:      mo.Some(1),
 		Offset:    mo.Some(10),
-		ChainID:   mo.Some(11155111),
+		ChainID:   mo.Some(uint64(11155111)),
 	})
 
 	spew.Dump(result)
