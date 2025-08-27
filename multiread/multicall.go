@@ -183,6 +183,19 @@ func CALL[A1 any](client bind.ContractCaller, a1 Func1[A1]) (*A1, error) {
 	return &ret, nil
 }
 
+func CALLD[A1 any](client bind.ContractCaller, target common.Address, calldata []byte, unpack func([]byte) (A1, error)) (*A1, error) {
+	caller := bind.NewBoundContract(target, abi.ABI{}, client, nil, nil)
+	response, err := caller.CallRaw(&bind.CallOpts{}, calldata)
+	if err != nil {
+		return nil, err
+	}
+	ret, err := unpack(response)
+	if err != nil {
+		return nil, err
+	}
+	return &ret, nil
+}
+
 func CALL1[A1 any](client bind.ContractCaller, a1 Func1[A1]) (r1 *A1, err error) {
 	r1, _, _, _, _, _, _, _, _, _, err = callGeneric(
 		client, a1, fnil, fnil, fnil, fnil, fnil, fnil, fnil, fnil, fnil,
