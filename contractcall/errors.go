@@ -86,14 +86,14 @@ func (e *EvmError) Unwrap() error {
 func (e *EvmError) Error() string {
 	var args []string
 	args = append(args, fmt.Sprintf("code=%d", e.ErrCode))
+	args = append(args, fmt.Sprintf("message=%q", e.Message))
 	if e.IsExecutionReverted() {
 		args = append(args, fmt.Sprintf("data=%q", e.ErrData))
 	}
-	args = append(args, fmt.Sprintf("message=%q", e.Message))
 	if e.Err != nil {
 		args = append(args, e.Err.Error())
 	}
-	return strings.Join(args, "\n")
+	return strings.Join(args, ",")
 }
 
 ///////////////////////////////// ETH ERROR /////////////////////////////////
