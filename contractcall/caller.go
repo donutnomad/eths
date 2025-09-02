@@ -29,6 +29,10 @@ func NewDefaultCallManager(client IMyClient, logger ILogger) *CallManager {
 	}
 }
 
+type SendTxOption struct {
+	Strict bool // true: 不允许向合约发送空data（因为，如果合约没有设置payable方法，则不能接受ETH，返回的只是execution reverted, 让人无法理解
+}
+
 func SendTx(
 	ctx context.Context,
 	client ISendTxClient,
@@ -38,6 +42,7 @@ func SendTx(
 	payer ISigner,
 	callManager *CallManager,
 	beforeSend func(tx *ethTypes.Transaction) error,
+	opt ...SendTxOption,
 ) (*ethTypes.Transaction, error) {
 	return send(ctx, client, chainId, nil, data, &to, payer, callManager, beforeSend, false, true)
 }
@@ -54,8 +59,9 @@ func SendTxE(
 	beforeSend func(tx *ethTypes.Transaction) error,
 	noSend bool,
 	toIsContract bool,
+	opt ...SendTxOption,
 ) (*ethTypes.Transaction, error) {
-	return send(ctx, client, chainId, value, data, to, payer, callManager, beforeSend, noSend, toIsContract)
+	return send(ctx, client, chainId, value, data, to, payer, callManager, beforeSend, noSend, toIsContract, opt...)
 }
 
 func EstimateTxE(
@@ -68,10 +74,11 @@ func EstimateTxE(
 	to *common.Address,
 	callManager *CallManager,
 	toIsContract bool,
+	opt ...SendTxOption,
 ) (*GasPrice, *big.Int, error) {
 	builder, err := sendFn[*TxBuilder](ctx, &noOpTransactionSender{client}, chainId, value, data, to, NewNoOpSigner(from, nil), callManager, toIsContract, func(txBuilder *TxBuilder) (*TxBuilder, error) {
 		return txBuilder, nil
-	})
+	}, opt...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -126,10 +133,11 @@ func send(
 	beforeSend func(tx *ethTypes.Transaction) error,
 	noSend bool,
 	checkContract bool,
+	opt ...SendTxOption,
 ) (*ethTypes.Transaction, error) {
 	return sendFn[*ethTypes.Transaction](ctx, client, chainId, value, data, to, payer, callManager, checkContract, func(txBuilder *TxBuilder) (*ethTypes.Transaction, error) {
 		return SendTxBuilder(ctx, txBuilder, client, payer, noSend, beforeSend)
-	})
+	}, opt...)
 }
 
 func sendFn[T any](
@@ -143,6 +151,7 @@ func sendFn[T any](
 	callManager *CallManager,
 	checkContract bool,
 	fn func(txBuilder *TxBuilder) (T, error),
+	opt ...SendTxOption,
 ) (T, error) {
 	txBuilder := NewTxBuilder(ctx, chainId)
 	if to != nil {
@@ -156,7 +165,7 @@ func sendFn[T any](
 		SetGasPriceBy(callManager.GasPricer).
 		BalanceCheck(callManager.Balance).
 		SetGasLimitBy(callManager.GasEstimate).
-		Check(client, callManager.GasValidator)
+		Check(client, callManager.GasValidator, opt...)
 	return fn(txBuilder)
 }
 

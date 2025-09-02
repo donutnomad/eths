@@ -14,6 +14,7 @@ import (
 var EthereumRPCErr = errors.New("ethereum rpc error")
 var GasInvalidGasPriceErr = errors.New("invalid gas price")
 var TxBuilderMissingRequiredFieldErr = errors.New("missing required field")
+var ErrContractCallEmptyData = errors.New("call contract with empty data is not allowed. if you confirm the contract is payable, please set strict to false")
 
 // SendTransactionError Ethereum SendTransaction Error
 type SendTransactionError struct {

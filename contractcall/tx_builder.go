@@ -225,15 +225,30 @@ func (b *TxBuilder) BalanceCheck(checker IBalanceChecker) *TxBuilder {
 	return b
 }
 
-func (b *TxBuilder) Check(transactor ICodeAt, gasPriceValidator IGasPriceValidator) *TxBuilder {
-	if b.to != nil && b.checkContract {
-		// Gas estimation cannot succeed without code for method invocations.
-		if code, err := transactor.PendingCodeAt(b.ctx, *b.to); err != nil {
-			b.err = err
-			return b
-		} else if len(code) == 0 {
-			b.err = bind.ErrNoCode
-			return b
+func (b *TxBuilder) Check(transactor ICodeAt, gasPriceValidator IGasPriceValidator, opt ...SendTxOption) *TxBuilder {
+	var nonStrict = false
+	for _, o := range opt {
+		if !nonStrict && !o.Strict {
+			nonStrict = true
+		}
+	}
+
+	if b.to != nil {
+		if b.checkContract || !nonStrict {
+			// Gas estimation cannot succeed without code for method invocations.
+			code, err := transactor.PendingCodeAt(b.ctx, *b.to)
+			if err != nil {
+				b.err = err
+				return b
+			}
+			if b.checkContract && len(code) == 0 {
+				b.err = bind.ErrNoCode
+				return b
+			}
+			if !nonStrict && len(code) > 0 && len(b.data) == 0 {
+				b.err = ErrContractCallEmptyData
+				return b
+			}
 		}
 	}
 
