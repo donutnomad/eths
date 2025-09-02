@@ -2,8 +2,9 @@ package contractcall
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum"
 )
 
 type GasEstimateImpl struct {

@@ -3,8 +3,9 @@ package contractcall
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
@@ -15,6 +16,7 @@ type CallManager struct {
 	GasPricer    IGasPricer
 	GasEstimate  IEstimateGas
 	NonceManager IGetNonce
+	Balance      IBalanceChecker
 }
 
 func NewDefaultCallManager(client IMyClient, logger ILogger) *CallManager {
@@ -23,6 +25,7 @@ func NewDefaultCallManager(client IMyClient, logger ILogger) *CallManager {
 		GasPricer:    NewGasPricerDefault(client),
 		GasEstimate:  NewGasEstimateImpl(client, logger),
 		NonceManager: NewDefaultNonceManager(client),
+		Balance:      NewBalanceCheckerImpl(client),
 	}
 }
 
@@ -33,22 +36,10 @@ func SendTx(
 	data []byte,
 	to common.Address,
 	payer ISigner,
-	gasManager *CallManager,
+	callManager *CallManager,
 	beforeSend func(tx *ethTypes.Transaction) error,
 ) (*ethTypes.Transaction, error) {
-	return _send(ctx, client, chainId, nil, data, &to, payer, gasManager, beforeSend, false, true)
-}
-
-func NoSendTx(
-	ctx context.Context,
-	client ISendTxClient,
-	chainId *big.Int,
-	data []byte,
-	to common.Address,
-	payer ISigner,
-	gasManager *CallManager,
-) (*ethTypes.Transaction, error) {
-	return _send(ctx, client, chainId, nil, data, &to, payer, gasManager, nil, true, true)
+	return send(ctx, client, chainId, nil, data, &to, payer, callManager, beforeSend, false, true)
 }
 
 func SendTxE(
@@ -59,12 +50,12 @@ func SendTxE(
 	data []byte,
 	to *common.Address,
 	payer ISigner,
-	gasManager *CallManager,
+	callManager *CallManager,
 	beforeSend func(tx *ethTypes.Transaction) error,
 	noSend bool,
 	toIsContract bool,
 ) (*ethTypes.Transaction, error) {
-	return _send(ctx, client, chainId, value, data, to, payer, gasManager, beforeSend, noSend, toIsContract)
+	return send(ctx, client, chainId, value, data, to, payer, callManager, beforeSend, noSend, toIsContract)
 }
 
 func EstimateTxE(
@@ -75,22 +66,16 @@ func EstimateTxE(
 	data []byte,
 	from common.Address,
 	to *common.Address,
-	gasManager *CallManager,
+	callManager *CallManager,
 	toIsContract bool,
 ) (*GasPrice, *big.Int, error) {
-	txBuilder := NewTxBuilder(ctx, chainId)
-	if to != nil {
-		txBuilder = txBuilder.SetTo(*to, toIsContract)
+	builder, err := sendFn[*TxBuilder](ctx, &noOpTransactionSender{client}, chainId, value, data, to, NewNoOpSigner(from, nil), callManager, toIsContract, func(txBuilder *TxBuilder) (*TxBuilder, error) {
+		return txBuilder, nil
+	})
+	if err != nil {
+		return nil, nil, err
 	}
-	txBuilder.
-		SetFrom(from).
-		SetValue(value).
-		SetData(data).
-		SetNonceBy(gasManager.NonceManager).
-		SetGasPriceBy(gasManager.GasPricer).
-		SetGasLimitBy(gasManager.GasEstimate).
-		Check(client, nil)
-	return txBuilder.gasPrice, txBuilder.gasLimit, txBuilder.err
+	return builder.gasPrice, builder.gasLimit, builder.err
 }
 
 func SendTxBuilder(
@@ -111,8 +96,7 @@ func SendTxBuilder(
 	}
 	tx := txWrapper.ToTransaction()
 	if beforeSend != nil {
-		err = beforeSend(tx)
-		if err != nil {
+		if err = beforeSend(tx); err != nil {
 			return nil, err
 		}
 	}
@@ -123,14 +107,14 @@ func SendTxBuilder(
 	if err != nil {
 		errSend := &SendTransactionError{
 			Tx:  tx,
-			Err: err,
+			Err: ParseEvmError(err),
 		}
 		return nil, fmt.Errorf("ethereum send transaction failed: %w,%w", errSend, EthereumRPCErr)
 	}
 	return tx, nil
 }
 
-func _send(
+func send(
 	ctx context.Context,
 	client ISendTxClient,
 	chainId *big.Int,
@@ -138,11 +122,28 @@ func _send(
 	data []byte,
 	to *common.Address,
 	payer ISigner,
-	gasManager *CallManager,
+	callManager *CallManager,
 	beforeSend func(tx *ethTypes.Transaction) error,
 	noSend bool,
 	checkContract bool,
 ) (*ethTypes.Transaction, error) {
+	return sendFn[*ethTypes.Transaction](ctx, client, chainId, value, data, to, payer, callManager, checkContract, func(txBuilder *TxBuilder) (*ethTypes.Transaction, error) {
+		return SendTxBuilder(ctx, txBuilder, client, payer, noSend, beforeSend)
+	})
+}
+
+func sendFn[T any](
+	ctx context.Context,
+	client ISendTxClient,
+	chainId *big.Int,
+	value *big.Int,
+	data []byte,
+	to *common.Address,
+	payer ISigner,
+	callManager *CallManager,
+	checkContract bool,
+	fn func(txBuilder *TxBuilder) (T, error),
+) (T, error) {
 	txBuilder := NewTxBuilder(ctx, chainId)
 	if to != nil {
 		txBuilder = txBuilder.SetTo(*to, checkContract)
@@ -151,9 +152,18 @@ func _send(
 		SetFrom(payer.Address()).
 		SetValue(value).
 		SetData(data).
-		SetNonceBy(gasManager.NonceManager).
-		SetGasPriceBy(gasManager.GasPricer).
-		SetGasLimitBy(gasManager.GasEstimate).
-		Check(client, gasManager.GasValidator)
-	return SendTxBuilder(ctx, txBuilder, client, payer, noSend, beforeSend)
+		SetNonceBy(callManager.NonceManager).
+		SetGasPriceBy(callManager.GasPricer).
+		BalanceCheck(callManager.Balance).
+		SetGasLimitBy(callManager.GasEstimate).
+		Check(client, callManager.GasValidator)
+	return fn(txBuilder)
+}
+
+type noOpTransactionSender struct {
+	ICodeAt
+}
+
+func (e *noOpTransactionSender) SendTransaction(ctx context.Context, tx *ethTypes.Transaction) error {
+	return nil
 }

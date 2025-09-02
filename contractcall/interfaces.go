@@ -2,10 +2,11 @@ package contractcall
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 )
 
 type IEthereumRPC interface {
@@ -38,6 +39,7 @@ type IMyClient interface {
 	ethereum.GasPricer1559
 	ethereum.GasEstimator
 	INonceAt
+	IBalance
 }
 
 type ISendTxClient interface {
@@ -68,4 +70,8 @@ type IGetNonce interface {
 
 type IHeaderByNumber interface {
 	HeaderByNumber(ctx context.Context, number *big.Int) (*ethTypes.Header, error)
+}
+
+type IBalance interface {
+	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error)
 }

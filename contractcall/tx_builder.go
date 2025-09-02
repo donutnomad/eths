@@ -6,14 +6,12 @@ import (
 	"math/big"
 
 	"github.com/donutnomad/blockchain-alg/xsecp256k1"
-	"github.com/samber/lo"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
-
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
+	"github.com/samber/lo"
 )
 
 // TxBuilder builds Ethereum transactions
@@ -205,6 +203,25 @@ func (b *TxBuilder) SetGasLimitBy(estimator IEstimateGas) *TxBuilder {
 		return b
 	}
 	b.gasLimit = gasLimit
+	return b
+}
+
+func (b *TxBuilder) BalanceCheck(checker IBalanceChecker) *TxBuilder {
+	if b.err != nil {
+		return b
+	}
+	if err := b.checkRequiredFields0(); err != nil {
+		b.err = err
+		return b
+	}
+	if checker == nil {
+		return b
+	}
+	err := checker.CheckBalance(b.ctx, b.from, b.data, b.to, b.gasPrice)
+	if err != nil {
+		b.err = err
+		return b
+	}
 	return b
 }
 
