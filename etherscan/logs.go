@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/samber/lo"
 	"github.com/samber/mo"
 )
@@ -100,4 +101,18 @@ type LogEntry struct {
 	LogIndex         Uint64         `json:"logIndex"`
 	TransactionHash  common.Hash    `json:"transactionHash"`
 	TransactionIndex Uint64         `json:"transactionIndex"`
+}
+
+func (e *LogEntry) ToLog() *ethTypes.Log {
+	return &ethTypes.Log{
+		Address:     e.Address,
+		Topics:      e.Topics,
+		Data:        e.Data,
+		BlockNumber: uint64(e.BlockNumber),
+		TxHash:      e.TransactionHash,
+		TxIndex:     uint(e.TransactionIndex),
+		BlockHash:   e.BlockHash,
+		Index:       uint(e.LogIndex),
+		Removed:     false,
+	}
 }
