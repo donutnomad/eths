@@ -193,13 +193,49 @@ func solidityToGoType(solidityType string) (goType, accessor string, err error) 
 	}
 }
 
+// needsHexutil 检查是否需要导入 hexutil
+func needsHexutil(fields []FieldDefinition) bool {
+	for _, field := range fields {
+		if field.Type == "bytes" || strings.HasPrefix(field.Type, "bytes") && len(field.Type) > 5 {
+			return true
+		}
+	}
+	return false
+}
+
+// buildImports 构建导入语句
+func buildImports(needsHexutil bool, isFullCode bool) string {
+	imports := []string{
+		`"math/big"`,
+	}
+
+	if isFullCode {
+		imports = append(imports,
+			``,
+			`"github.com/donutnomad/eths/eip/eip712"`,
+			`"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"`,
+		)
+	}
+
+	imports = append(imports, `"github.com/ethereum/go-ethereum/common"`)
+
+	if needsHexutil {
+		imports = append(imports, `"github.com/ethereum/go-ethereum/common/hexutil"`)
+	}
+
+	if isFullCode {
+		imports = append(imports, `"github.com/ethereum/go-ethereum/signer/core/apitypes"`)
+	}
+
+	return strings.Join(imports, "\n\t")
+}
+
 // generateStructCode 仅生成结构体代码
 func generateStructCode(config CodeGenConfig) (string, error) {
 	tmpl := `package {{.PackageName}}
 
 import (
-	"math/big"
-	"github.com/ethereum/go-ethereum/common"
+	` + buildImports(needsHexutil(config.StructDef.Fields), false) + `
 )
 
 type {{.StructDef.Name}} struct {
@@ -232,12 +268,7 @@ func generateFullCode(config CodeGenConfig) (string, error) {
 package {{.PackageName}}
 
 import (
-	"math/big"
-	
-	"github.com/donutnomad/eths/eip/eip712"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+	` + buildImports(needsHexutil(config.StructDef.Fields), true) + `
 )
 
 type {{.StructDef.Name}} struct {
