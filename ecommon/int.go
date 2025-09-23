@@ -9,6 +9,23 @@ import (
 // Big json序列化和反序列化时，转换为字符串类型"xxxxxx"
 // 支持gin binding, sql
 type Big big.Int
+type BigInt = Big
+
+func NewInt(x int64) *Big {
+	return (*Big)(big.NewInt(x))
+}
+
+func NewIntFromString(input string) (*Big, error) {
+	v, ok := new(big.Int).SetString(input, 10)
+	if !ok {
+		return nil, fmt.Errorf("invalid bigInt %s", input)
+	}
+	return (*Big)(v), nil
+}
+
+func (x *Big) IsZero() bool {
+	return x.ToInt().Sign() == 0
+}
 
 // AppendText implements the [encoding.TextAppender] interface.
 func (x *Big) AppendText(buf []byte) (text []byte, err error) {
@@ -55,6 +72,10 @@ func (x *Big) ToInt() *big.Int {
 	return (*big.Int)(x)
 }
 
+func (x *Big) BigInt() *big.Int {
+	return (*big.Int)(x)
+}
+
 // String returns the hex encoding of b.
 func (x *Big) String() string {
 	return x.ToInt().Text(10)
@@ -83,37 +104,6 @@ func (x *Big) Scan(src any) error {
 // Value implements valuer for database/sql.
 func (x Big) Value() (driver.Value, error) {
 	return x.MarshalText()
-}
-
-type Int interface {
-	SetInt64(x int64) *Big
-	SetUint64(x uint64) *Big
-	Set(x *Big) *Big
-	SetBits(abs []big.Word) *Big
-	Neg(x *Big) *Big
-	Add(x, y *Big) *Big
-	Sub(x, y *Big) *Big
-	Mul(x, y *Big) *Big
-	MulRange(a, b int64) *Big
-	Div(x, y *Big) *Big
-	Mod(x, y *Big) *Big
-	DivMod(x, y, m *Big) (*Big, *Big)
-	Cmp(y *Big) (r int)
-	CmpAbs(y *Big) int
-	SetString(s string, base int) (*Big, bool)
-	SetBytes(buf []byte) *Big
-	Exp(x, y, m *Big) *Big
-	ModInverse(g, n *Big) *Big
-	ModSqrt(x, p *Big) *Big
-	Lsh(x *Big, n uint) *Big
-	Rsh(x *Big, n uint) *Big
-	SetBit(x *Big, i int, b uint) *Big
-	And(x, y *Big) *Big
-	AndNot(x, y *Big) *Big
-	Or(x, y *Big) *Big
-	Xor(x, y *Big) *Big
-	Not(x *Big) *Big
-	Sqrt(x *Big) *Big
 }
 
 // SetInt64 sets x to y and returns x.
