@@ -1,4 +1,4 @@
-package ethtype
+package ecommon
 
 import (
 	"database/sql/driver"
