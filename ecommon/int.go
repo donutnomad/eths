@@ -4,6 +4,8 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"math/big"
+
+	"github.com/shopspring/decimal"
 )
 
 // Big json序列化和反序列化时，转换为字符串类型"xxxxxx"
@@ -65,6 +67,10 @@ func (x *Big) UnmarshalJSON(text []byte) error {
 		text = text[1 : len(text)-1]
 	}
 	return x.ToInt().UnmarshalJSON(text)
+}
+
+func (x *Big) ToDecimal() decimal.Decimal {
+	return decimal.NewFromBigInt(x.BigInt(), 0)
 }
 
 // ToInt converts b to a big.Int.

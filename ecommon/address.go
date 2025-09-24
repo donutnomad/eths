@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"reflect"
 
+	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -47,6 +48,10 @@ func IsHexAddress(s string) bool {
 		s = s[2:]
 	}
 	return len(s) == 2*AddressLength && isHex(s)
+}
+
+func (a Address) To() common.Address {
+	return common.Address(a)
 }
 
 // Cmp compares two addresses.
