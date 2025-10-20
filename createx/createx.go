@@ -2,12 +2,13 @@ package createx
 
 import (
 	"crypto/rand"
+	"math/big"
+	"slices"
+
 	"github.com/donutnomad/eths/contracts_pack"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/samber/lo"
-	"math/big"
-	"slices"
 )
 
 // Address hardhat createX's address
