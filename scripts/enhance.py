@@ -297,7 +297,7 @@ def generate_unpack_input_method(method, struct_name, receiver_var):
             elif param_type == "string":
                 code_lines.append(f"\t{param_name} = *abi.ConvertType(arguments[{i}], new(string)).(*string)")
             elif param_type == "[]byte":
-                code_lines.append(f"\t{param_name} = abi.ConvertType(arguments[{i}], new([]byte)).([]byte)")
+                code_lines.append(f"\t{param_name} = *abi.ConvertType(arguments[{i}], new([]byte)).(*[]byte)")
             elif param_type.startswith("*"):
                 # 指针类型（包括结构体指针）
                 inner_type = param_type[1:]  # 去掉*
