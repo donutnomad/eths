@@ -218,6 +218,9 @@ def get_go_zero_value(go_type):
         return "0"
     elif go_type == "string":
         return "\"\""
+    elif re.match(r'\[\d+\]', go_type):
+        # 固定长度数组类型，如 [32]byte, [64]uint8
+        return f"{go_type}{{}}"
     else:
         return "nil"
 
