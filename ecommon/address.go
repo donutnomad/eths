@@ -142,7 +142,7 @@ func (a *Address) SetBytes(b []byte) {
 
 // MarshalText returns the hex representation of a.
 func (a Address) MarshalText() ([]byte, error) {
-	return EncodeHexToBytes(a[:]), nil
+	return a.checksumHex(), nil
 }
 
 // UnmarshalText parses a hash in hex syntax.
