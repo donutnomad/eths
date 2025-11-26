@@ -3,7 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go/parser"
+	"go/token"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
@@ -30,12 +33,42 @@ type CodeGenConfig struct {
 	StructDef   StructDefinition
 }
 
+// detectPackageName 自动检测当前目录的包名
+func detectPackageName() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "main"
+	}
+
+	// 查找当前目录下的 .go 文件
+	files, err := filepath.Glob(filepath.Join(dir, "*.go"))
+	if err != nil || len(files) == 0 {
+		return "main"
+	}
+
+	// 解析第一个非测试文件获取包名
+	fset := token.NewFileSet()
+	for _, file := range files {
+		if strings.HasSuffix(file, "_test.go") {
+			continue
+		}
+		f, err := parser.ParseFile(fset, file, nil, parser.PackageClauseOnly)
+		if err != nil {
+			continue
+		}
+		if f.Name != nil && f.Name.Name != "" {
+			return f.Name.Name
+		}
+	}
+
+	return "main"
+}
+
 func main() {
 	var (
-		definition  = flag.String("def", "", "合约结构体定义字符串，例如: 'SwapData(address token,address nft,uint256 nftId,...)'")
-		packageName = flag.String("pkg", "main", "生成代码的包名")
-		output      = flag.String("o", "", "输出文件路径，不指定则输出到标准输出")
-		structOnly  = flag.Bool("struct-only", false, "仅生成结构体，不生成EIP712函数")
+		definition = flag.String("def", "", "合约结构体定义字符串，例如: 'SwapData(address token,address nft,uint256 nftId,...)'")
+		output     = flag.String("o", "", "输出文件路径，不指定则输出到标准输出")
+		structOnly = flag.Bool("struct-only", false, "仅生成结构体，不生成EIP712函数")
 	)
 	flag.Parse()
 
@@ -46,6 +79,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// 自动检测包名
+	packageName := detectPackageName()
+
 	// 解析结构体定义
 	structDef, err := parseStructDefinition(*definition)
 	if err != nil {
@@ -55,7 +91,7 @@ func main() {
 
 	// 生成代码
 	config := CodeGenConfig{
-		PackageName: *packageName,
+		PackageName: packageName,
 		StructDef:   *structDef,
 	}
 
@@ -72,7 +108,7 @@ func main() {
 
 	// 输出代码
 	if *output != "" {
-		err = os.WriteFile(*output, []byte(code), 0644)
+		err = WriteFormat(*output, []byte(code))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "写入文件错误: %v\n", err)
 			os.Exit(1)
