@@ -166,6 +166,9 @@ func sendFn[T any](
 		BalanceCheck(callManager.Balance).
 		SetGasLimitBy(callManager.GasEstimate).
 		Check(client, callManager.GasValidator, opt...)
+	if txBuilder.err != nil {
+		return *new(T), txBuilder.err
+	}
 	return fn(txBuilder)
 }
 

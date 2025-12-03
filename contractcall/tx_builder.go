@@ -226,6 +226,9 @@ func (b *TxBuilder) BalanceCheck(checker IBalanceChecker) *TxBuilder {
 }
 
 func (b *TxBuilder) Check(transactor ICodeAt, gasPriceValidator IGasPriceValidator, opt ...SendTxOption) *TxBuilder {
+	if b.err != nil {
+		return b
+	}
 	var nonStrict = false
 	for _, o := range opt {
 		if !nonStrict && !o.Strict {
