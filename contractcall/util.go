@@ -10,7 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/uint256"
+	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
+	"golang.org/x/exp/constraints"
 )
 
 func covertGweiToWei(gwei string) *big.Int {
@@ -109,4 +112,60 @@ func toWordSize(size uint64) uint64 {
 	}
 
 	return (size + 31) / 32
+}
+
+func bigToBytes32[T *big.Int | *uint256.Int](i T) [32]byte {
+	var bs [32]byte
+	if lo.IsNil(i) {
+		return bs
+	}
+	switch v := any(i).(type) {
+	case *big.Int:
+		v.FillBytes(bs[:])
+		return bs
+	case *uint256.Int:
+		v.ToBig().FillBytes(bs[:])
+		return bs
+	default:
+		panic(UNREACHABLE)
+	}
+}
+
+func copyInt(i *big.Int) *big.Int {
+	if i == nil {
+		return big.NewInt(0)
+	}
+	return new(big.Int).Set(i)
+}
+
+func newInt(i *big.Int) *uint256.Int {
+	if i == nil {
+		return uint256.NewInt(0)
+	}
+	d := new(uint256.Int)
+	d.SetFromBig(i)
+	return d
+}
+
+func newIntBy[I constraints.Integer](i I) *uint256.Int {
+	d := new(uint256.Int)
+	d.SetUint64(uint64(i))
+	return d
+}
+
+type ethTransactionReflect struct {
+	Inner ethTypes.TxData
+}
+
+// deriveChainId derives the chain id from the given v parameter
+func deriveChainId(v *big.Int) *big.Int {
+	if v.BitLen() <= 64 {
+		v := v.Uint64()
+		if v == 27 || v == 28 {
+			return new(big.Int)
+		}
+		return new(big.Int).SetUint64((v - 35) / 2)
+	}
+	vCopy := new(big.Int).Sub(v, big.NewInt(35))
+	return vCopy.Rsh(vCopy, 1)
 }

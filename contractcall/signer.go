@@ -29,8 +29,6 @@ func (s *NoOpSigner) Sign(data []byte) (*xecdsa.RSVSignature, error) {
 		s.signFn(data)
 	}
 	return nil, nil
-	//v := byte(27)
-	//return xecdsa.NewSignature(big.NewInt(0), big.NewInt(0), &v).(*xecdsa.RSVSignature), nil
 }
 
 type EcdsaPrivateKeySigner struct {

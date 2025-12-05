@@ -44,7 +44,7 @@ func SendTx(
 	beforeSend func(tx *ethTypes.Transaction) error,
 	opt ...SendTxOption,
 ) (*ethTypes.Transaction, error) {
-	return send(ctx, client, chainId, nil, data, &to, payer, callManager, beforeSend, false, true)
+	return send(ctx, client, chainId, nil, data, &to, payer, callManager, beforeSend, false, true, opt...)
 }
 
 func SendTxE(
@@ -97,8 +97,7 @@ func SendTxBuilder(
 	if err != nil {
 		return nil, err
 	}
-	txWrapper, err = txWrapper.Sign(payer)
-	if err != nil {
+	if err = txWrapper.Sign(payer); err != nil {
 		return nil, err
 	}
 	tx := txWrapper.ToTransaction()

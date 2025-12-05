@@ -9,9 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
-	"github.com/samber/lo"
 )
 
 // TxBuilder builds Ethereum transactions
@@ -264,8 +262,7 @@ func (b *TxBuilder) Check(transactor ICodeAt, gasPriceValidator IGasPriceValidat
 	return b
 }
 
-// Build builds and returns the transaction
-func (b *TxBuilder) Build() (*TxWrapper, error) {
+func (b *TxBuilder) BuildTx(txType TxType) (ITx, error) {
 	if b.err != nil {
 		return nil, b.err
 	}
@@ -273,175 +270,34 @@ func (b *TxBuilder) Build() (*TxWrapper, error) {
 		b.err = err
 		return nil, err
 	}
-
-	// Create transaction based on gas price type
-	if b.gasPrice.DynamicGas != nil {
-		// EIP-1559 transaction
-		tx := &ethTypes.DynamicFeeTx{
-			To:        b.to,
-			Nonce:     *b.nonce,
-			GasFeeCap: b.gasPrice.DynamicGas.MaxFeePerGas,
-			GasTipCap: b.gasPrice.DynamicGas.MaxPriorityFeePerGas,
-			Gas:       b.gasLimit.Uint64(),
-			Value:     b.value,
-			Data:      b.data,
+	impl := NewTxImplWith(txType, b.chainId)
+	if txType.IsEIP1559Gas() {
+		if b.gasPrice.DynamicGas == nil {
+			b.err = errors.Wrap(TxBuilderMissingRequiredFieldErr, "dynamic gas price is required")
+			return nil, b.err
 		}
-		return NewTxWrapperDynamic(tx, b.chainId), nil
-	} else if b.gasPrice.LegacyGas != nil {
-		// Legacy transaction
-		tx := &ethTypes.LegacyTx{
-			To:       b.to,
-			Nonce:    *b.nonce,
-			GasPrice: b.gasPrice.LegacyGas.GasPrice,
-			Gas:      b.gasLimit.Uint64(),
-			Value:    b.value,
-			Data:     b.data,
+		impl.SetMaxFeePerGas(b.gasPrice.DynamicGas.MaxFeePerGas)
+		impl.SetMaxPriorityFeePerGas(b.gasPrice.DynamicGas.MaxPriorityFeePerGas)
+	} else {
+		if b.gasPrice.LegacyGas == nil {
+			b.err = errors.Wrap(TxBuilderMissingRequiredFieldErr, "legacy gas price is required")
+			return nil, b.err
 		}
-		return NewTxWrapperLegacy(tx, b.chainId), nil
-	} else {
-		panic(UNREACHABLE)
+		impl.SetGasPrice(b.gasPrice.LegacyGas.GasPrice)
 	}
+	impl.SetTo(b.to)
+	impl.SetValue(b.value)
+	impl.SetData(b.data)
+	impl.SetNonce(*b.nonce)
+	impl.SetGas(b.gasLimit.Uint64())
+	return impl, nil
 }
 
-type TxWrapper struct {
-	dynamicFeeTx *ethTypes.DynamicFeeTx // EIP-1559 transaction
-	legacyTx     *ethTypes.LegacyTx     // POST EIP0-155 replay protected transactions
-	blobTx       *ethTypes.BlobTx       // EIP-4844 transaction
-	setCodeTx    *ethTypes.SetCodeTx    // EIP-7702 transaction
-	accessListTx *ethTypes.AccessListTx // EIP-2930
-	chainID      *big.Int
-}
-
-//type ExtData struct {
-//	EIP4844 *struct {
-//		BlobFeeCap *uint256.Int // a.k.a. maxFeePerBlobGas
-//		BlobHashes []common.Hash
-//	}
-//	EIP7702 *struct {
-//		AuthList []ethTypes.SetCodeAuthorization
-//	}
-//}
-
-//type Tx struct {
-//	ChainID   *uint256.Int
-//	Nonce     uint64
-//	GasTipCap *uint256.Int // a.k.a. maxPriorityFeePerGas
-//	GasFeeCap *uint256.Int // a.k.a. maxFeePerGas
-//	Gas       uint64
-//	To        common.Address
-//	Value     *uint256.Int
-//	Data      []byte
-//
-//	// EIP-4844 Blob Tx
-//	AccessList ethTypes.AccessList
-//	BlobFeeCap *uint256.Int // a.k.a. maxFeePerBlobGas
-//	BlobHashes []common.Hash
-//
-//	// EIP-7702 Set code
-//	AccessList ethTypes.AccessList
-//	AuthList   []ethTypes.SetCodeAuthorization
-//
-//	// EIP-2930 Access List
-//	AccessList ethTypes.AccessList
-//	GasPrice   *big.Int // wei per gas
-//
-//	// Legacy EIP155
-//	GasPrice *big.Int // wei per gas
-//
-//	// EIP-1559
-//	AccessList ethTypes.AccessList
-//
-//	V, R, S *big.Int
-//}
-
-func NewTxWrapperDynamic(tx *ethTypes.DynamicFeeTx, chainID *big.Int) *TxWrapper {
-	tx.ChainID = chainID
-	return &TxWrapper{
-		dynamicFeeTx: tx,
-		chainID:      chainID,
+// Build builds and returns the transaction
+func (b *TxBuilder) Build() (ITx, error) {
+	txType := LegacyTxType
+	if b.gasPrice != nil && b.gasPrice.DynamicGas != nil {
+		txType = DynamicFeeTxType
 	}
+	return b.BuildTx(txType)
 }
-
-func NewTxWrapperBlob(tx *ethTypes.BlobTx, chainID *big.Int) *TxWrapper {
-	return &TxWrapper{
-		blobTx:  tx,
-		chainID: chainID,
-	}
-}
-
-func NewTxWrapperSetCode(tx *ethTypes.SetCodeTx, chainID *big.Int) *TxWrapper {
-	return &TxWrapper{
-		setCodeTx: tx,
-		chainID:   chainID,
-	}
-}
-
-func NewTxWrapperAccessList(tx *ethTypes.AccessListTx, chainID *big.Int) *TxWrapper {
-	return &TxWrapper{
-		accessListTx: tx,
-		chainID:      chainID,
-	}
-}
-
-func NewTxWrapperLegacy(tx *ethTypes.LegacyTx, chainID *big.Int) *TxWrapper {
-	return &TxWrapper{
-		legacyTx: tx,
-		chainID:  chainID,
-	}
-}
-
-func (w *TxWrapper) SetSignatureValues(v, r, s *big.Int) *TxWrapper {
-	if w.dynamicFeeTx != nil {
-		w.dynamicFeeTx.V = new(big.Int).Set(v)
-		w.dynamicFeeTx.R = new(big.Int).Set(r)
-		w.dynamicFeeTx.S = new(big.Int).Set(s)
-	} else if w.legacyTx != nil {
-		w.legacyTx.V = new(big.Int).Set(v)
-		w.legacyTx.R = new(big.Int).Set(r)
-		w.legacyTx.S = new(big.Int).Set(s)
-	} else if w.blobTx != nil {
-		w.blobTx.V.SetFromBig(v)
-		w.blobTx.R.SetFromBig(r)
-		w.blobTx.S.SetFromBig(s)
-	} else if w.accessListTx != nil {
-		w.accessListTx.V = new(big.Int).Set(v)
-		w.accessListTx.R = new(big.Int).Set(r)
-		w.accessListTx.S = new(big.Int).Set(s)
-	} else if w.setCodeTx != nil {
-		w.setCodeTx.V.SetFromBig(v)
-		w.setCodeTx.R.SetFromBig(r)
-		w.setCodeTx.S.SetFromBig(s)
-	} else {
-		panic(UNREACHABLE)
-	}
-	return w
-}
-
-func (w *TxWrapper) Sign(privateKey ISigner) (*TxWrapper, error) {
-	txHashForSign := ethTypes.NewPragueSigner(w.chainID).Hash(w.ToTransaction()).Bytes() // not txHash
-	if noOpSigner, ok := privateKey.(*NoOpSigner); ok {
-		_, _ = noOpSigner.Sign(txHashForSign)
-		return w, nil
-	}
-	sig, err := privateKey.Sign(txHashForSign)
-	if err != nil {
-		return nil, err
-	}
-	w.SetSignatureValues(big.NewInt(int64(sig.V()-27)), sig.R(), sig.S())
-	return w, nil
-}
-
-func (w *TxWrapper) ToJSON() []byte {
-	return lo.Must1(w.ToTransaction().MarshalJSON())
-}
-
-func (w *TxWrapper) ToTransaction() *ethTypes.Transaction {
-	if w.dynamicFeeTx != nil {
-		return ethTypes.NewTx(w.dynamicFeeTx)
-	} else if w.legacyTx != nil {
-		return ethTypes.NewTx(w.legacyTx)
-	}
-	panic(UNREACHABLE)
-}
-
-var UNREACHABLE = "unreachable"

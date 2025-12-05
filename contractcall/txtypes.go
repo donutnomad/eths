@@ -9,3 +9,7 @@ const (
 	BlobTxType       TxType = 0x03
 	SetCodeTxType    TxType = 0x04
 )
+
+func (t TxType) IsEIP1559Gas() bool {
+	return t != LegacyTxType && t != AccessListTxType
+}
