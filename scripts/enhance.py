@@ -298,6 +298,9 @@ def generate_unpack_input_method(method, struct_name, receiver_var):
                 code_lines.append(f"\t{param_name} = *abi.ConvertType(arguments[{i}], new(string)).(*string)")
             elif param_type == "[]byte":
                 code_lines.append(f"\t{param_name} = *abi.ConvertType(arguments[{i}], new([]byte)).(*[]byte)")
+            elif re.match(r'\[\d+\]', param_type):
+                # 固定长度数组类型，如 [32]byte, [64]uint8
+                code_lines.append(f"\t{param_name} = *abi.ConvertType(arguments[{i}], new({param_type})).(*{param_type})")
             elif param_type.startswith("*"):
                 # 指针类型（包括结构体指针）
                 inner_type = param_type[1:]  # 去掉*
