@@ -270,7 +270,7 @@ func (b *TxBuilder) BuildTx(txType TxType) (ITx, error) {
 		b.err = err
 		return nil, err
 	}
-	impl := NewTxImplWith(txType, b.chainId)
+	impl := NewTxWith(txType, b.chainId)
 	if txType.IsEIP1559Gas() {
 		if b.gasPrice.DynamicGas == nil {
 			b.err = errors.Wrap(TxBuilderMissingRequiredFieldErr, "dynamic gas price is required")

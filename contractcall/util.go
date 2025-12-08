@@ -8,7 +8,9 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	"github.com/samber/lo"
@@ -153,6 +155,21 @@ func newIntBy[I constraints.Integer](i I) *uint256.Int {
 	return d
 }
 
+func computeVForEIP155(sigV byte, chainID *big.Int, isLegacyTx bool) *big.Int {
+	// v to 0 or 1
+	if sigV >= 27 {
+		sigV -= 27
+	}
+	v := big.NewInt(int64(sigV))
+	if isLegacyTx { // EIP155-Fork
+		// (0/1 + 35)(35/36) + chainID * 2
+		mulChainID := new(big.Int).Mul(chainID, big.NewInt(2))
+		v.Add(v, big.NewInt(35))
+		v.Add(v, mulChainID)
+	}
+	return v
+}
+
 type ethTransactionReflect struct {
 	Inner ethTypes.TxData
 }
@@ -199,4 +216,70 @@ func bigIntOrIntToBigInt[N *big.Int | *uint256.Int | int | int8 | int16 | int32 
 	default:
 		panic(UNREACHABLE)
 	}
+}
+
+func if_(condition bool, args ...any) []any {
+	if condition {
+		return args
+	}
+	return []any{}
+}
+
+func ifG[T any](condition bool, args ...T) []T {
+	if condition {
+		return args
+	}
+	return []T{}
+}
+
+func ifElse(condition bool, a []any, elseSlice ...any) []any {
+	if condition {
+		return a
+	}
+	return elseSlice
+}
+
+func buildArgs(args ...any) []any {
+	var out = make([]any, 0, 20)
+	for _, arg := range args {
+		if items, ok := arg.([]any); ok {
+			for _, innerItem := range items {
+				if v2, ok := innerItem.([]any); ok {
+					out = append(out, v2...)
+				} else {
+					out = append(out, innerItem)
+				}
+			}
+			continue
+		}
+		out = append(out, arg)
+	}
+	return out
+}
+
+func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (common.Address, error) {
+	if Vb.BitLen() > 8 {
+		return common.Address{}, ethTypes.ErrInvalidSig
+	}
+	V := byte(Vb.Uint64() - 27)
+	if !crypto.ValidateSignatureValues(V, R, S, homestead) {
+		return common.Address{}, ethTypes.ErrInvalidSig
+	}
+	// encode the signature in uncompressed format
+	r, s := R.Bytes(), S.Bytes()
+	sig := make([]byte, crypto.SignatureLength)
+	copy(sig[32-len(r):32], r)
+	copy(sig[64-len(s):64], s)
+	sig[64] = V
+	// recover the public key from the signature
+	pub, err := crypto.Ecrecover(sighash[:], sig)
+	if err != nil {
+		return common.Address{}, err
+	}
+	if len(pub) == 0 || pub[0] != 4 {
+		return common.Address{}, errors.New("invalid public key")
+	}
+	var addr common.Address
+	copy(addr[:], crypto.Keccak256(pub[1:])[12:])
+	return addr, nil
 }
