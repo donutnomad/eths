@@ -140,8 +140,11 @@ func NewTxImplWith(txType TxType, chainID *big.Int) ITx {
 	}
 }
 
-func NewTxImpl[T *ethTypes.LegacyTx | *ethTypes.AccessListTx | *ethTypes.DynamicFeeTx | *ethTypes.BlobTx | *ethTypes.SetCodeTx | *ethTypes.Transaction](tx T, chainID *big.Int) ITx {
-	ret, err := newTxImpl(any(tx), chainID)
+func NewTxImpl[
+	T *ethTypes.LegacyTx | *ethTypes.AccessListTx | *ethTypes.DynamicFeeTx | *ethTypes.BlobTx | *ethTypes.SetCodeTx | *ethTypes.Transaction,
+	ChainID *big.Int | *uint256.Int | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64,
+](tx T, chainID ChainID) ITx {
+	ret, err := newTxImpl(any(tx), bigIntOrIntToBigInt(chainID))
 	if err != nil {
 		panic(err)
 	}
