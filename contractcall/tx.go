@@ -114,6 +114,8 @@ type ITx interface {
 	Sign(privateKey ISigner) error
 	ToJSON() []byte
 	ToTransaction() *ethTypes.Transaction
+	Hash() common.Hash
+	SigHash() common.Hash
 	json.Marshaler
 	json.Unmarshaler
 	encoding.BinaryUnmarshaler
@@ -191,15 +193,13 @@ func (t *txImpl) Hash() common.Hash {
 	return PrefixedRlpHash(prefix, t.BuildRlpFields(false))
 }
 
-func (t *txImpl) SigHash() [32]byte {
+func (t *txImpl) SigHash() common.Hash {
 	var prefix = ifG(t.isModern(), byte(t.txType))
 	return PrefixedRlpHash(prefix, t.BuildRlpFields(true))
 }
 
 func (t *txImpl) Sign(privateKey ISigner) error {
-	sigHash := t.SigHash()
-
-	sig, err := privateKey.Sign(sigHash[:])
+	sig, err := privateKey.Sign(t.SigHash().Bytes())
 	if err != nil {
 		return err
 	}
