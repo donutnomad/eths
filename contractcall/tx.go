@@ -519,9 +519,6 @@ func txImplToTx(t *txImpl) ethTypes.TxData {
 }
 
 func newTxImpl(tx any, chainID *big.Int) (*txImpl, error) {
-	if v, ok := tx.(*ethTypes.Transaction); ok {
-		chainID = v.ChainId()
-	}
 	impl, err := newTxImplRaw(tx, chainID)
 	if err != nil {
 		return nil, err
