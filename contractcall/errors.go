@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/donutnomad/eths/contracts_pack"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/samber/lo"
 )
@@ -231,4 +233,122 @@ func unwrapOnce(err error) (cause error) {
 		return e.Unwrap()
 	}
 	return nil
+}
+
+// KnownMethodError represents a parsed contract error with its definition and arguments.
+// Example:
+//
+//	{
+//		"name": "RecipientNotWhitelisted",
+//		"signature": "RecipientNotWhitelisted(address)",
+//		"arguments": [
+//			"0x00083667B13f48F236278839B18155E078050000"
+//		],
+//		"definition": "error RecipientNotWhitelisted(address addr)",
+//		"formatted": "RecipientNotWhitelisted(addr=0x00083667B13f48F236278839B18155E078050000)"
+//	}
+type KnownMethodError struct {
+	Name       string   `json:"name"`
+	Signature  string   `json:"signature"`
+	Arguments  []string `json:"arguments"`
+	Definition string   `json:"definition"` // Full error definition, e.g. "error RecipientNotWhitelisted(address addr)"
+	Formatted  string   `json:"formatted"`  // Error with named arguments, e.g. "RecipientNotWhitelisted(addr=0x...)"
+}
+
+// Predefined standard error selectors
+var (
+	// Error(string) - standard revert error
+	selectorError = [4]byte{0x08, 0xc3, 0x79, 0xa0}
+	// Panic(uint256) - standard panic error
+	selectorPanic = [4]byte{0x4e, 0x48, 0x7b, 0x71}
+
+	// Predefined standard error types
+	Uint256, _   = abi.NewType("uint256", "", nil)
+	String, _    = abi.NewType("string", "", nil)
+	stdErrorType = lo.ToPtr(abi.NewError("Error", []abi.Argument{{Name: "message", Type: String, Indexed: false}}))
+	stdPanicType = lo.ToPtr(abi.NewError("Panic", []abi.Argument{{Name: "code", Type: Uint256, Indexed: false}}))
+)
+
+// ParseContractError extracts and parses the revert reason from an EVM error.
+// It returns nil if the error is not an EvmError or if parsing fails.
+func ParseContractError(knownABIs []*abi.ABI, err error) *KnownMethodError {
+	var evmErr *EvmError
+	if !errors.As(err, &evmErr) {
+		return nil
+	}
+	bs, err := decodeHex(evmErr.ErrData)
+	if err != nil {
+		return nil
+	}
+	return ParseRevertedData(knownABIs, bs)
+}
+
+// ParseRevertedData parses EVM revert data into a readable error message.
+// knownABIs: list of known ABIs for parsing custom errors; uses default ERC20 ABI if empty
+// bs: revert data in format: 4-byte selector + N*32-byte arguments
+func ParseRevertedData(knownABIs []*abi.ABI, bs []byte) *KnownMethodError {
+	// Validate data format: 4-byte selector + N*32-byte arguments
+	if len(bs) < 4 || len(bs)%32 != 4 {
+		return nil
+	}
+
+	selectorID := [4]byte(bs[0:4])
+
+	// Find matching error definition
+	errEvent := findErrorDefinition(selectorID, knownABIs)
+	if errEvent == nil {
+		return nil
+	}
+
+	// Unpack arguments
+	args, err := errEvent.Inputs.Unpack(bs[4:])
+	if err != nil {
+		return nil
+	}
+
+	return buildKnownMethodError(errEvent, args)
+}
+
+// findErrorDefinition finds the error definition by selector
+func findErrorDefinition(selectorID [4]byte, knownABIs []*abi.ABI) *abi.Error {
+	// Check standard error types first
+	switch selectorID {
+	case selectorError:
+		return stdErrorType
+	case selectorPanic:
+		return stdPanicType
+	}
+
+	// Ensure ABIs are available for lookup
+	if len(knownABIs) == 0 {
+		knownABIs = []*abi.ABI{lo.Must1(contracts_pack.ERC20MetaData.ParseABI())}
+	}
+
+	// Search in known ABIs
+	for _, k := range knownABIs {
+		if errEvent, err := k.ErrorByID(selectorID); err == nil {
+			return errEvent
+		}
+	}
+	return nil
+}
+
+// buildKnownMethodError builds a KnownMethodError from error definition and arguments
+func buildKnownMethodError(errEvent *abi.Error, args []any) *KnownMethodError {
+	arguments := make([]string, 0, len(args))
+	namedKeyValues := make([]string, 0, len(args))
+
+	for i, item := range args {
+		valueString := fmt.Sprintf("%v", item)
+		arguments = append(arguments, valueString)
+		namedKeyValues = append(namedKeyValues, fmt.Sprintf("%s=%s", errEvent.Inputs[i].Name, valueString))
+	}
+
+	return &KnownMethodError{
+		Name:       errEvent.Name,
+		Signature:  errEvent.Sig,
+		Arguments:  arguments,
+		Definition: errEvent.String(),
+		Formatted:  errEvent.Name + "(" + strings.Join(namedKeyValues, ",") + ")",
+	}
 }

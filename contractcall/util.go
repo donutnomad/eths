@@ -2,6 +2,7 @@ package contractcall
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
@@ -282,4 +283,21 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 	var addr common.Address
 	copy(addr[:], crypto.Keccak256(pub[1:])[12:])
 	return addr, nil
+}
+
+// has0xPrefix validates str begins with '0x' or '0X'.
+func has0xPrefix(str string) bool {
+	return len(str) >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X')
+}
+
+// decodeHex returns the bytes represented by the hexadecimal string s.
+// s may be prefixed with "0x".
+func decodeHex(s string) ([]byte, error) {
+	if has0xPrefix(s) {
+		s = s[2:]
+	}
+	if len(s)%2 == 1 {
+		s = "0" + s
+	}
+	return hex.DecodeString(s)
 }
