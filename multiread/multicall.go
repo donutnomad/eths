@@ -116,40 +116,47 @@ func Any[T any](contractAddress common.Address, callData []byte, returnUnpack Re
 	}
 }
 
-func GetChainID() Func1[*big.Int] {
-	return One(Address, multiCallPack.PackGetChainId(), multiCallPack.UnpackGetChainId)
+func addrOrDefault(addr []common.Address) common.Address {
+	if len(addr) > 0 {
+		return addr[0]
+	}
+	return Address
 }
 
-func GetBaseFee() Func1[*big.Int] {
-	return One(Address, multiCallPack.PackGetBasefee(), multiCallPack.UnpackGetBasefee)
+func GetChainID(addr ...common.Address) Func1[*big.Int] {
+	return One(addrOrDefault(addr), multiCallPack.PackGetChainId(), multiCallPack.UnpackGetChainId)
 }
 
-func GetBlockNumber() Func1[*big.Int] {
-	return One(Address, multiCallPack.PackGetBlockNumber(), multiCallPack.UnpackGetBlockNumber)
+func GetBaseFee(addr ...common.Address) Func1[*big.Int] {
+	return One(addrOrDefault(addr), multiCallPack.PackGetBasefee(), multiCallPack.UnpackGetBasefee)
 }
 
-func GetCurrentBlockTimestamp() Func1[*big.Int] {
-	return One(Address, multiCallPack.PackGetCurrentBlockTimestamp(), multiCallPack.UnpackGetCurrentBlockTimestamp)
+func GetBlockNumber(addr ...common.Address) Func1[*big.Int] {
+	return One(addrOrDefault(addr), multiCallPack.PackGetBlockNumber(), multiCallPack.UnpackGetBlockNumber)
 }
 
-func GetCurrentBlockGasLimit() Func1[*big.Int] {
-	return One(Address, multiCallPack.PackGetCurrentBlockGasLimit(), multiCallPack.UnpackGetCurrentBlockGasLimit)
+func GetCurrentBlockTimestamp(addr ...common.Address) Func1[*big.Int] {
+	return One(addrOrDefault(addr), multiCallPack.PackGetCurrentBlockTimestamp(), multiCallPack.UnpackGetCurrentBlockTimestamp)
 }
 
-func GetCurrentBlockDifficulty() Func1[*big.Int] {
-	return One(Address, multiCallPack.PackGetCurrentBlockDifficulty(), multiCallPack.UnpackGetCurrentBlockDifficulty)
+func GetCurrentBlockGasLimit(addr ...common.Address) Func1[*big.Int] {
+	return One(addrOrDefault(addr), multiCallPack.PackGetCurrentBlockGasLimit(), multiCallPack.UnpackGetCurrentBlockGasLimit)
 }
 
-func GetCurrentBlockCoinbase() Func1[common.Address] {
-	return One(Address, multiCallPack.PackGetCurrentBlockCoinbase(), multiCallPack.UnpackGetCurrentBlockCoinbase)
+func GetCurrentBlockDifficulty(addr ...common.Address) Func1[*big.Int] {
+	return One(addrOrDefault(addr), multiCallPack.PackGetCurrentBlockDifficulty(), multiCallPack.UnpackGetCurrentBlockDifficulty)
 }
 
-func GetEthBalance(addr common.Address) Func1[*big.Int] {
-	return One(Address, multiCallPack.PackGetEthBalance(addr), multiCallPack.UnpackGetEthBalance)
+func GetCurrentBlockCoinbase(addr ...common.Address) Func1[common.Address] {
+	return One(addrOrDefault(addr), multiCallPack.PackGetCurrentBlockCoinbase(), multiCallPack.UnpackGetCurrentBlockCoinbase)
 }
 
-func GetBlockHash(blockNumber *big.Int) Func1[common.Hash] {
-	return One(Address, multiCallPack.PackGetBlockHash(blockNumber), func(bytes []byte) (common.Hash, error) {
+func GetEthBalance(ethAddr common.Address, multicallAddr ...common.Address) Func1[*big.Int] {
+	return One(addrOrDefault(multicallAddr), multiCallPack.PackGetEthBalance(ethAddr), multiCallPack.UnpackGetEthBalance)
+}
+
+func GetBlockHash(blockNumber *big.Int, addr ...common.Address) Func1[common.Hash] {
+	return One(addrOrDefault(addr), multiCallPack.PackGetBlockHash(blockNumber), func(bytes []byte) (common.Hash, error) {
 		ret, err := multiCallPack.UnpackGetBlockHash(bytes)
 		if err != nil {
 			return common.Hash{}, err
@@ -158,8 +165,8 @@ func GetBlockHash(blockNumber *big.Int) Func1[common.Hash] {
 	})
 }
 
-func GetLastBlockHash() Func1[common.Hash] {
-	return One(Address, multiCallPack.PackGetLastBlockHash(), func(bytes []byte) (common.Hash, error) {
+func GetLastBlockHash(addr ...common.Address) Func1[common.Hash] {
+	return One(addrOrDefault(addr), multiCallPack.PackGetLastBlockHash(), func(bytes []byte) (common.Hash, error) {
 		ret, err := multiCallPack.UnpackGetLastBlockHash(bytes)
 		if err != nil {
 			return common.Hash{}, err
