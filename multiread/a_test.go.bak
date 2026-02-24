@@ -1,0 +1,165 @@
+package multiread
+
+import (
+	"context"
+	"math/big"
+	"testing"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/donutnomad/eths/contracts_pack"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+var client *ethclient.Client
+
+func init() {
+	var err error
+	client, err = ethclient.DialContext(context.Background(), "https://ethereum-sepolia-rpc.publicnode.com")
+	if err != nil {
+		panic(err)
+	}
+}
+
+type GLDBTokenQueryTokenInfo struct {
+	BlockNumber              *big.Int
+	BlockHash                *common.Hash
+	Name                     *string
+	Symbol                   *string
+	Decimals                 *uint8
+	Owner                    *common.Address
+	InitialSupply            *big.Int
+	TotalSupply              *big.Int
+	MaxSupply                *big.Int
+	DocumentUri              *string
+	Metadata                 *string
+	IsMintable               *bool
+	IsBurnable               *bool
+	IsPausable               *bool
+	Paused                   *bool
+	IsBlacklistEnabled       *bool
+	IsWhitelistEnabled       *bool
+	IsMaxAmountPerAddressSet *bool
+	IsForceTransferAllowed   *bool
+	MaxTokenPerAddress       *big.Int
+	Whitelist                *common.Address
+	Blacklist                *common.Address
+	GW                       *big.Int
+}
+
+func TestGetInterfaceID(t *testing.T) {
+	tokenPack := contracts_pack.NewGLDBToken()
+	//interfaceId := xevm.GetInterfaceID(&goContractPack.IWhitelistCoreMetaData)
+	//fmt.Printf("%x\n", interfaceId)
+	//interfaceId[1] = 112
+	tokenAddress := common.HexToAddress("0xbCc1817000a9c55A695B29bF48e33bF6228a427d")
+
+	a1, err := CALLN[GLDBTokenQueryTokenInfo](client,
+		GetBlockNumber().Any(),
+		GetLastBlockHash().Any(),
+		Any(tokenAddress, tokenPack.PackName(), tokenPack.UnpackName),
+		Any(tokenAddress, tokenPack.PackSymbol(), tokenPack.UnpackSymbol),
+		Any(tokenAddress, tokenPack.PackDecimals(), tokenPack.UnpackDecimals),
+		Any(tokenAddress, tokenPack.PackOwner(), tokenPack.UnpackOwner),
+		Any(tokenAddress, tokenPack.PackInitialSupply(), tokenPack.UnpackInitialSupply),
+		Any(tokenAddress, tokenPack.PackTotalSupply(), tokenPack.UnpackTotalSupply),
+		Any(tokenAddress, tokenPack.PackCap(), tokenPack.UnpackCap),
+		Any(tokenAddress, tokenPack.PackDocumentUri(), tokenPack.UnpackDocumentUri),
+		Any(tokenAddress, tokenPack.PackMetadata(), tokenPack.UnpackMetadata),
+		Any(tokenAddress, tokenPack.PackIsMintable(), tokenPack.UnpackIsMintable),
+		Any(tokenAddress, tokenPack.PackIsBurnable(), tokenPack.UnpackIsBurnable),
+		Any(tokenAddress, tokenPack.PackIsPausable(), tokenPack.UnpackIsPausable),
+		Any(tokenAddress, tokenPack.PackPaused(), tokenPack.UnpackPaused),
+		Any(tokenAddress, tokenPack.PackIsBlacklistEnabled(), tokenPack.UnpackIsBlacklistEnabled),
+		Any(tokenAddress, tokenPack.PackIsWhitelistEnabled(), tokenPack.UnpackIsWhitelistEnabled),
+		Any(tokenAddress, tokenPack.PackIsMaxAmountPerAddressSet(), tokenPack.UnpackIsMaxAmountPerAddressSet),
+		Any(tokenAddress, tokenPack.PackIsForceTransferAllowed(), tokenPack.UnpackIsForceTransferAllowed),
+		Any(tokenAddress, tokenPack.PackMaxTokenAmountPerAddress(), tokenPack.UnpackMaxTokenAmountPerAddress),
+		Any(tokenAddress, tokenPack.PackGetWhitelistImpl(), tokenPack.UnpackGetWhitelistImpl),
+		Any(tokenAddress, tokenPack.PackGetBlacklistImpl(), tokenPack.UnpackGetBlacklistImpl),
+		Any(tokenAddress, contracts_pack.NewWhiteBlackList().PackWhitelistedAddressCount(), contracts_pack.NewWhiteBlackList().UnpackWhitelistedAddressCount),
+	)
+	if err != nil {
+		panic(err)
+	}
+	spew.Dump(a1)
+}
+
+func TestGetBlockInfo(t *testing.T) {
+	a1, a2, a3, a4, err := CALL4(client,
+		GetBlockNumber(),
+		GetCurrentBlockTimestamp(),
+		GetLastBlockHash(),
+		GetCurrentBlockGasLimit(),
+	)
+	if err != nil {
+		panic(err)
+	}
+	spew.Dump(a1)
+	spew.Dump(a2)
+	spew.Dump(a3)
+	spew.Dump(a4)
+}
+
+func TestGeBalance(t *testing.T) {
+	tokenPack := contracts_pack.NewGLDBToken()
+	wallet := common.HexToAddress("0xbCc1817000a9c55A695B29bF48e33bF6228a427d")
+	token := common.HexToAddress("0x288053dFbF5c0d8932fcaE88b89aD6169DCFd033")
+
+	a1, err := CALLSlice(client,
+		tokenPack.UnpackBalanceOf,
+		One2(
+			token,
+			tokenPack.PackBalanceOf(wallet),
+		),
+		GetEthBalance(wallet).Downcast(),
+	)
+	if err != nil {
+		panic(err)
+	}
+	spew.Dump(a1)
+}
+
+func TestCallNE(t *testing.T) {
+	tokenPack := contracts_pack.NewGLDBToken()
+	//wallet := common.HexToAddress("0xbCc1817000a9c55A695B29bF48e33bF6228a427d")
+	//token := common.HexToAddress("0x288053dFbF5c0d8932fcaE88b89aD6169DCFd033")
+	tokenAddress := common.HexToAddress("0x08eb99511672B79E5Ca2A110F1f665e99BaB8caF")
+
+	type XA struct {
+		Bools1      [2]*bool
+		Bools2      [2]*bool
+		Addresses   [1]*common.Address
+		Addresses2  []*common.Address
+		BlockNumber *big.Int
+		BlockTime   *big.Int
+	}
+	a1, err := CALLNE[XA](client,
+		Any(tokenAddress, tokenPack.PackIsMintable(), tokenPack.UnpackIsMintable),
+		Any(tokenAddress, tokenPack.PackIsBurnable(), tokenPack.UnpackIsBurnable),
+		Any(tokenAddress, tokenPack.PackIsPausable(), tokenPack.UnpackIsPausable),
+		Any(tokenAddress, tokenPack.PackPaused(), tokenPack.UnpackPaused),
+		Any(tokenAddress, tokenPack.PackOwner(), tokenPack.UnpackOwner),
+		Any(tokenAddress, tokenPack.PackOwner(), tokenPack.UnpackOwner),
+		Any(tokenAddress, tokenPack.PackOwner(), tokenPack.UnpackOwner),
+		GetBlockNumber().Any(),
+		GetCurrentBlockTimestamp().Any(),
+	)
+	if err != nil {
+		panic(err)
+	}
+	spew.Dump(a1)
+}
+
+func TestCallDirect(t *testing.T) {
+	tokenPack := contracts_pack.NewGLDBToken()
+	//wallet := common.HexToAddress("0xbCc1817000a9c55A695B29bF48e33bF6228a427d")
+	//token := common.HexToAddress("0x288053dFbF5c0d8932fcaE88b89aD6169DCFd033")
+	tokenAddress := common.HexToAddress("0x08eb99511672B79E5Ca2A110F1f665e99BaB8caF")
+
+	a1, err := CALL(client, One(tokenAddress, tokenPack.PackIsMintable(), tokenPack.UnpackIsMintable))
+	if err != nil {
+		panic(err)
+	}
+	spew.Dump(a1)
+}

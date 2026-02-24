@@ -1,12 +1,14 @@
 package multiread
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"reflect"
 	"sync"
 
 	"github.com/donutnomad/eths/contracts_pack"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,8 +19,49 @@ import (
 type Multicall3Call3 = contracts_pack.Multicall3Call3
 type Multicall3Result = contracts_pack.Multicall3Result
 
-// Address Multicall3: https://www.multicall3.com/abi#ethers-js
+// Address is the default Multicall3 address: https://www.multicall3.com/abi#ethers-js
 var Address = common.HexToAddress("0xcA11bde05977b3631167028862bE2a173976CA11")
+
+var (
+	addressMu  sync.RWMutex
+	addressMap = map[int64]common.Address{}
+)
+
+// RegisterAddress registers a Multicall3 address for a specific chain ID.
+func RegisterAddress(chainID int64, addr common.Address) {
+	addressMu.Lock()
+	addressMap[chainID] = addr
+	addressMu.Unlock()
+}
+
+// GetAddress returns the Multicall3 address for a specific chain ID.
+// If no address is registered, it returns the default Address.
+func GetAddress(chainID int64) common.Address {
+	addressMu.RLock()
+	addr, found := addressMap[chainID]
+	addressMu.RUnlock()
+	if found {
+		return addr
+	}
+	return Address
+}
+
+// getAddress resolves the Multicall3 address for the given client.
+// If the client implements ethereum.ChainIDReader and the chain ID has a registered address, use it.
+// Otherwise, fall back to the default Address.
+func getAddress(client bind.ContractCaller) common.Address {
+	if cr, ok := client.(ethereum.ChainIDReader); ok {
+		if chainID, err := cr.ChainID(context.Background()); err == nil {
+			addressMu.RLock()
+			addr, found := addressMap[chainID.Int64()]
+			addressMu.RUnlock()
+			if found {
+				return addr
+			}
+		}
+	}
+	return Address
+}
 
 var multiCallPack = contracts_pack.NewMulticall()
 
@@ -591,9 +634,10 @@ func callN1(
 	if len(args) != len(returns) || len(args) != len(functions) {
 		panic("[multiread] invalid arguments")
 	}
+	multicallAddr := getAddress(client)
 
 	var outputs []any
-	caller := bind.NewBoundContract(Address, *getMultiABI(), client, nil, nil)
+	caller := bind.NewBoundContract(multicallAddr, *getMultiABI(), client, nil, nil)
 	if err := caller.Call(opts, &outputs, method, args); err != nil {
 		return err
 	}
