@@ -41,13 +41,56 @@ type Client struct {
 	od *overloadDetector
 }
 
+// Option configures the Client created by DialContext.
+type Option func(*dialConfig)
+
+type dialConfig struct {
+	httpClient *http.Client
+	rpcOpts    []rpc.ClientOption
+}
+
+// WithHTTPClient configures the base http.Client used by the RPC client.
+// The Client will wrap the provided http.Client's Transport with a
+// headerCapture layer to capture response headers from non-2xx responses.
+// If not provided, a default http.Client with http.DefaultTransport is used.
+func WithHTTPClient(c *http.Client) Option {
+	return func(cfg *dialConfig) {
+		cfg.httpClient = c
+	}
+}
+
+// WithRPCOptions passes additional rpc.ClientOption to the underlying rpc.DialOptions.
+func WithRPCOptions(opts ...rpc.ClientOption) Option {
+	return func(cfg *dialConfig) {
+		cfg.rpcOpts = append(cfg.rpcOpts, opts...)
+	}
+}
+
 // DialContext connects a client to the given URL with context.
-func DialContext(ctx context.Context, rawurl string, opts ...rpc.ClientOption) (*Client, error) {
-	hc := &headerCapture{base: http.DefaultTransport}
-	httpClient := &http.Client{Transport: hc}
-	allOpts := make([]rpc.ClientOption, 0, len(opts)+1)
+func DialContext(ctx context.Context, rawurl string, opts ...Option) (*Client, error) {
+	var cfg dialConfig
+	for _, o := range opts {
+		o(&cfg)
+	}
+
+	var hc *headerCapture
+	var httpClient *http.Client
+	if cfg.httpClient != nil {
+		hc = &headerCapture{base: lo.Ternary(cfg.httpClient.Transport == nil, http.DefaultTransport, cfg.httpClient.Transport)}
+		httpClient = &http.Client{
+			Transport:     hc,
+			CheckRedirect: cfg.httpClient.CheckRedirect,
+			Jar:           cfg.httpClient.Jar,
+			Timeout:       cfg.httpClient.Timeout,
+		}
+	} else {
+		hc = &headerCapture{base: http.DefaultTransport}
+		httpClient = &http.Client{Transport: hc}
+	}
+
+	allOpts := make([]rpc.ClientOption, 0, len(cfg.rpcOpts)+1)
 	allOpts = append(allOpts, rpc.WithHTTPClient(httpClient))
-	allOpts = append(allOpts, opts...)
+	allOpts = append(allOpts, cfg.rpcOpts...)
 	c, err := rpc.DialOptions(ctx, rawurl, allOpts...)
 	if err != nil {
 		return nil, err
