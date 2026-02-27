@@ -24,11 +24,11 @@ var Address = common.HexToAddress("0xcA11bde05977b3631167028862bE2a173976CA11")
 
 var (
 	addressMu  sync.RWMutex
-	addressMap = map[int64]common.Address{}
+	addressMap = map[uint64]common.Address{}
 )
 
 // RegisterAddress registers a Multicall3 address for a specific chain ID.
-func RegisterAddress(chainID int64, addr common.Address) {
+func RegisterAddress(chainID uint64, addr common.Address) {
 	addressMu.Lock()
 	addressMap[chainID] = addr
 	addressMu.Unlock()
@@ -36,7 +36,7 @@ func RegisterAddress(chainID int64, addr common.Address) {
 
 // GetAddress returns the Multicall3 address for a specific chain ID.
 // If no address is registered, it returns the default Address.
-func GetAddress(chainID int64) common.Address {
+func GetAddress(chainID uint64) common.Address {
 	addressMu.RLock()
 	addr, found := addressMap[chainID]
 	addressMu.RUnlock()
@@ -52,12 +52,7 @@ func GetAddress(chainID int64) common.Address {
 func getAddress(client bind.ContractCaller) common.Address {
 	if cr, ok := client.(ethereum.ChainIDReader); ok {
 		if chainID, err := cr.ChainID(context.Background()); err == nil {
-			addressMu.RLock()
-			addr, found := addressMap[chainID.Int64()]
-			addressMu.RUnlock()
-			if found {
-				return addr
-			}
+			return GetAddress(chainID.Uint64())
 		}
 	}
 	return Address
