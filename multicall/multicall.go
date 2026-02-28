@@ -11,7 +11,7 @@ var Address = common.HexToAddress("0xcA11bde05977b3631167028862bE2a173976CA11")
 
 // GetAddress returns the Multicall3 address for a specific chain ID.
 // It delegates to multiread.RegisterAddress for the registry.
-func GetAddress(chainID int64) common.Address {
+func GetAddress(chainID uint64) common.Address {
 	return multiread.GetAddress(chainID)
 }
 
