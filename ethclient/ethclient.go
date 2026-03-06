@@ -182,43 +182,6 @@ func (ec *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Bl
 	return ec.getBlock(ctx, "eth_getBlockByNumber", toBlockNumArg(number), true)
 }
 
-// LiteBlock holds block header and transaction hashes without full tx data or uncles.
-type LiteBlock struct {
-	*types.Header
-	BlockHash    *common.Hash        `json:"hash"`
-	Transactions []common.Hash       `json:"transactions"`
-	Withdrawals  []*types.Withdrawal `json:"withdrawals,omitempty"`
-}
-
-// Hash returns the block hash.
-func (b *LiteBlock) Hash() common.Hash {
-	if b.BlockHash != nil {
-		return *b.BlockHash
-	}
-	return b.Header.Hash()
-}
-
-func (b *LiteBlock) UnmarshalJSON(data []byte) error {
-	var h types.Header
-	if err := json.Unmarshal(data, &h); err != nil {
-		return err
-	}
-	type extra struct {
-		BlockHash    *common.Hash        `json:"hash"`
-		Transactions []common.Hash       `json:"transactions"`
-		Withdrawals  []*types.Withdrawal `json:"withdrawals,omitempty"`
-	}
-	var e extra
-	if err := json.Unmarshal(data, &e); err != nil {
-		return err
-	}
-	b.Header = &h
-	b.BlockHash = e.BlockHash
-	b.Transactions = e.Transactions
-	b.Withdrawals = e.Withdrawals
-	return nil
-}
-
 // LiteBlockByNumber returns a block with only transaction hashes (not full
 // transaction objects) and without loading uncle headers. This avoids the
 // extra RPC calls that BlockByNumber makes, and is suitable when you only
@@ -235,6 +198,36 @@ func (ec *Client) LiteBlockByNumber(ctx context.Context, number *big.Int) (*Lite
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbyhash
 func (ec *Client) LiteBlockByHash(ctx context.Context, hash common.Hash) (*LiteBlock, error) {
 	return LiteBlockByHashAs[LiteBlock](ctx, ec, hash)
+}
+
+// RichBlockByNumber returns a block with full transaction objects and without
+// loading uncle headers.
+//
+// RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
+func (ec *Client) RichBlockByNumber(ctx context.Context, number *big.Int) (*RichBlock, error) {
+	return RichBlockByNumberAs[RichBlock](ctx, ec, number)
+}
+
+// RichBlockByHash returns a block with full transaction objects and without
+// loading uncle headers.
+//
+// RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbyhash
+func (ec *Client) RichBlockByHash(ctx context.Context, hash common.Hash) (*RichBlock, error) {
+	return RichBlockByHashAs[RichBlock](ctx, ec, hash)
+}
+
+// RichBlockByNumberAs is the generic version of RichBlockByNumber.
+//
+// RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
+func RichBlockByNumberAs[T any](ctx context.Context, ec *Client, number *big.Int) (*T, error) {
+	return CallNotFound[*T](ec, ctx, "eth_getBlockByNumber", toBlockNumArg(number), true)
+}
+
+// RichBlockByHashAs is the generic version of RichBlockByHash.
+//
+// RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbyhash
+func RichBlockByHashAs[T any](ctx context.Context, ec *Client, hash common.Hash) (*T, error) {
+	return CallNotFound[*T](ec, ctx, "eth_getBlockByHash", hash, true)
 }
 
 // LiteBlockByNumberAs is the generic version of LiteBlockByNumber.
