@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/trie"
 )
 
 // headerJSON is the shared JSON encoding for block headers.
@@ -165,7 +166,7 @@ func (b *RichBlock) ToBlock() *types.Block {
 	return types.NewBlock(b.Header, &types.Body{
 		Transactions: b.Transactions,
 		Withdrawals:  b.Withdrawals,
-	}, nil, nil)
+	}, nil, trie.NewStackTrie(nil))
 }
 
 func (b *RichBlock) MarshalJSON() ([]byte, error) {
