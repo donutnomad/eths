@@ -5,8 +5,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-//go:generate go run github.com/fjl/gencodec -type Withdrawal -field-override withdrawalMarshaling -out withdrawal_generated.go
-
 // Withdrawal represents a validator withdrawal from the consensus layer.
 type Withdrawal struct {
 	Index     uint64          `json:"index"`          // monotonically increasing identifier issued by consensus layer

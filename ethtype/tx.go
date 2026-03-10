@@ -8,8 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 )
 
-//go:generate go tool github.com/fjl/gencodec -type Tx -field-override txMarshaling -out tx_generated.go
-
 type Transaction = Tx
 
 type Tx struct {

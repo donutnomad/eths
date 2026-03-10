@@ -7,8 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-//go:generate go tool github.com/fjl/gencodec -type TxReceipt -field-override receiptMarshaling -out receipt_generated.go
-
 type Receipt = TxReceipt
 type Receipts = []*Receipt
 

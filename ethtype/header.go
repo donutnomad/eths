@@ -8,8 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-//go:generate go run github.com/fjl/gencodec -type Header -field-override headerMarshaling -out header_generated.go
-
 // Header represents a block header in the Ethereum blockchain.
 type Header struct {
 	Hash       ecommon.Hash    `json:"hash"`

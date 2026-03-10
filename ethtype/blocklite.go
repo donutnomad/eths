@@ -1,7 +1,7 @@
 package ethtype
 
 import (
-	"encoding/json"
+	"slices"
 
 	"github.com/donutnomad/eths/ecommon"
 )
@@ -14,42 +14,9 @@ type LiteBlock struct {
 }
 
 func (b *LiteBlock) Transaction(hash ecommon.Hash) *ecommon.Hash {
-	for _, transactionHash := range b.Transactions {
-		if transactionHash == hash {
-			return &transactionHash
-		}
+	idx := slices.Index(b.Transactions, hash)
+	if idx < 0 {
+		return nil
 	}
-	return nil
-}
-
-func (b LiteBlock) MarshalJSON() ([]byte, error) {
-	type enc struct {
-		Header       Header         `json:",inline"`
-		Transactions []ecommon.Hash `json:"transactions"`
-		Withdrawals  []*Withdrawal  `json:"withdrawals,omitempty"`
-	}
-	return json.Marshal(&enc{
-		Header:       b.Header,
-		Transactions: b.Transactions,
-		Withdrawals:  b.Withdrawals,
-	})
-}
-
-func (b *LiteBlock) UnmarshalJSON(data []byte) error {
-	type raw struct {
-		Transactions []ecommon.Hash `json:"transactions"`
-		Withdrawals  []*Withdrawal  `json:"withdrawals,omitempty"`
-	}
-	var h Header
-	if err := json.Unmarshal(data, &h); err != nil {
-		return err
-	}
-	var r raw
-	if err := json.Unmarshal(data, &r); err != nil {
-		return err
-	}
-	b.Header = h
-	b.Transactions = r.Transactions
-	b.Withdrawals = r.Withdrawals
-	return nil
+	return &b.Transactions[idx]
 }
