@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -730,7 +731,7 @@ func TestOverloadAlchemyBlockReceipts(t *testing.T) {
 	for i := range goroutines {
 		go func() {
 			defer wg.Done()
-			bn := rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(blockNum - uint64(i%10)))
+			bn := ethtype.BlockNumberOrHashWithNumber(ethtype.BlockNumber(blockNum - uint64(i%10)))
 			_, err := ec.BlockReceipts(ctx, bn)
 			if err == nil {
 				succeeded.Add(1)

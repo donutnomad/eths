@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/donutnomad/eths/ecommon"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/donutnomad/eths/hexutil"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -17,14 +18,14 @@ const sepoliaRPC = "https://ethereum-sepolia-rpc.publicnode.com"
 
 var (
 	// knownSepoliaTx is a confirmed Sepolia ERC-20 Transfer tx in block 0x9ddc3a.
-	knownSepoliaTx   = common.HexToHash("0xf542851546efc4a89a06c8b394a607afa74e8500688d09d9d50be7698adefd5f")
-	knownBlockHash   = common.HexToHash("0x9962d2a3f02043ff6dce9b757eb4782cd10dcde92d66bfbe9377d37ea4bf6aef")
+	knownSepoliaTx   = ecommon.HexToHash("0xf542851546efc4a89a06c8b394a607afa74e8500688d09d9d50be7698adefd5f")
+	knownBlockHash   = ecommon.HexToHash("0x9962d2a3f02043ff6dce9b757eb4782cd10dcde92d66bfbe9377d37ea4bf6aef")
 	knownBlockNumber = big.NewInt(0x9ddc3a)
-	knownTxSender    = common.HexToAddress("0x690c39adabdea83322bf8e90626cd40eeb456a95")
-	knownTxTo        = common.HexToAddress("0x3429519ee7cdbb13b49161f1eb6e1b026939113a") // ERC-20 contract
+	knownTxSender    = ecommon.HexToAddress("0x690c39adabdea83322bf8e90626cd40eeb456a95")
+	knownTxTo        = ecommon.HexToAddress("0x3429519ee7cdbb13b49161f1eb6e1b026939113a") // ERC-20 contract
 	sepoliaChainID   = big.NewInt(11155111)
-	transferTopic    = common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")
-	fakeHash         = common.HexToHash("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+	transferTopic    = ecommon.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")
+	fakeHash         = ecommon.HexToHash("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
 )
 
 func dialSepolia(t *testing.T) *Client {
@@ -139,8 +140,8 @@ func TestHeaderByNumber_Sepolia(t *testing.T) {
 	if head.Number.Cmp(knownBlockNumber) != 0 {
 		t.Fatalf("HeaderByNumber number = %v, want %v", head.Number, knownBlockNumber)
 	}
-	if head.Hash() != knownBlockHash {
-		t.Fatalf("HeaderByNumber hash = %s, want %s", head.Hash(), knownBlockHash)
+	if head.Hash != knownBlockHash {
+		t.Fatalf("HeaderByNumber hash = %s, want %s", head.Hash, knownBlockHash)
 	}
 }
 
@@ -192,8 +193,8 @@ func TestLiteBlockByNumber_Sepolia(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if block.Hash() != knownBlockHash {
-		t.Fatalf("hash = %s, want %s", block.Hash(), knownBlockHash)
+	if block.Hash != knownBlockHash {
+		t.Fatalf("hash = %s, want %s", block.Hash, knownBlockHash)
 	}
 	if block.Number.Cmp(knownBlockNumber) != 0 {
 		t.Fatalf("number = %v, want %v", block.Number, knownBlockNumber)
@@ -257,14 +258,14 @@ func TestBlockByNumber_Sepolia(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if block.Hash() != knownBlockHash {
-		t.Fatalf("hash = %s, want %s", block.Hash(), knownBlockHash)
+	if block.Hash != knownBlockHash {
+		t.Fatalf("hash = %s, want %s", block.Hash, knownBlockHash)
 	}
 	if block.NumberU64() != knownBlockNumber.Uint64() {
 		t.Fatalf("number = %d, want %d", block.NumberU64(), knownBlockNumber.Uint64())
 	}
-	if len(block.Transactions()) != 151 {
-		t.Fatalf("tx count = %d, want 151", len(block.Transactions()))
+	if len(block.Transactions) != 151 {
+		t.Fatalf("tx count = %d, want 151", len(block.Transactions))
 	}
 }
 
@@ -319,10 +320,10 @@ func TestTransactionByHash_Sepolia(t *testing.T) {
 	if isPending {
 		t.Fatal("expected confirmed tx, got pending")
 	}
-	if tx.Hash() != knownSepoliaTx {
+	if tx.Hash() != knownSepoliaTx.To() {
 		t.Fatalf("hash = %s, want %s", tx.Hash(), knownSepoliaTx)
 	}
-	if *tx.To() != knownTxTo {
+	if *tx.To() != knownTxTo.To() {
 		t.Fatalf("to = %s, want %s", tx.To(), knownTxTo)
 	}
 }
@@ -375,7 +376,7 @@ func TestTransactionInBlock_Sepolia(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if tx.Hash() != knownSepoliaTx {
+	if tx.Hash() != knownSepoliaTx.To() {
 		t.Fatalf("hash = %s, want %s", tx.Hash(), knownSepoliaTx)
 	}
 }
@@ -413,7 +414,7 @@ func TestTransactionReceipt_Sepolia(t *testing.T) {
 	if receipt.TxHash != knownSepoliaTx {
 		t.Fatalf("TxHash = %s, want %s", receipt.TxHash, knownSepoliaTx)
 	}
-	if receipt.Status != types.ReceiptStatusSuccessful {
+	if receipt.Status != 1 {
 		t.Fatalf("Status = %d, want 1", receipt.Status)
 	}
 	if receipt.BlockNumber == nil || receipt.BlockNumber.Cmp(knownBlockNumber) != 0 {
@@ -452,7 +453,7 @@ func TestTransactionReceiptAs_Sepolia(t *testing.T) {
 	defer cancel()
 
 	type LiteReceipt struct {
-		TxHash           common.Hash    `json:"transactionHash"`
+		TxHash           ecommon.Hash   `json:"transactionHash"`
 		Status           hexutil.Uint64 `json:"status"`
 		BlockNumber      hexutil.Uint64 `json:"blockNumber"`
 		GasUsed          hexutil.Uint64 `json:"gasUsed"`
@@ -507,7 +508,7 @@ func TestTransactionReceiptAs_Sepolia(t *testing.T) {
 //	ctx, cancel := sepoliaCtx()
 //	defer cancel()
 //
-//	tag := rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(knownBlockNumber.Int64()))
+//	tag := ethtype.BlockNumberOrHashWithNumber(ethtype.BlockNumber(knownBlockNumber.Int64()))
 //	receipts, err := BlockReceiptsAs[*TxEntry](ctx, ec, tag)
 //	if err != nil {
 //		t.Fatal(err)
@@ -530,7 +531,7 @@ func TestBlockReceipts_Sepolia(t *testing.T) {
 	ctx, cancel := sepoliaCtx()
 	defer cancel()
 
-	tag := rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(knownBlockNumber.Int64()))
+	tag := ethtype.BlockNumberOrHashWithNumber(ethtype.BlockNumber(knownBlockNumber.Int64()))
 	receipts, err := ec.BlockReceipts(ctx, tag)
 	if err != nil {
 		t.Fatal(err)
@@ -628,7 +629,7 @@ func TestStorageAt_Sepolia(t *testing.T) {
 	defer cancel()
 
 	// Slot 0 of the ERC-20 contract (typically totalSupply or name).
-	storage, err := ec.StorageAt(ctx, knownTxTo, common.Hash{}, nil)
+	storage, err := ec.StorageAt(ctx, knownTxTo, ecommon.Hash{}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -648,10 +649,11 @@ func TestFilterLogs_Sepolia(t *testing.T) {
 	ctx, cancel := sepoliaCtx()
 	defer cancel()
 
+	blockHash := knownBlockHash.To()
 	logs, err := ec.FilterLogs(ctx, ethereum.FilterQuery{
-		BlockHash: &knownBlockHash,
-		Addresses: []common.Address{knownTxTo},
-		Topics:    [][]common.Hash{{transferTopic}},
+		BlockHash: &blockHash,
+		Addresses: []common.Address{knownTxTo.To()},
+		Topics:    [][]common.Hash{{transferTopic.To()}},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -745,8 +747,9 @@ func TestEstimateGas_Sepolia(t *testing.T) {
 	defer cancel()
 
 	to := common.HexToAddress("0x0000000000000000000000000000000000000001")
+	sender := knownTxSender.To()
 	gas, err := ec.EstimateGas(ctx, ethereum.CallMsg{
-		From:  knownTxSender,
+		From:  sender,
 		To:    &to,
 		Value: big.NewInt(0),
 	})
@@ -770,9 +773,10 @@ func TestCallContract_Sepolia(t *testing.T) {
 	defer cancel()
 
 	// Call ERC-20 totalSupply() = 0x18160ddd
-	data := common.FromHex("0x18160ddd")
+	data := ecommon.FromHex("0x18160ddd")
+	callTo := knownTxTo.To()
 	result, err := ec.CallContract(ctx, ethereum.CallMsg{
-		To:   &knownTxTo,
+		To:   &callTo,
 		Data: data,
 	}, nil)
 	if err != nil {
