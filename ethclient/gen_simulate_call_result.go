@@ -5,8 +5,8 @@ package ethclient
 import (
 	"encoding/json"
 
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 var _ = (*simulateCallResultMarshaling)(nil)
@@ -15,7 +15,7 @@ var _ = (*simulateCallResultMarshaling)(nil)
 func (s SimulateCallResult) MarshalJSON() ([]byte, error) {
 	type SimulateCallResult struct {
 		ReturnValue hexutil.Bytes  `json:"returnData"`
-		Logs        []*types.Log   `json:"logs"`
+		Logs        []*ethtype.Log `json:"logs"`
 		GasUsed     hexutil.Uint64 `json:"gasUsed"`
 		Status      hexutil.Uint64 `json:"status"`
 		Error       *CallError     `json:"error,omitempty"`
@@ -33,7 +33,7 @@ func (s SimulateCallResult) MarshalJSON() ([]byte, error) {
 func (s *SimulateCallResult) UnmarshalJSON(input []byte) error {
 	type SimulateCallResult struct {
 		ReturnValue *hexutil.Bytes  `json:"returnData"`
-		Logs        []*types.Log    `json:"logs"`
+		Logs        []*ethtype.Log  `json:"logs"`
 		GasUsed     *hexutil.Uint64 `json:"gasUsed"`
 		Status      *hexutil.Uint64 `json:"status"`
 		Error       *CallError      `json:"error,omitempty"`

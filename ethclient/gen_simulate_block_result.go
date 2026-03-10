@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/ecommon"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -16,11 +16,11 @@ var _ = (*simulateBlockResultMarshaling)(nil)
 func (s SimulateBlockResult) MarshalJSON() ([]byte, error) {
 	type SimulateBlockResult struct {
 		Number        *hexutil.Big         `json:"number"`
-		Hash          common.Hash          `json:"hash"`
+		Hash          ecommon.Hash         `json:"hash"`
 		Timestamp     hexutil.Uint64       `json:"timestamp"`
 		GasLimit      hexutil.Uint64       `json:"gasLimit"`
 		GasUsed       hexutil.Uint64       `json:"gasUsed"`
-		FeeRecipient  common.Address       `json:"miner"`
+		FeeRecipient  ecommon.Address      `json:"miner"`
 		BaseFeePerGas *hexutil.Big         `json:"baseFeePerGas,omitempty"`
 		Calls         []SimulateCallResult `json:"calls"`
 	}
@@ -40,11 +40,11 @@ func (s SimulateBlockResult) MarshalJSON() ([]byte, error) {
 func (s *SimulateBlockResult) UnmarshalJSON(input []byte) error {
 	type SimulateBlockResult struct {
 		Number        *hexutil.Big         `json:"number"`
-		Hash          *common.Hash         `json:"hash"`
+		Hash          *ecommon.Hash        `json:"hash"`
 		Timestamp     *hexutil.Uint64      `json:"timestamp"`
 		GasLimit      *hexutil.Uint64      `json:"gasLimit"`
 		GasUsed       *hexutil.Uint64      `json:"gasUsed"`
-		FeeRecipient  *common.Address      `json:"miner"`
+		FeeRecipient  *ecommon.Address     `json:"miner"`
 		BaseFeePerGas *hexutil.Big         `json:"baseFeePerGas,omitempty"`
 		Calls         []SimulateCallResult `json:"calls"`
 	}

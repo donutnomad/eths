@@ -59,6 +59,10 @@ type Header struct {
 	SendRoot  *ecommon.Hash `json:"sendRoot,omitempty"`
 }
 
+func (h Header) NumberU64() uint64 {
+	return h.Number.Uint64()
+}
+
 // field type overrides for gencodec
 type headerMarshaling struct {
 	Difficulty      *hexutil.Big

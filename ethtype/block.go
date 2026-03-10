@@ -3,7 +3,7 @@ package ethtype
 import (
 	"encoding/json"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/donutnomad/eths/ecommon"
 )
 
 // Block holds block header with full transaction objects and withdrawals.
@@ -11,6 +11,15 @@ type Block struct {
 	Header
 	Transactions []*Transaction `json:"transactions"`
 	Withdrawals  []*Withdrawal  `json:"withdrawals,omitempty"`
+}
+
+func (b *Block) Transaction(hash ecommon.Hash) *Transaction {
+	for _, transaction := range b.Transactions {
+		if transaction.Hash == hash {
+			return transaction
+		}
+	}
+	return nil
 }
 
 func (b *Block) MarshalJSON() ([]byte, error) {
@@ -42,8 +51,5 @@ func (b *Block) UnmarshalJSON(data []byte) error {
 	b.Header = h
 	b.Transactions = r.Transactions
 	b.Withdrawals = r.Withdrawals
-
-	a, _ := b.MarshalJSON()
-	spew.Dump(string(a))
 	return nil
 }

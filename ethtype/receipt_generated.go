@@ -7,9 +7,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/ecommon"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 var _ = (*receiptMarshaling)(nil)
@@ -17,23 +16,23 @@ var _ = (*receiptMarshaling)(nil)
 // MarshalJSON marshals as JSON.
 func (t TxReceipt) MarshalJSON() ([]byte, error) {
 	type TxReceipt struct {
-		Type              hexutil.Uint64  `json:"type,omitempty"`
-		PostState         hexutil.Bytes   `json:"root"`
-		Status            hexutil.Uint64  `json:"status"`
-		CumulativeGasUsed hexutil.Uint64  `json:"cumulativeGasUsed" gencodec:"required"`
-		Bloom             types.Bloom     `json:"logsBloom"         gencodec:"required"`
-		Logs              []*types.Log    `json:"logs"              gencodec:"required"`
-		TxHash            common.Hash     `json:"transactionHash" gencodec:"required"`
-		ContractAddress   *common.Address `json:"contractAddress"`
-		From              common.Address  `json:"from"`
-		To                *common.Address `json:"to"`
-		GasUsed           hexutil.Uint64  `json:"gasUsed" gencodec:"required"`
-		EffectiveGasPrice *hexutil.Big    `json:"effectiveGasPrice"`
-		BlobGasUsed       hexutil.Uint64  `json:"blobGasUsed,omitempty"`
-		BlobGasPrice      *hexutil.Big    `json:"blobGasPrice,omitempty"`
-		BlockHash         common.Hash     `json:"blockHash,omitempty"`
-		BlockNumber       *hexutil.Big    `json:"blockNumber,omitempty"`
-		TransactionIndex  hexutil.Uint    `json:"transactionIndex"`
+		Type              hexutil.Uint64   `json:"type,omitempty"`
+		PostState         hexutil.Bytes    `json:"root"`
+		Status            hexutil.Uint64   `json:"status"`
+		CumulativeGasUsed hexutil.Uint64   `json:"cumulativeGasUsed" gencodec:"required"`
+		Bloom             Bloom            `json:"logsBloom"         gencodec:"required"`
+		Logs              []*Log           `json:"logs"              gencodec:"required"`
+		TxHash            ecommon.Hash     `json:"transactionHash" gencodec:"required"`
+		ContractAddress   *ecommon.Address `json:"contractAddress"`
+		From              ecommon.Address  `json:"from"`
+		To                *ecommon.Address `json:"to"`
+		GasUsed           hexutil.Uint64   `json:"gasUsed" gencodec:"required"`
+		EffectiveGasPrice *hexutil.Big     `json:"effectiveGasPrice"`
+		BlobGasUsed       hexutil.Uint64   `json:"blobGasUsed,omitempty"`
+		BlobGasPrice      *hexutil.Big     `json:"blobGasPrice,omitempty"`
+		BlockHash         ecommon.Hash     `json:"blockHash,omitempty"`
+		BlockNumber       *hexutil.Big     `json:"blockNumber,omitempty"`
+		TransactionIndex  hexutil.Uint     `json:"transactionIndex"`
 	}
 	var enc TxReceipt
 	enc.Type = hexutil.Uint64(t.Type)
@@ -59,23 +58,23 @@ func (t TxReceipt) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals from JSON.
 func (t *TxReceipt) UnmarshalJSON(input []byte) error {
 	type TxReceipt struct {
-		Type              *hexutil.Uint64 `json:"type,omitempty"`
-		PostState         *hexutil.Bytes  `json:"root"`
-		Status            *hexutil.Uint64 `json:"status"`
-		CumulativeGasUsed *hexutil.Uint64 `json:"cumulativeGasUsed" gencodec:"required"`
-		Bloom             *types.Bloom    `json:"logsBloom"         gencodec:"required"`
-		Logs              []*types.Log    `json:"logs"              gencodec:"required"`
-		TxHash            *common.Hash    `json:"transactionHash" gencodec:"required"`
-		ContractAddress   *common.Address `json:"contractAddress"`
-		From              *common.Address `json:"from"`
-		To                *common.Address `json:"to"`
-		GasUsed           *hexutil.Uint64 `json:"gasUsed" gencodec:"required"`
-		EffectiveGasPrice *hexutil.Big    `json:"effectiveGasPrice"`
-		BlobGasUsed       *hexutil.Uint64 `json:"blobGasUsed,omitempty"`
-		BlobGasPrice      *hexutil.Big    `json:"blobGasPrice,omitempty"`
-		BlockHash         *common.Hash    `json:"blockHash,omitempty"`
-		BlockNumber       *hexutil.Big    `json:"blockNumber,omitempty"`
-		TransactionIndex  *hexutil.Uint   `json:"transactionIndex"`
+		Type              *hexutil.Uint64  `json:"type,omitempty"`
+		PostState         *hexutil.Bytes   `json:"root"`
+		Status            *hexutil.Uint64  `json:"status"`
+		CumulativeGasUsed *hexutil.Uint64  `json:"cumulativeGasUsed" gencodec:"required"`
+		Bloom             *Bloom           `json:"logsBloom"         gencodec:"required"`
+		Logs              []*Log           `json:"logs"              gencodec:"required"`
+		TxHash            *ecommon.Hash    `json:"transactionHash" gencodec:"required"`
+		ContractAddress   *ecommon.Address `json:"contractAddress"`
+		From              *ecommon.Address `json:"from"`
+		To                *ecommon.Address `json:"to"`
+		GasUsed           *hexutil.Uint64  `json:"gasUsed" gencodec:"required"`
+		EffectiveGasPrice *hexutil.Big     `json:"effectiveGasPrice"`
+		BlobGasUsed       *hexutil.Uint64  `json:"blobGasUsed,omitempty"`
+		BlobGasPrice      *hexutil.Big     `json:"blobGasPrice,omitempty"`
+		BlockHash         *ecommon.Hash    `json:"blockHash,omitempty"`
+		BlockNumber       *hexutil.Big     `json:"blockNumber,omitempty"`
+		TransactionIndex  *hexutil.Uint    `json:"transactionIndex"`
 	}
 	var dec TxReceipt
 	if err := json.Unmarshal(input, &dec); err != nil {

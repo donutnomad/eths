@@ -17,7 +17,7 @@ type Tx struct {
 
 	ChainID              *big.Int         `json:"chainId,omitempty"`
 	Nonce                uint64           `json:"nonce"`
-	From                 *ecommon.Address `json:"from"`
+	From                 ecommon.Address  `json:"from"`
 	To                   *ecommon.Address `json:"to"`
 	Gas                  uint64           `json:"gas"`
 	GasPrice             *big.Int         `json:"gasPrice"`

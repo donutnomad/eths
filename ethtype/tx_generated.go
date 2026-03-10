@@ -19,6 +19,7 @@ func (t Tx) MarshalJSON() ([]byte, error) {
 		Type                 hexutil.Uint64         `json:"type"`
 		ChainID              *hexutil.Big           `json:"chainId,omitempty"`
 		Nonce                hexutil.Uint64         `json:"nonce"`
+		From                 ecommon.Address        `json:"from"`
 		To                   *ecommon.Address       `json:"to"`
 		Gas                  hexutil.Uint64         `json:"gas"`
 		GasPrice             *hexutil.Big           `json:"gasPrice"`
@@ -42,6 +43,7 @@ func (t Tx) MarshalJSON() ([]byte, error) {
 	enc.Type = hexutil.Uint64(t.Type)
 	enc.ChainID = (*hexutil.Big)(t.ChainID)
 	enc.Nonce = hexutil.Uint64(t.Nonce)
+	enc.From = t.From
 	enc.To = t.To
 	enc.Gas = hexutil.Uint64(t.Gas)
 	enc.GasPrice = (*hexutil.Big)(t.GasPrice)
@@ -69,6 +71,7 @@ func (t *Tx) UnmarshalJSON(input []byte) error {
 		Type                 *hexutil.Uint64        `json:"type"`
 		ChainID              *hexutil.Big           `json:"chainId,omitempty"`
 		Nonce                *hexutil.Uint64        `json:"nonce"`
+		From                 *ecommon.Address       `json:"from"`
 		To                   *ecommon.Address       `json:"to"`
 		Gas                  *hexutil.Uint64        `json:"gas"`
 		GasPrice             *hexutil.Big           `json:"gasPrice"`
@@ -100,6 +103,9 @@ func (t *Tx) UnmarshalJSON(input []byte) error {
 	}
 	if dec.Nonce != nil {
 		t.Nonce = uint64(*dec.Nonce)
+	}
+	if dec.From != nil {
+		t.From = *dec.From
 	}
 	if dec.To != nil {
 		t.To = dec.To
