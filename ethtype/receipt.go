@@ -8,7 +8,10 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-//go:generate go tool github.com/fjl/gencodec -type TxReceipt -field-override receiptMarshaling -out gen_receipt_json.go
+//go:generate go tool github.com/fjl/gencodec -type TxReceipt -field-override receiptMarshaling -out receipt_generated.go
+
+type Receipt = TxReceipt
+type Receipts = []*Receipt
 
 type TxReceipt struct {
 	// Consensus fields: These fields are defined by the Yellow Paper

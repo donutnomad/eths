@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -149,14 +150,28 @@ func (ec *Client) ChainID(ctx context.Context) (*big.Int, error) {
 	return (*big.Int)(&result), err
 }
 
+// BlockByNumberAs is the generic version of RichBlockByNumber.
+//
+// RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
+func BlockByNumberAs[T any](ctx context.Context, ec *Client, number *big.Int) (*T, error) {
+	return CallNotFound[*T](ec, ctx, "eth_getBlockByNumber", toBlockNumArg(number), true)
+}
+
+// BlockByHashAs is the generic version of RichBlockByHash.
+//
+// RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbyhash
+func BlockByHashAs[T any](ctx context.Context, ec *Client, hash common.Hash) (*T, error) {
+	return CallNotFound[*T](ec, ctx, "eth_getBlockByHash", hash, true)
+}
+
 // BlockByHash returns the given full block.
 //
 // Note that loading full blocks requires two requests. Use HeaderByHash
 // if you don't need all transactions or uncle headers.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbyhash
-func (ec *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
-	return ec.getBlock(ctx, "eth_getBlockByHash", hash, true)
+func (ec *Client) BlockByHash(ctx context.Context, hash common.Hash) (*ethtype.Block, error) {
+	return BlockByHashAs[ethtype.Block](ctx, ec, hash)
 }
 
 // BlockByNumber returns a block from the current canonical chain.
@@ -178,8 +193,8 @@ func (ec *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Blo
 // ```go
 // BlockByNumber(context.Background(), big.NewInt(int64(rpc.LatestBlockNumber)))
 // ```
-func (ec *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
-	return ec.getBlock(ctx, "eth_getBlockByNumber", toBlockNumArg(number), true)
+func (ec *Client) BlockByNumber(ctx context.Context, number *big.Int) (*ethtype.Block, error) {
+	return BlockByNumberAs[ethtype.Block](ctx, ec, number)
 }
 
 // LiteBlockByNumber returns a block with only transaction hashes (not full
@@ -188,46 +203,16 @@ func (ec *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Bl
 // need block metadata and the list of transaction hashes.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
-func (ec *Client) LiteBlockByNumber(ctx context.Context, number *big.Int) (*LiteBlock, error) {
-	return LiteBlockByNumberAs[LiteBlock](ctx, ec, number)
+func (ec *Client) LiteBlockByNumber(ctx context.Context, number *big.Int) (*ethtype.LiteBlock, error) {
+	return LiteBlockByNumberAs[ethtype.LiteBlock](ctx, ec, number)
 }
 
 // LiteBlockByHash returns a block with only transaction hashes and without
 // loading uncle headers.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbyhash
-func (ec *Client) LiteBlockByHash(ctx context.Context, hash common.Hash) (*LiteBlock, error) {
-	return LiteBlockByHashAs[LiteBlock](ctx, ec, hash)
-}
-
-// RichBlockByNumber returns a block with full transaction objects and without
-// loading uncle headers.
-//
-// RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
-func (ec *Client) RichBlockByNumber(ctx context.Context, number *big.Int) (*RichBlock, error) {
-	return RichBlockByNumberAs[RichBlock](ctx, ec, number)
-}
-
-// RichBlockByHash returns a block with full transaction objects and without
-// loading uncle headers.
-//
-// RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbyhash
-func (ec *Client) RichBlockByHash(ctx context.Context, hash common.Hash) (*RichBlock, error) {
-	return RichBlockByHashAs[RichBlock](ctx, ec, hash)
-}
-
-// RichBlockByNumberAs is the generic version of RichBlockByNumber.
-//
-// RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbynumber
-func RichBlockByNumberAs[T any](ctx context.Context, ec *Client, number *big.Int) (*T, error) {
-	return CallNotFound[*T](ec, ctx, "eth_getBlockByNumber", toBlockNumArg(number), true)
-}
-
-// RichBlockByHashAs is the generic version of RichBlockByHash.
-//
-// RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbyhash
-func RichBlockByHashAs[T any](ctx context.Context, ec *Client, hash common.Hash) (*T, error) {
-	return CallNotFound[*T](ec, ctx, "eth_getBlockByHash", hash, true)
+func (ec *Client) LiteBlockByHash(ctx context.Context, hash common.Hash) (*ethtype.LiteBlock, error) {
+	return LiteBlockByHashAs[ethtype.LiteBlock](ctx, ec, hash)
 }
 
 // LiteBlockByNumberAs is the generic version of LiteBlockByNumber.
@@ -263,8 +248,8 @@ func (ec *Client) PeerCount(ctx context.Context) (uint64, error) {
 // BlockReceipts returns the receipts of a given block number or hash.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockreceipts
-func (ec *Client) BlockReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*types.Receipt, error) {
-	return CallNotFound[[]*types.Receipt](ec, ctx, "eth_getBlockReceipts", blockNrOrHash.String())
+func (ec *Client) BlockReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*ethtype.TxReceipt, error) {
+	return CallNotFound[[]*ethtype.TxReceipt](ec, ctx, "eth_getBlockReceipts", blockNrOrHash.String())
 }
 
 // BlockReceiptsAs is the generic version of BlockReceipts. It allows the
@@ -281,99 +266,11 @@ func BlockReceiptsAs[T any](ctx context.Context, ec *Client, blockNrOrHash rpc.B
 	return CallNotFound[[]T](ec, ctx, "eth_getBlockReceipts", blockNrOrHash.String())
 }
 
-type rpcBlock struct {
-	Hash         *common.Hash        `json:"hash"`
-	Transactions []rpcTransaction    `json:"transactions"`
-	UncleHashes  []common.Hash       `json:"uncles"`
-	Withdrawals  []*types.Withdrawal `json:"withdrawals,omitempty"`
-}
-
-func (ec *Client) getBlock(ctx context.Context, method string, args ...any) (*types.Block, error) {
-	var raw json.RawMessage
-	err := ec.callContext(ctx, &raw, method, args...)
-	if err != nil {
-		return nil, err
-	}
-
-	// Decode header and transactions.
-	var head *types.Header
-	if err := json.Unmarshal(raw, &head); err != nil {
-		return nil, err
-	}
-	// When the block is not found, the API returns JSON null.
-	if head == nil {
-		return nil, ethereum.NotFound
-	}
-
-	var body rpcBlock
-	if err := json.Unmarshal(raw, &body); err != nil {
-		return nil, err
-	}
-	// Pending blocks don't return a block hash, compute it for sender caching.
-	if body.Hash == nil {
-		tmp := head.Hash()
-		body.Hash = &tmp
-	}
-
-	// Quick-verify transaction and uncle lists. This mostly helps with debugging the server.
-	if head.UncleHash == types.EmptyUncleHash && len(body.UncleHashes) > 0 {
-		return nil, errors.New("server returned non-empty uncle list but block header indicates no uncles")
-	}
-	if head.UncleHash != types.EmptyUncleHash && len(body.UncleHashes) == 0 {
-		return nil, errors.New("server returned empty uncle list but block header indicates uncles")
-	}
-	if head.TxHash == types.EmptyTxsHash && len(body.Transactions) > 0 {
-		return nil, errors.New("server returned non-empty transaction list but block header indicates no transactions")
-	}
-	if head.TxHash != types.EmptyTxsHash && len(body.Transactions) == 0 {
-		return nil, errors.New("server returned empty transaction list but block header indicates transactions")
-	}
-	// Load uncles because they are not included in the block response.
-	var uncles []*types.Header
-	if len(body.UncleHashes) > 0 {
-		uncles = make([]*types.Header, len(body.UncleHashes))
-		reqs := make([]rpc.BatchElem, len(body.UncleHashes))
-		for i := range reqs {
-			reqs[i] = rpc.BatchElem{
-				Method: "eth_getUncleByBlockHashAndIndex",
-				Args:   []any{body.Hash, hexutil.EncodeUint64(uint64(i))},
-				Result: &uncles[i],
-			}
-		}
-		if err := ec.batchCallContext(ctx, reqs); err != nil {
-			return nil, err
-		}
-		for i := range reqs {
-			if reqs[i].Error != nil {
-				return nil, reqs[i].Error
-			}
-			if uncles[i] == nil {
-				return nil, fmt.Errorf("got null header for uncle %d of block %x", i, body.Hash[:])
-			}
-		}
-	}
-	// Fill the sender cache of transactions in the block.
-	txs := make([]*types.Transaction, len(body.Transactions))
-	for i, tx := range body.Transactions {
-		if tx.From != nil {
-			setSenderFromServer(tx.tx, *tx.From, *body.Hash)
-		}
-		txs[i] = tx.tx
-	}
-
-	return types.NewBlockWithHeader(head).WithBody(
-		types.Body{
-			Transactions: txs,
-			Uncles:       uncles,
-			Withdrawals:  body.Withdrawals,
-		}), nil
-}
-
 // HeaderByHash returns the block header with the given hash.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblockbyhash
-func (ec *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
-	var head *types.Header
+func (ec *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*ethtype.Header, error) {
+	var head *ethtype.Header
 	err := ec.callContext(ctx, &head, "eth_getBlockByHash", hash, false)
 	if err == nil && head == nil {
 		err = ethereum.NotFound
@@ -398,8 +295,8 @@ func (ec *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*types.He
 // ```go
 // HeaderByNumber(context.Background(), big.NewInt(int64(rpc.LatestBlockNumber)))
 // ```
-func (ec *Client) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
-	var head *types.Header
+func (ec *Client) HeaderByNumber(ctx context.Context, number *big.Int) (*ethtype.Header, error) {
+	var head *ethtype.Header
 	err := ec.callContext(ctx, &head, "eth_getBlockByNumber", toBlockNumArg(number), false)
 	if err == nil && head == nil {
 		err = ethereum.NotFound
@@ -503,8 +400,8 @@ func (ec *Client) TransactionInBlock(ctx context.Context, blockHash common.Hash,
 // Note that the receipt is not available for pending transactions.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionreceipt
-func (ec *Client) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
-	return CallNotFound[*types.Receipt](ec, ctx, "eth_getTransactionReceipt", txHash)
+func (ec *Client) TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethtype.Receipt, error) {
+	return CallNotFound[*ethtype.Receipt](ec, ctx, "eth_getTransactionReceipt", txHash)
 }
 
 // TransactionReceiptAs is the generic version of TransactionReceipt.
@@ -515,7 +412,7 @@ func TransactionReceiptAs[T any](ctx context.Context, ec *Client, txHash common.
 }
 
 // SubscribeTransactionReceipts subscribes to notifications about transaction receipts.
-func (ec *Client) SubscribeTransactionReceipts(ctx context.Context, q *ethereum.TransactionReceiptsQuery, ch chan<- []*types.Receipt) (ethereum.Subscription, error) {
+func (ec *Client) SubscribeTransactionReceipts(ctx context.Context, q *ethereum.TransactionReceiptsQuery, ch chan<- []*ethtype.Receipt) (ethereum.Subscription, error) {
 	return ec.c.EthSubscribe(ctx, ch, "transactionReceipts", q)
 }
 
@@ -542,7 +439,7 @@ func (ec *Client) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, err
 
 // SubscribeNewHead subscribes to notifications about the current blockchain head
 // on the given channel.
-func (ec *Client) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
+func (ec *Client) SubscribeNewHead(ctx context.Context, ch chan<- *ethtype.Header) (ethereum.Subscription, error) {
 	sub, err := ec.c.EthSubscribe(ctx, ch, "newHeads")
 	if err != nil {
 		// Defensively prefer returning nil interface explicitly on error-path, instead
@@ -639,12 +536,12 @@ func (ec *Client) NonceAtHash(ctx context.Context, account common.Address, block
 // FilterLogs executes a filter query.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getlogs
-func (ec *Client) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
+func (ec *Client) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]ethtype.Log, error) {
 	arg, err := toFilterArg(q)
 	if err != nil {
 		return nil, err
 	}
-	return Call[[]types.Log](ec, ctx, "eth_getLogs", arg)
+	return Call[[]ethtype.Log](ec, ctx, "eth_getLogs", arg)
 }
 
 // FilterLogsAs is the generic version of FilterLogs.
@@ -659,7 +556,7 @@ func FilterLogsAs[T any](ctx context.Context, ec *Client, q ethereum.FilterQuery
 }
 
 // SubscribeFilterLogs subscribes to the results of a streaming filter query.
-func (ec *Client) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
+func (ec *Client) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- ethtype.Log) (ethereum.Subscription, error) {
 	arg, err := toFilterArg(q)
 	if err != nil {
 		return nil, err
@@ -880,7 +777,7 @@ func (ec *Client) SendTransactionSync(
 	ctx context.Context,
 	tx *types.Transaction,
 	timeout *time.Duration,
-) (*types.Receipt, error) {
+) (*ethtype.Receipt, error) {
 	raw, err := tx.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -892,14 +789,14 @@ func (ec *Client) SendRawTransactionSync(
 	ctx context.Context,
 	rawTx []byte,
 	timeout *time.Duration,
-) (*types.Receipt, error) {
+) (*ethtype.Receipt, error) {
 	var ms *hexutil.Uint64
 	if timeout != nil {
 		if d := hexutil.Uint64(timeout.Milliseconds()); d > 0 {
 			ms = &d
 		}
 	}
-	var receipt types.Receipt
+	var receipt ethtype.Receipt
 	if err := ec.callContext(ctx, &receipt, "eth_sendRawTransactionSync", hexutil.Bytes(rawTx), ms); err != nil {
 		return nil, err
 	}
@@ -1067,11 +964,11 @@ func (s SimulateBlock) MarshalJSON() ([]byte, error) {
 
 // SimulateCallResult is the result of a simulated call.
 type SimulateCallResult struct {
-	ReturnValue []byte       `json:"returnData"`
-	Logs        []*types.Log `json:"logs"`
-	GasUsed     uint64       `json:"gasUsed"`
-	Status      uint64       `json:"status"`
-	Error       *CallError   `json:"error,omitempty"`
+	ReturnValue []byte         `json:"returnData"`
+	Logs        []*ethtype.Log `json:"logs"`
+	GasUsed     uint64         `json:"gasUsed"`
+	Status      uint64         `json:"status"`
+	Error       *CallError     `json:"error,omitempty"`
 }
 
 type simulateCallResultMarshaling struct {
