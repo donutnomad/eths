@@ -56,7 +56,7 @@ func (t *txImpl) isProtected() bool {
 }
 
 // MarshalJSON marshals as JSON with a hash.
-func (t *txImpl) MarshalJSON() ([]byte, error) {
+func (t txImpl) MarshalJSON() ([]byte, error) {
 	var enc = txJSON{
 		Hash:    t.Hash(),
 		Type:    hexutil.Uint64(t.TxType()),

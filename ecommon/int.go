@@ -45,7 +45,7 @@ func (x *Big) UnmarshalText(text []byte) error {
 }
 
 // MarshalJSON implements the [encoding/json.Marshaler] interface.
-func (x *Big) MarshalJSON() ([]byte, error) {
+func (x Big) MarshalJSON() ([]byte, error) {
 	str, err := x.MarshalText()
 	if err != nil {
 		return nil, err

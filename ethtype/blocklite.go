@@ -22,7 +22,7 @@ func (b *LiteBlock) Transaction(hash ecommon.Hash) *ecommon.Hash {
 	return nil
 }
 
-func (b *LiteBlock) MarshalJSON() ([]byte, error) {
+func (b LiteBlock) MarshalJSON() ([]byte, error) {
 	type enc struct {
 		Header       Header         `json:",inline"`
 		Transactions []ecommon.Hash `json:"transactions"`

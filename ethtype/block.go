@@ -22,16 +22,17 @@ func (b *Block) Transaction(hash ecommon.Hash) *Transaction {
 	return nil
 }
 
-func (b *Block) MarshalJSON() ([]byte, error) {
+func (b Block) MarshalJSON() ([]byte, error) {
+	type headerNoMethods Header
 	type enc struct {
-		Header       Header         `json:",inline"`
+		headerNoMethods
 		Transactions []*Transaction `json:"transactions"`
 		Withdrawals  []*Withdrawal  `json:"withdrawals,omitempty"`
 	}
 	return json.Marshal(&enc{
-		Header:       b.Header,
-		Transactions: b.Transactions,
-		Withdrawals:  b.Withdrawals,
+		headerNoMethods: headerNoMethods(b.Header),
+		Transactions:    b.Transactions,
+		Withdrawals:     b.Withdrawals,
 	})
 }
 
