@@ -4,11 +4,10 @@ package ethtype
 
 import (
 	"encoding/json"
-	"errors"
 	"math/big"
 
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/donutnomad/eths/hexutil"
 )
 
 var _ = (*receiptMarshaling)(nil)
@@ -19,14 +18,14 @@ func (t TxReceipt) MarshalJSON() ([]byte, error) {
 		Type              hexutil.Uint64   `json:"type,omitempty"`
 		PostState         hexutil.Bytes    `json:"root"`
 		Status            hexutil.Uint64   `json:"status"`
-		CumulativeGasUsed hexutil.Uint64   `json:"cumulativeGasUsed" gencodec:"required"`
-		Bloom             Bloom            `json:"logsBloom"         gencodec:"required"`
-		Logs              []*Log           `json:"logs"              gencodec:"required"`
-		TxHash            ecommon.Hash     `json:"transactionHash" gencodec:"required"`
+		CumulativeGasUsed hexutil.Uint64   `json:"cumulativeGasUsed"`
+		Bloom             Bloom            `json:"logsBloom"`
+		Logs              []*Log           `json:"logs"`
+		TxHash            ecommon.Hash     `json:"transactionHash"`
 		ContractAddress   *ecommon.Address `json:"contractAddress"`
 		From              ecommon.Address  `json:"from"`
 		To                *ecommon.Address `json:"to"`
-		GasUsed           hexutil.Uint64   `json:"gasUsed" gencodec:"required"`
+		GasUsed           hexutil.Uint64   `json:"gasUsed"`
 		EffectiveGasPrice *hexutil.Big     `json:"effectiveGasPrice"`
 		BlobGasUsed       hexutil.Uint64   `json:"blobGasUsed,omitempty"`
 		BlobGasPrice      *hexutil.Big     `json:"blobGasPrice,omitempty"`
@@ -61,14 +60,14 @@ func (t *TxReceipt) UnmarshalJSON(input []byte) error {
 		Type              *hexutil.Uint64  `json:"type,omitempty"`
 		PostState         *hexutil.Bytes   `json:"root"`
 		Status            *hexutil.Uint64  `json:"status"`
-		CumulativeGasUsed *hexutil.Uint64  `json:"cumulativeGasUsed" gencodec:"required"`
-		Bloom             *Bloom           `json:"logsBloom"         gencodec:"required"`
-		Logs              []*Log           `json:"logs"              gencodec:"required"`
-		TxHash            *ecommon.Hash    `json:"transactionHash" gencodec:"required"`
+		CumulativeGasUsed *hexutil.Uint64  `json:"cumulativeGasUsed"`
+		Bloom             *Bloom           `json:"logsBloom"`
+		Logs              []*Log           `json:"logs"`
+		TxHash            *ecommon.Hash    `json:"transactionHash"`
 		ContractAddress   *ecommon.Address `json:"contractAddress"`
 		From              *ecommon.Address `json:"from"`
 		To                *ecommon.Address `json:"to"`
-		GasUsed           *hexutil.Uint64  `json:"gasUsed" gencodec:"required"`
+		GasUsed           *hexutil.Uint64  `json:"gasUsed"`
 		EffectiveGasPrice *hexutil.Big     `json:"effectiveGasPrice"`
 		BlobGasUsed       *hexutil.Uint64  `json:"blobGasUsed,omitempty"`
 		BlobGasPrice      *hexutil.Big     `json:"blobGasPrice,omitempty"`
@@ -89,22 +88,18 @@ func (t *TxReceipt) UnmarshalJSON(input []byte) error {
 	if dec.Status != nil {
 		t.Status = uint64(*dec.Status)
 	}
-	if dec.CumulativeGasUsed == nil {
-		return errors.New("missing required field 'cumulativeGasUsed' for TxReceipt")
+	if dec.CumulativeGasUsed != nil {
+		t.CumulativeGasUsed = uint64(*dec.CumulativeGasUsed)
 	}
-	t.CumulativeGasUsed = uint64(*dec.CumulativeGasUsed)
-	if dec.Bloom == nil {
-		return errors.New("missing required field 'logsBloom' for TxReceipt")
+	if dec.Bloom != nil {
+		t.Bloom = *dec.Bloom
 	}
-	t.Bloom = *dec.Bloom
-	if dec.Logs == nil {
-		return errors.New("missing required field 'logs' for TxReceipt")
+	if dec.Logs != nil {
+		t.Logs = dec.Logs
 	}
-	t.Logs = dec.Logs
-	if dec.TxHash == nil {
-		return errors.New("missing required field 'transactionHash' for TxReceipt")
+	if dec.TxHash != nil {
+		t.TxHash = *dec.TxHash
 	}
-	t.TxHash = *dec.TxHash
 	if dec.ContractAddress != nil {
 		t.ContractAddress = dec.ContractAddress
 	}
@@ -114,10 +109,9 @@ func (t *TxReceipt) UnmarshalJSON(input []byte) error {
 	if dec.To != nil {
 		t.To = dec.To
 	}
-	if dec.GasUsed == nil {
-		return errors.New("missing required field 'gasUsed' for TxReceipt")
+	if dec.GasUsed != nil {
+		t.GasUsed = uint64(*dec.GasUsed)
 	}
-	t.GasUsed = uint64(*dec.GasUsed)
 	if dec.EffectiveGasPrice != nil {
 		t.EffectiveGasPrice = (*big.Int)(dec.EffectiveGasPrice)
 	}

@@ -4,7 +4,7 @@ import (
 	"math/big"
 
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/donutnomad/eths/hexutil"
 )
 
 type Receipt = TxReceipt
@@ -15,16 +15,16 @@ type TxReceipt struct {
 	Type              uint8  `json:"type,omitempty"`
 	PostState         []byte `json:"root"`
 	Status            uint64 `json:"status"`
-	CumulativeGasUsed uint64 `json:"cumulativeGasUsed" gencodec:"required"`
-	Bloom             Bloom  `json:"logsBloom"         gencodec:"required"`
-	Logs              []*Log `json:"logs"              gencodec:"required"`
+	CumulativeGasUsed uint64 `json:"cumulativeGasUsed"`
+	Bloom             Bloom  `json:"logsBloom"`
+	Logs              []*Log `json:"logs"`
 
 	// Implementation fields: These fields are added by geth when processing a transaction.
-	TxHash            ecommon.Hash     `json:"transactionHash" gencodec:"required"`
+	TxHash            ecommon.Hash     `json:"transactionHash"`
 	ContractAddress   *ecommon.Address `json:"contractAddress"`
 	From              ecommon.Address  `json:"from"`
 	To                *ecommon.Address `json:"to"`
-	GasUsed           uint64           `json:"gasUsed" gencodec:"required"`
+	GasUsed           uint64           `json:"gasUsed"`
 	EffectiveGasPrice *big.Int         `json:"effectiveGasPrice"` // required, but tag omitted for backwards compatibility
 	BlobGasUsed       uint64           `json:"blobGasUsed,omitempty"`
 	BlobGasPrice      *big.Int         `json:"blobGasPrice,omitempty"`

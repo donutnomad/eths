@@ -2,11 +2,9 @@ package ethtype
 
 import (
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/donutnomad/eths/hexutil"
 	"github.com/holiman/uint256"
 )
-
-//go:generate go run github.com/fjl/gencodec -type SetCodeAuthorization -field-override authorizationMarshaling -out authorization_generated.go
 
 // SetCodeAuthorization is an authorization from an account to deploy code at its address.
 type SetCodeAuthorization struct {

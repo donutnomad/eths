@@ -4,12 +4,10 @@ package ethtype
 
 import (
 	"encoding/json"
-	"errors"
 	"math/big"
 
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto/kzg4844"
+	"github.com/donutnomad/eths/hexutil"
 )
 
 var _ = (*txMarshaling)(nil)
@@ -30,24 +28,22 @@ func (t TxDetail) MarshalJSON() ([]byte, error) {
 		MaxFeePerBlobGas     *hexutil.Big           `json:"maxFeePerBlobGas,omitempty"`
 		Value                *hexutil.Big           `json:"value"`
 		Input                hexutil.Bytes          `json:"input"`
+		AccessList           AccessList             `json:"accessList,omitempty"`
 		BlobVersionedHashes  []ecommon.Hash         `json:"blobVersionedHashes,omitempty"`
 		AuthorizationList    []SetCodeAuthorization `json:"authorizationList,omitempty"`
 		V                    *hexutil.Big           `json:"v"`
 		R                    *hexutil.Big           `json:"r"`
 		S                    *hexutil.Big           `json:"s"`
 		YParity              hexutil.Uint64         `json:"yParity,omitempty"`
-		Blobs                []kzg4844.Blob         `json:"blobs,omitempty"`
-		Commitments          []kzg4844.Commitment   `json:"commitments,omitempty"`
-		Proofs               []kzg4844.Proof        `json:"proofs,omitempty"`
 		Hash                 ecommon.Hash           `json:"hash"`
 		PostState            hexutil.Bytes          `json:"root"`
 		Status               hexutil.Uint64         `json:"status"`
-		CumulativeGasUsed    hexutil.Uint64         `json:"cumulativeGasUsed" gencodec:"required"`
-		Bloom                Bloom                  `json:"logsBloom"         gencodec:"required"`
-		Logs                 []*Log                 `json:"logs"              gencodec:"required"`
-		TxHash               ecommon.Hash           `json:"transactionHash" gencodec:"required"`
+		CumulativeGasUsed    hexutil.Uint64         `json:"cumulativeGasUsed"`
+		Bloom                Bloom                  `json:"logsBloom"`
+		Logs                 []*Log                 `json:"logs"`
+		TxHash               ecommon.Hash           `json:"transactionHash"`
 		ContractAddress      *ecommon.Address       `json:"contractAddress"`
-		GasUsed              hexutil.Uint64         `json:"gasUsed" gencodec:"required"`
+		GasUsed              hexutil.Uint64         `json:"gasUsed"`
 		EffectiveGasPrice    *hexutil.Big           `json:"effectiveGasPrice"`
 		BlobGasUsed          hexutil.Uint64         `json:"blobGasUsed,omitempty"`
 		BlobGasPrice         *hexutil.Big           `json:"blobGasPrice,omitempty"`
@@ -68,15 +64,13 @@ func (t TxDetail) MarshalJSON() ([]byte, error) {
 	enc.MaxFeePerBlobGas = (*hexutil.Big)(t.MaxFeePerBlobGas)
 	enc.Value = (*hexutil.Big)(t.Value)
 	enc.Input = t.Input
+	enc.AccessList = t.AccessList
 	enc.BlobVersionedHashes = t.BlobVersionedHashes
 	enc.AuthorizationList = t.AuthorizationList
 	enc.V = (*hexutil.Big)(t.V)
 	enc.R = (*hexutil.Big)(t.R)
 	enc.S = (*hexutil.Big)(t.S)
 	enc.YParity = hexutil.Uint64(t.YParity)
-	enc.Blobs = t.Blobs
-	enc.Commitments = t.Commitments
-	enc.Proofs = t.Proofs
 	enc.Hash = t.Hash
 	enc.PostState = t.PostState
 	enc.Status = hexutil.Uint64(t.Status)
@@ -110,24 +104,22 @@ func (t *TxDetail) UnmarshalJSON(input []byte) error {
 		MaxFeePerBlobGas     *hexutil.Big           `json:"maxFeePerBlobGas,omitempty"`
 		Value                *hexutil.Big           `json:"value"`
 		Input                *hexutil.Bytes         `json:"input"`
+		AccessList           *AccessList            `json:"accessList,omitempty"`
 		BlobVersionedHashes  []ecommon.Hash         `json:"blobVersionedHashes,omitempty"`
 		AuthorizationList    []SetCodeAuthorization `json:"authorizationList,omitempty"`
 		V                    *hexutil.Big           `json:"v"`
 		R                    *hexutil.Big           `json:"r"`
 		S                    *hexutil.Big           `json:"s"`
 		YParity              *hexutil.Uint64        `json:"yParity,omitempty"`
-		Blobs                []kzg4844.Blob         `json:"blobs,omitempty"`
-		Commitments          []kzg4844.Commitment   `json:"commitments,omitempty"`
-		Proofs               []kzg4844.Proof        `json:"proofs,omitempty"`
 		Hash                 *ecommon.Hash          `json:"hash"`
 		PostState            *hexutil.Bytes         `json:"root"`
 		Status               *hexutil.Uint64        `json:"status"`
-		CumulativeGasUsed    *hexutil.Uint64        `json:"cumulativeGasUsed" gencodec:"required"`
-		Bloom                *Bloom                 `json:"logsBloom"         gencodec:"required"`
-		Logs                 []*Log                 `json:"logs"              gencodec:"required"`
-		TxHash               *ecommon.Hash          `json:"transactionHash" gencodec:"required"`
+		CumulativeGasUsed    *hexutil.Uint64        `json:"cumulativeGasUsed"`
+		Bloom                *Bloom                 `json:"logsBloom"`
+		Logs                 []*Log                 `json:"logs"`
+		TxHash               *ecommon.Hash          `json:"transactionHash"`
 		ContractAddress      *ecommon.Address       `json:"contractAddress"`
-		GasUsed              *hexutil.Uint64        `json:"gasUsed" gencodec:"required"`
+		GasUsed              *hexutil.Uint64        `json:"gasUsed"`
 		EffectiveGasPrice    *hexutil.Big           `json:"effectiveGasPrice"`
 		BlobGasUsed          *hexutil.Uint64        `json:"blobGasUsed,omitempty"`
 		BlobGasPrice         *hexutil.Big           `json:"blobGasPrice,omitempty"`
@@ -175,6 +167,9 @@ func (t *TxDetail) UnmarshalJSON(input []byte) error {
 	if dec.Input != nil {
 		t.Input = *dec.Input
 	}
+	if dec.AccessList != nil {
+		t.AccessList = *dec.AccessList
+	}
 	if dec.BlobVersionedHashes != nil {
 		t.BlobVersionedHashes = dec.BlobVersionedHashes
 	}
@@ -193,15 +188,6 @@ func (t *TxDetail) UnmarshalJSON(input []byte) error {
 	if dec.YParity != nil {
 		t.YParity = uint64(*dec.YParity)
 	}
-	if dec.Blobs != nil {
-		t.Blobs = dec.Blobs
-	}
-	if dec.Commitments != nil {
-		t.Commitments = dec.Commitments
-	}
-	if dec.Proofs != nil {
-		t.Proofs = dec.Proofs
-	}
 	if dec.Hash != nil {
 		t.Hash = *dec.Hash
 	}
@@ -211,29 +197,24 @@ func (t *TxDetail) UnmarshalJSON(input []byte) error {
 	if dec.Status != nil {
 		t.Status = uint64(*dec.Status)
 	}
-	if dec.CumulativeGasUsed == nil {
-		return errors.New("missing required field 'cumulativeGasUsed' for TxDetail")
+	if dec.CumulativeGasUsed != nil {
+		t.CumulativeGasUsed = uint64(*dec.CumulativeGasUsed)
 	}
-	t.CumulativeGasUsed = uint64(*dec.CumulativeGasUsed)
-	if dec.Bloom == nil {
-		return errors.New("missing required field 'logsBloom' for TxDetail")
+	if dec.Bloom != nil {
+		t.Bloom = *dec.Bloom
 	}
-	t.Bloom = *dec.Bloom
-	if dec.Logs == nil {
-		return errors.New("missing required field 'logs' for TxDetail")
+	if dec.Logs != nil {
+		t.Logs = dec.Logs
 	}
-	t.Logs = dec.Logs
-	if dec.TxHash == nil {
-		return errors.New("missing required field 'transactionHash' for TxDetail")
+	if dec.TxHash != nil {
+		t.TxHash = *dec.TxHash
 	}
-	t.TxHash = *dec.TxHash
 	if dec.ContractAddress != nil {
 		t.ContractAddress = dec.ContractAddress
 	}
-	if dec.GasUsed == nil {
-		return errors.New("missing required field 'gasUsed' for TxDetail")
+	if dec.GasUsed != nil {
+		t.GasUsed = uint64(*dec.GasUsed)
 	}
-	t.GasUsed = uint64(*dec.GasUsed)
 	if dec.EffectiveGasPrice != nil {
 		t.EffectiveGasPrice = (*big.Int)(dec.EffectiveGasPrice)
 	}

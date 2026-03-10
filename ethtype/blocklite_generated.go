@@ -7,8 +7,7 @@ import (
 	"math/big"
 
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/donutnomad/eths/hexutil"
 )
 
 var _ = (*headerMarshaling)(nil)
@@ -32,10 +31,10 @@ func (l LiteBlock) MarshalJSON() ([]byte, error) {
 		GasUsed          hexutil.Uint64  `json:"gasUsed"`
 		Time             hexutil.Uint64  `json:"timestamp"`
 		Extra            hexutil.Bytes   `json:"extraData"`
-		MixDigest        common.Hash     `json:"mixHash"`
+		MixDigest        ecommon.Hash    `json:"mixHash"`
 		Nonce            BlockNonce      `json:"nonce"`
 		BaseFee          *hexutil.Big    `json:"baseFeePerGas" rlp:"optional"`
-		WithdrawalsHash  *common.Hash    `json:"withdrawalsRoot" rlp:"optional"`
+		WithdrawalsHash  *ecommon.Hash   `json:"withdrawalsRoot" rlp:"optional"`
 		BlobGasUsed      *hexutil.Uint64 `json:"blobGasUsed" rlp:"optional"`
 		ExcessBlobGas    *hexutil.Uint64 `json:"excessBlobGas" rlp:"optional"`
 		ParentBeaconRoot *ecommon.Hash   `json:"parentBeaconBlockRoot" rlp:"optional"`
@@ -98,10 +97,10 @@ func (l *LiteBlock) UnmarshalJSON(input []byte) error {
 		GasUsed          *hexutil.Uint64  `json:"gasUsed"`
 		Time             *hexutil.Uint64  `json:"timestamp"`
 		Extra            *hexutil.Bytes   `json:"extraData"`
-		MixDigest        *common.Hash     `json:"mixHash"`
+		MixDigest        *ecommon.Hash    `json:"mixHash"`
 		Nonce            *BlockNonce      `json:"nonce"`
 		BaseFee          *hexutil.Big     `json:"baseFeePerGas" rlp:"optional"`
-		WithdrawalsHash  *common.Hash     `json:"withdrawalsRoot" rlp:"optional"`
+		WithdrawalsHash  *ecommon.Hash    `json:"withdrawalsRoot" rlp:"optional"`
 		BlobGasUsed      *hexutil.Uint64  `json:"blobGasUsed" rlp:"optional"`
 		ExcessBlobGas    *hexutil.Uint64  `json:"excessBlobGas" rlp:"optional"`
 		ParentBeaconRoot *ecommon.Hash    `json:"parentBeaconBlockRoot" rlp:"optional"`

@@ -9,11 +9,8 @@ import (
 	"strings"
 
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/hexutil"
 )
-
-type AccessList = types.AccessList
 
 // A BlockNonce is a 64-bit hash which proves (combined with the
 // mix-hash) that a sufficient amount of computation has been carried

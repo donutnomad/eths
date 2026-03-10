@@ -17,9 +17,37 @@
 package ethtype
 
 import (
+	"hash"
+
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/ethereum/go-ethereum/crypto"
+	"golang.org/x/crypto/sha3"
 )
+
+// KeccakState wraps sha3.state. In addition to the usual hash methods, it also supports
+// Read to get a variable amount of data from the hash state. Read is faster than Sum
+// because it doesn't copy the internal state, but also modifies the internal state.
+type KeccakState interface {
+	hash.Hash
+	Read([]byte) (int, error)
+}
+
+// NewKeccakState creates a new KeccakState
+func NewKeccakState() KeccakState {
+	return sha3.NewLegacyKeccak256().(KeccakState)
+}
+
+// Keccak256Hash calculates and returns the Keccak256 hash of the input data,
+// converting it to an internal Hash data structure.
+func Keccak256Hash(data ...[]byte) (h ecommon.Hash) {
+	d := hasherPool.Get().(KeccakState)
+	d.Reset()
+	for _, b := range data {
+		d.Write(b)
+	}
+	d.Read(h[:])
+	hasherPool.Put(d)
+	return h
+}
 
 var (
 	// EmptyRootHash is the known root hash of an empty merkle trie.
@@ -29,7 +57,7 @@ var (
 	EmptyUncleHash = ecommon.HexToHash("1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347")
 
 	// EmptyCodeHash is the known hash of the empty EVM bytecode.
-	EmptyCodeHash = crypto.Keccak256Hash(nil) // c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+	EmptyCodeHash = Keccak256Hash(nil) // c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 
 	// EmptyTxsHash is the known hash of the empty transaction set.
 	EmptyTxsHash = ecommon.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")

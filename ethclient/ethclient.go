@@ -28,8 +28,8 @@ import (
 
 	"github.com/donutnomad/eths/ecommon"
 	"github.com/donutnomad/eths/ethtype"
+	"github.com/donutnomad/eths/hexutil"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/samber/lo"
@@ -340,12 +340,7 @@ func (ec *Client) TransactionByHash(ctx context.Context, hash ecommon.Hash) (tx 
 		return nil, false, err
 	} else if json == nil {
 		return nil, false, ethereum.NotFound
-	} else if _, r, _ := json.tx.RawSignatureValues(); r == nil {
-		return nil, false, errors.New("server returned transaction without signature")
 	}
-	//if json.From != nil && json.BlockHash != nil {
-	//	setSenderFromServer(json.tx, *json.From, *json.BlockHash)
-	//}
 	return json.tx, json.BlockNumber == nil, nil
 }
 
@@ -368,12 +363,7 @@ func (ec *Client) TransactionInBlock(ctx context.Context, blockHash ecommon.Hash
 	}
 	if json == nil {
 		return nil, ethereum.NotFound
-	} else if _, r, _ := json.tx.RawSignatureValues(); r == nil {
-		return nil, errors.New("server returned transaction without signature")
 	}
-	//if json.From != nil && json.BlockHash != nil {
-	//	setSenderFromServer(json.tx, *json.From, *json.BlockHash)
-	//}
 	return json.tx, err
 }
 

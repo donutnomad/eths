@@ -7,8 +7,7 @@ import (
 	"math/big"
 
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto/kzg4844"
+	"github.com/donutnomad/eths/hexutil"
 )
 
 var _ = (*txMarshaling)(nil)
@@ -28,15 +27,13 @@ func (t Tx) MarshalJSON() ([]byte, error) {
 		MaxFeePerBlobGas     *hexutil.Big           `json:"maxFeePerBlobGas,omitempty"`
 		Value                *hexutil.Big           `json:"value"`
 		Input                hexutil.Bytes          `json:"input"`
+		AccessList           AccessList             `json:"accessList,omitempty"`
 		BlobVersionedHashes  []ecommon.Hash         `json:"blobVersionedHashes,omitempty"`
 		AuthorizationList    []SetCodeAuthorization `json:"authorizationList,omitempty"`
 		V                    *hexutil.Big           `json:"v"`
 		R                    *hexutil.Big           `json:"r"`
 		S                    *hexutil.Big           `json:"s"`
 		YParity              hexutil.Uint64         `json:"yParity,omitempty"`
-		Blobs                []kzg4844.Blob         `json:"blobs,omitempty"`
-		Commitments          []kzg4844.Commitment   `json:"commitments,omitempty"`
-		Proofs               []kzg4844.Proof        `json:"proofs,omitempty"`
 		Hash                 ecommon.Hash           `json:"hash"`
 	}
 	var enc Tx
@@ -52,15 +49,13 @@ func (t Tx) MarshalJSON() ([]byte, error) {
 	enc.MaxFeePerBlobGas = (*hexutil.Big)(t.MaxFeePerBlobGas)
 	enc.Value = (*hexutil.Big)(t.Value)
 	enc.Input = t.Input
+	enc.AccessList = t.AccessList
 	enc.BlobVersionedHashes = t.BlobVersionedHashes
 	enc.AuthorizationList = t.AuthorizationList
 	enc.V = (*hexutil.Big)(t.V)
 	enc.R = (*hexutil.Big)(t.R)
 	enc.S = (*hexutil.Big)(t.S)
 	enc.YParity = hexutil.Uint64(t.YParity)
-	enc.Blobs = t.Blobs
-	enc.Commitments = t.Commitments
-	enc.Proofs = t.Proofs
 	enc.Hash = t.Hash
 	return json.Marshal(&enc)
 }
@@ -80,15 +75,13 @@ func (t *Tx) UnmarshalJSON(input []byte) error {
 		MaxFeePerBlobGas     *hexutil.Big           `json:"maxFeePerBlobGas,omitempty"`
 		Value                *hexutil.Big           `json:"value"`
 		Input                *hexutil.Bytes         `json:"input"`
+		AccessList           *AccessList            `json:"accessList,omitempty"`
 		BlobVersionedHashes  []ecommon.Hash         `json:"blobVersionedHashes,omitempty"`
 		AuthorizationList    []SetCodeAuthorization `json:"authorizationList,omitempty"`
 		V                    *hexutil.Big           `json:"v"`
 		R                    *hexutil.Big           `json:"r"`
 		S                    *hexutil.Big           `json:"s"`
 		YParity              *hexutil.Uint64        `json:"yParity,omitempty"`
-		Blobs                []kzg4844.Blob         `json:"blobs,omitempty"`
-		Commitments          []kzg4844.Commitment   `json:"commitments,omitempty"`
-		Proofs               []kzg4844.Proof        `json:"proofs,omitempty"`
 		Hash                 *ecommon.Hash          `json:"hash"`
 	}
 	var dec Tx
@@ -131,6 +124,9 @@ func (t *Tx) UnmarshalJSON(input []byte) error {
 	if dec.Input != nil {
 		t.Input = *dec.Input
 	}
+	if dec.AccessList != nil {
+		t.AccessList = *dec.AccessList
+	}
 	if dec.BlobVersionedHashes != nil {
 		t.BlobVersionedHashes = dec.BlobVersionedHashes
 	}
@@ -148,15 +144,6 @@ func (t *Tx) UnmarshalJSON(input []byte) error {
 	}
 	if dec.YParity != nil {
 		t.YParity = uint64(*dec.YParity)
-	}
-	if dec.Blobs != nil {
-		t.Blobs = dec.Blobs
-	}
-	if dec.Commitments != nil {
-		t.Commitments = dec.Commitments
-	}
-	if dec.Proofs != nil {
-		t.Proofs = dec.Proofs
 	}
 	if dec.Hash != nil {
 		t.Hash = *dec.Hash

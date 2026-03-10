@@ -4,8 +4,7 @@ import (
 	"math/big"
 
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/donutnomad/eths/hexutil"
 )
 
 // Header represents a block header in the Ethereum blockchain.
@@ -25,14 +24,14 @@ type Header struct {
 	GasUsed     uint64       `json:"gasUsed"`
 	Time        uint64       `json:"timestamp"`
 	Extra       []byte       `json:"extraData"`
-	MixDigest   common.Hash  `json:"mixHash"`
+	MixDigest   ecommon.Hash `json:"mixHash"`
 	Nonce       BlockNonce   `json:"nonce"`
 
 	// BaseFee was added by EIP-1559 and is ignored in legacy headers.
 	BaseFee *big.Int `json:"baseFeePerGas" rlp:"optional"`
 
 	// WithdrawalsHash was added by EIP-4895 and is ignored in legacy headers.
-	WithdrawalsHash *common.Hash `json:"withdrawalsRoot" rlp:"optional"`
+	WithdrawalsHash *ecommon.Hash `json:"withdrawalsRoot" rlp:"optional"`
 
 	// BlobGasUsed was added by EIP-4844 and is ignored in legacy headers.
 	BlobGasUsed *uint64 `json:"blobGasUsed" rlp:"optional"`

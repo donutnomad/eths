@@ -22,14 +22,13 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common/bitutil"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/donutnomad/eths/bitutil"
+	"github.com/donutnomad/eths/hexutil"
 )
 
 // hasherPool holds LegacyKeccak256 buffer for rlpHash.
 var hasherPool = sync.Pool{
-	New: func() interface{} { return crypto.NewKeccakState() },
+	New: func() any { return NewKeccakState() },
 }
 
 type bytesBacked interface {
@@ -147,7 +146,7 @@ func Bloom9(data []byte) []byte {
 
 // bloomValues returns the bytes (index-value pairs) to set for the given data
 func bloomValues(data []byte, hashbuf *[6]byte) (uint, byte, uint, byte, uint, byte) {
-	sha := hasherPool.Get().(crypto.KeccakState)
+	sha := hasherPool.Get().(KeccakState)
 	sha.Reset()
 	sha.Write(data)
 	sha.Read(hashbuf[:])

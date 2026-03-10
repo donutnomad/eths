@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/donutnomad/eths/hexutil"
 )
 
 var _ = (*simulateCallResultMarshaling)(nil)
