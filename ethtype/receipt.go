@@ -36,6 +36,10 @@ type TxReceipt struct {
 	TransactionIndex uint         `json:"transactionIndex"`
 }
 
+func (t TxReceipt) IsSuccess() bool {
+	return t.Status == 1
+}
+
 type receiptMarshaling struct {
 	Type              hexutil.Uint64
 	PostState         hexutil.Bytes
