@@ -214,10 +214,12 @@ def get_go_zero_value(go_type):
         return "nil"
     elif go_type == "bool":
         return "false"
-    elif go_type == "uint8":
+    elif go_type in ["uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64"]:
         return "0"
     elif go_type == "string":
         return "\"\""
+    elif go_type.startswith("[]"):
+        return "nil"
     elif re.match(r'\[\d+\]', go_type):
         # 固定长度数组类型，如 [32]byte, [64]uint8
         return f"{go_type}{{}}"
@@ -245,13 +247,13 @@ def generate_unpack_input_method(method, struct_name, receiver_var):
     method_name = f"UnpackInput{method['pack_method_name']}"
     abi_method_name = method['abi_method_name']
     go_params = method['go_params']
-    
+
     code_lines = [
         f"// {method_name} unpacks the input data for the {abi_method_name} method.",
         f"//",
         f"// Solidity: function {method['solidity_signature']}",
     ]
-    
+
     # 构建函数签名
     if go_params:
         # 有参数
@@ -264,10 +266,10 @@ def generate_unpack_input_method(method, struct_name, receiver_var):
                 adjusted_params.append({'name': p['name'], 'type': f"*{param_type}"})
             else:
                 adjusted_params.append(p)
-        
+
         return_params = ", ".join([f"{p['name']} {p['type']}" for p in adjusted_params])
         zero_values = ", ".join([get_go_zero_value(p['type']) for p in adjusted_params])
-        
+
         code_lines.append(f"func ({receiver_var} *{struct_name}) {method_name}(callData []byte) ({return_params}, err error) {{")
         code_lines.append(f"\tmethod, ok := {receiver_var}.abi.Methods[\"{abi_method_name}\"]")
         code_lines.append(f"\tif !ok {{")
@@ -280,20 +282,20 @@ def generate_unpack_input_method(method, struct_name, receiver_var):
         code_lines.append(f"\tif err != nil {{")
         code_lines.append(f"\t\treturn {zero_values}, err")
         code_lines.append(f"\t}}")
-        
+
         # 生成参数解析代码
         for i, param in enumerate(adjusted_params):
             param_name = param['name']
             param_type = param['type']
-            
+
             if param_type == "common.Address":
                 code_lines.append(f"\t{param_name} = *abi.ConvertType(arguments[{i}], new(common.Address)).(*common.Address)")
             elif param_type == "*big.Int":
                 code_lines.append(f"\t{param_name} = abi.ConvertType(arguments[{i}], new(big.Int)).(*big.Int)")
             elif param_type == "bool":
                 code_lines.append(f"\t{param_name} = *abi.ConvertType(arguments[{i}], new(bool)).(*bool)")
-            elif param_type == "uint8":
-                code_lines.append(f"\t{param_name} = *abi.ConvertType(arguments[{i}], new(uint8)).(*uint8)")
+            elif param_type in ["uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64"]:
+                code_lines.append(f"\t{param_name} = *abi.ConvertType(arguments[{i}], new({param_type})).(*{param_type})")
             elif param_type == "string":
                 code_lines.append(f"\t{param_name} = *abi.ConvertType(arguments[{i}], new(string)).(*string)")
             elif param_type == "[]byte":
@@ -308,7 +310,7 @@ def generate_unpack_input_method(method, struct_name, receiver_var):
             else:
                 # 默认处理
                 code_lines.append(f"\t{param_name} = abi.ConvertType(arguments[{i}], new({param_type})).({param_type})")
-        
+
         code_lines.append(f"\treturn {', '.join([p['name'] for p in adjusted_params])}, nil")
     else:
         # 无参数
@@ -321,33 +323,33 @@ def generate_unpack_input_method(method, struct_name, receiver_var):
         code_lines.append(f"\t\treturn errors.New(\"method signature mismatch\")")
         code_lines.append(f"\t}}")
         code_lines.append(f"\treturn nil")
-    
+
     code_lines.append("}")
-    
+
     return "\n".join(code_lines)
 
 
 def generate_unpack_input_methods(pack_methods, struct_name, receiver_var):
     """生成所有UnpackInputXXX方法"""
     code_lines = []
-    
+
     for method in pack_methods:
         code_lines.append(generate_unpack_input_method(method, struct_name, receiver_var))
         code_lines.append("")
-    
+
     return "\n".join(code_lines[:-1])  # 去除最后一个空行
 
 
 def generate_method_id_methods(pack_methods, struct_name, receiver_var):
     """生成函数MethodID方法"""
     code_lines = []
-    
+
     for method in pack_methods:
         method_name = f"{method['pack_method_name']}MethodID"
-        
+
         # 提取methodID的后8位（去掉0x前缀）
         method_id_hex = method['method_id'][2:]  # 去掉0x
-        
+
         code_lines.extend([
             f"// {method_name} returns the method ID for {method['abi_method_name']} ({method['method_id']}).",
             f"//",
@@ -357,25 +359,25 @@ def generate_method_id_methods(pack_methods, struct_name, receiver_var):
             f"}}",
             ""
         ])
-    
+
     return "\n".join(code_lines[:-1])  # 去除最后一个空行
 
 
 def generate_event_topic0_methods(methods, struct_name):
     """生成事件Topic0方法"""
     code_lines = []
-    
+
     for method in methods:
         # 清理Solidity签名
         cleaned_signature = clean_solidity_signature(method['solidity_signature'])
-        
+
         # 计算topic0 hash
         topic0_hash = calculate_topic0_hash(cleaned_signature)
         if topic0_hash is None:
             continue
-            
+
         method_name = f"{struct_name}{method['struct_prefix']}Topic0"
-        
+
         code_lines.extend([
             f"// {method_name} returns the hash of the event signature.",
             f"//",
@@ -385,25 +387,25 @@ def generate_event_topic0_methods(methods, struct_name):
             f"}}",
             ""
         ])
-    
+
     return "\n".join(code_lines[:-1])  # 去除最后一个空行
 
 
 def generate_struct_topic0_methods(methods, struct_name):
     """生成结构体的Topic0方法"""
     code_lines = []
-    
+
     for method in methods:
         # 清理Solidity签名
         cleaned_signature = clean_solidity_signature(method['solidity_signature'])
-        
+
         # 计算topic0 hash
         topic0_hash = calculate_topic0_hash(cleaned_signature)
         if topic0_hash is None:
             continue
-            
+
         struct_type = method['return_type']  # 例如: T2AuthorizedSignerUpdated
-        
+
         code_lines.extend([
             f"// Topic0 returns the hash of the event signature.",
             f"//",
@@ -413,7 +415,7 @@ def generate_struct_topic0_methods(methods, struct_name):
             f"}}",
             ""
         ])
-    
+
     return "\n".join(code_lines[:-1])  # 去除最后一个空行
 
 
@@ -422,56 +424,56 @@ def check_existing_methods(content, struct_name, receiver_var):
     # 检查UnpackEvent方法（需要匹配多行返回类型）
     unpack_pattern = rf'// UnpackEvent unpacks event log based on topic0\.\s*^func \({re.escape(receiver_var)} \*{re.escape(struct_name)}\) UnpackEvent\(log \*types\.Log\).*?^\}}\s*$'
     unpack_match = re.search(unpack_pattern, content, re.DOTALL | re.MULTILINE)
-    
+
     # 检查Topic0方法区域（从第一个Topic0方法开始到最后一个结束）
     topic0_pattern = rf'// {re.escape(struct_name)}\w+Topic0 returns.*?^func {re.escape(struct_name)}\w+Topic0\(\).*?^}}'
     topic0_matches = list(re.finditer(topic0_pattern, content, re.DOTALL | re.MULTILINE))
-    
+
     # 检查MethodID方法区域
     methodid_pattern = rf'// \w+MethodID returns.*?^func \({re.escape(receiver_var)} \*{re.escape(struct_name)}\) \w+MethodID\(\).*?^}}'
     methodid_matches = list(re.finditer(methodid_pattern, content, re.DOTALL | re.MULTILINE))
-    
+
     # 检查结构体Topic0方法区域
     struct_topic0_pattern = rf'// Topic0 returns the hash of the event signature\.\s*//\s*// Solidity: event.*?^func \({re.escape(struct_name)}\w+\) Topic0\(\).*?^}}'
     struct_topic0_matches = list(re.finditer(struct_topic0_pattern, content, re.DOTALL | re.MULTILINE))
-    
+
     # 检查UnpackInputXXX方法区域
     unpack_input_pattern = rf'// UnpackInput\w+ unpacks the input data.*?^func \({re.escape(receiver_var)} \*{re.escape(struct_name)}\) UnpackInput\w+\(callData \[\]byte\).*?^}}'
     unpack_input_matches = list(re.finditer(unpack_input_pattern, content, re.DOTALL | re.MULTILINE))
-    
+
     unpack_pos = None
     topic0_pos = None
     methodid_pos = None
     struct_topic0_pos = None
     unpack_input_pos = None
-    
+
     if unpack_match:
         unpack_pos = (unpack_match.start(), unpack_match.end())
-    
+
     if topic0_matches:
         # 找到所有Topic0方法的范围
         first_start = topic0_matches[0].start()
         last_end = topic0_matches[-1].end()
         topic0_pos = (first_start, last_end)
-    
+
     if methodid_matches:
         # 找到所有MethodID方法的范围
         first_start = methodid_matches[0].start()
         last_end = methodid_matches[-1].end()
         methodid_pos = (first_start, last_end)
-    
+
     if struct_topic0_matches:
         # 找到所有结构体Topic0方法的范围
         first_start = struct_topic0_matches[0].start()
         last_end = struct_topic0_matches[-1].end()
         struct_topic0_pos = (first_start, last_end)
-    
+
     if unpack_input_matches:
         # 找到所有UnpackInputXXX方法的范围
         first_start = unpack_input_matches[0].start()
         last_end = unpack_input_matches[-1].end()
         unpack_input_pos = (first_start, last_end)
-    
+
     return unpack_pos, topic0_pos, methodid_pos, struct_topic0_pos, unpack_input_pos
 
 
@@ -483,12 +485,12 @@ def write_methods_to_file(go_file_path, unpack_code, topic0_code, methodid_code,
     except FileNotFoundError:
         print(f"错误：找不到文件 {go_file_path}")
         return False
-    
+
     # 检查已存在的方法
     unpack_pos, topic0_pos, methodid_pos, struct_topic0_pos, unpack_input_pos = check_existing_methods(content, struct_name, receiver_var)
-    
+
     new_content = content
-    
+
     # 处理UnpackEvent方法
     if unpack_pos is not None:
         new_content = new_content[:unpack_pos[0]] + unpack_code + new_content[unpack_pos[1]:]
@@ -499,10 +501,10 @@ def write_methods_to_file(go_file_path, unpack_code, topic0_code, methodid_code,
         else:
             new_content = new_content + '\n' + unpack_code
 #         print("在文件末尾添加UnpackEvent方法...")
-    
+
     # 重新检查位置（因为内容可能已经变化）
     unpack_pos_new, topic0_pos_new, methodid_pos_new, struct_topic0_pos_new, unpack_input_pos_new = check_existing_methods(new_content, struct_name, receiver_var)
-    
+
     # 处理Topic0方法
     if topic0_pos_new is not None:
         new_content = new_content[:topic0_pos_new[0]] + topic0_code + new_content[topic0_pos_new[1]:]
@@ -513,10 +515,10 @@ def write_methods_to_file(go_file_path, unpack_code, topic0_code, methodid_code,
         else:
             new_content = new_content + '\n' + topic0_code
 #         print("在文件末尾添加Topic0方法...")
-    
+
     # 重新检查位置
     unpack_pos_final, topic0_pos_final, methodid_pos_final, struct_topic0_pos_final, unpack_input_pos_final = check_existing_methods(new_content, struct_name, receiver_var)
-    
+
     # 处理MethodID方法
     if methodid_code and methodid_pos_final is not None:
         new_content = new_content[:methodid_pos_final[0]] + methodid_code + new_content[methodid_pos_final[1]:]
@@ -527,10 +529,10 @@ def write_methods_to_file(go_file_path, unpack_code, topic0_code, methodid_code,
         else:
             new_content = new_content + '\n' + methodid_code
 #         print("在文件末尾添加MethodID方法...")
-    
+
     # 再次检查位置
     unpack_pos_temp, topic0_pos_temp, methodid_pos_temp, struct_topic0_pos_temp, unpack_input_pos_temp = check_existing_methods(new_content, struct_name, receiver_var)
-    
+
     # 处理UnpackInputXXX方法
     if unpack_input_code and unpack_input_pos_temp is not None:
         new_content = new_content[:unpack_input_pos_temp[0]] + unpack_input_code + new_content[unpack_input_pos_temp[1]:]
@@ -541,10 +543,10 @@ def write_methods_to_file(go_file_path, unpack_code, topic0_code, methodid_code,
         else:
             new_content = new_content + '\n' + unpack_input_code
 #         print("在文件末尾添加UnpackInput方法...")
-    
+
     # 最后检查位置
     unpack_pos_last, topic0_pos_last, methodid_pos_last, struct_topic0_pos_last, unpack_input_pos_last = check_existing_methods(new_content, struct_name, receiver_var)
-    
+
     # 处理结构体Topic0方法
     if struct_topic0_code and struct_topic0_pos_last is not None:
         new_content = new_content[:struct_topic0_pos_last[0]] + struct_topic0_code + new_content[struct_topic0_pos_last[1]:]
@@ -555,7 +557,7 @@ def write_methods_to_file(go_file_path, unpack_code, topic0_code, methodid_code,
         else:
             new_content = new_content + '\n' + struct_topic0_code
 #         print("在文件末尾添加结构体Topic0方法...")
-    
+
     try:
         with open(go_file_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
@@ -569,31 +571,31 @@ def main():
     if len(sys.argv) != 2:
         print("用法: python3 generate_unpack_event.py <go_file_path>")
         sys.exit(1)
-    
+
     go_file_path = sys.argv[1]
-    
+
 #     print(f"正在分析文件: {go_file_path}")
-    
+
     # 提取UnpackXXXEvent方法
     unpack_methods, struct_prefix = extract_unpack_methods(go_file_path)
-    
+
     if not unpack_methods:
         print("未找到任何UnpackXXXEvent方法")
         sys.exit(1)
-    
+
     # 获取结构体信息
     struct_name = unpack_methods[0]['struct_name']
     receiver_var = unpack_methods[0]['receiver_var']
-    
+
 #     print(f"检测到结构体: {struct_name}, 接收器变量: {receiver_var}")
 #     print(f"找到 {len(unpack_methods)} 个UnpackXXXEvent方法:")
 #     for method in unpack_methods:
 #         print(f"  - {method['method_name']} -> {method['return_type']} (event: {method['event_name']})")
 #         print(f"    Solidity: {method['solidity_signature']}")
-    
+
     # 提取PackXXX方法
     pack_methods = extract_pack_methods(go_file_path, struct_name, receiver_var)
-    
+
 #     if pack_methods:
 #         print(f"\n找到 {len(pack_methods)} 个PackXXX方法:")
 #         for method in pack_methods:
@@ -602,37 +604,37 @@ def main():
 #             print(f"    Go参数: {method['go_params']}")
 #     else:
 #         print("\n未找到任何PackXXX方法")
-    
+
     # 生成UnpackEvent代码
     unpack_code = generate_unpack_event(unpack_methods, struct_name, receiver_var)
-    
+
     # 生成Topic0方法代码
 #     print("\n正在生成Topic0方法...")
     topic0_code = generate_event_topic0_methods(unpack_methods, struct_name)
-    
+
     # 生成MethodID方法代码
     methodid_code = ""
     if pack_methods:
 #         print("正在生成MethodID方法...")
         methodid_code = generate_method_id_methods(pack_methods, struct_name, receiver_var)
-    
+
     # 生成UnpackInputXXX方法代码
     unpack_input_code = ""
     if pack_methods:
 #         print("正在生成UnpackInput方法...")
         unpack_input_code = generate_unpack_input_methods(pack_methods, struct_name, receiver_var)
-    
+
     # 生成结构体Topic0方法代码
 #     print("正在生成结构体Topic0方法...")
     struct_topic0_code = generate_struct_topic0_methods(unpack_methods, struct_name)
-    
+
     # 写入到原文件
     if write_methods_to_file(go_file_path, unpack_code, topic0_code, methodid_code, struct_topic0_code, unpack_input_code, struct_name, receiver_var):
         print(f"\n✓ 所有方法已成功写入到 {go_file_path}")
     else:
         print("\n✗ 写入文件失败")
         sys.exit(1)
-    
+
 #     print("\n生成的UnpackEvent代码:")
 #     print("=" * 50)
 #     print(unpack_code)
@@ -642,7 +644,7 @@ def main():
 #     print("=" * 50)
 #     print(topic0_code)
 #     print("=" * 50)
-    
+
 #     if methodid_code:
 #         print("\n生成的MethodID方法代码:")
 #         print("=" * 50)
