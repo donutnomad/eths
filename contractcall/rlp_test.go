@@ -2,7 +2,10 @@ package contractcall
 
 import (
 	"fmt"
+	"go/parser"
+	"go/token"
 	"math/big"
+	"strconv"
 	"testing"
 
 	"github.com/donutnomad/blockchain-alg/xecdsa"
@@ -10,6 +13,25 @@ import (
 	"github.com/donutnomad/eths/crypto"
 	"github.com/holiman/uint256"
 )
+
+func TestPrefixedRlpHashUsesGoSHA3(t *testing.T) {
+	file, err := parser.ParseFile(token.NewFileSet(), "rlp.go", nil, parser.ImportsOnly)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, importSpec := range file.Imports {
+		importPath, err := strconv.Unquote(importSpec.Path.Value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if importPath == "golang.org/x/crypto/sha3" {
+			return
+		}
+	}
+
+	t.Fatal("PrefixedRlpHash should import golang.org/x/crypto/sha3")
+}
 
 func TestRlp(t *testing.T) {
 	x := xecdsa.Secp256k1.Curve().Params().N

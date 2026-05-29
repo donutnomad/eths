@@ -1,29 +1,31 @@
 package contractcall
 
 import (
+	"hash"
 	"sync"
 
 	"github.com/donutnomad/eths/common"
-	"github.com/donutnomad/eths/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+	"golang.org/x/crypto/sha3"
 )
 
-// hasherPool holds LegacyKeccak256 buffer for rlpHash.
+// hasherPool holds LegacyKeccak256 buffers for RLP hashing.
 var hasherPool = sync.Pool{
-	New: func() any { return crypto.NewKeccakState() },
+	New: func() any { return sha3.NewLegacyKeccak256() },
 }
 
 // PrefixedRlpHash writes the prefix into the hasher before rlp-encoding x.
 // It's used for typed transactions.
 func PrefixedRlpHash(prefix []byte, x any) (h common.Hash) {
-	sha := hasherPool.Get().(crypto.KeccakState)
+	sha := hasherPool.Get().(hash.Hash)
 	defer hasherPool.Put(sha)
 	sha.Reset()
 	if len(prefix) > 0 {
 		sha.Write(prefix)
 	}
 	rlp.Encode(sha, x)
-	sha.Read(h[:])
+	sum := sha.Sum(h[:0])
+	copy(h[:], sum)
 	return h
 }
 
