@@ -2,7 +2,6 @@ package ethtype
 
 import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
 //go:generate bash ../internal/gencodec/run.sh -type Header -field-override headerMarshaling -out header_generated.go
@@ -38,5 +37,4 @@ func NewTx(inner ethTypes.TxData) *ETransaction {
 	return ethTypes.NewTx(inner)
 }
 
-type TypedDataDomain = apitypes.TypedDataDomain
-type TypedDataType = apitypes.Type
+type TypedDataType = Type

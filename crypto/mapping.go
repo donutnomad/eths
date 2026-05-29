@@ -8,9 +8,10 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	secp256k1ecdsa "github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/common/math"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 )
@@ -65,7 +66,23 @@ func ValidateSignatureValues(v byte, r, s *big.Int, homestead bool) bool {
 
 // Ecrecover returns the uncompressed public key that created the given signature.
 func Ecrecover(hash, sig []byte) ([]byte, error) {
-	return secp256k1.RecoverPubkey(hash, sig)
+	if len(hash) != 32 {
+		return nil, fmt.Errorf("hash is required to be exactly %d bytes (%d)", 32, len(hash))
+	}
+	if len(sig) != SignatureLength {
+		return nil, fmt.Errorf("signature is required to be exactly %d bytes (%d)", SignatureLength, len(sig))
+	}
+
+	compactSig := make([]byte, SignatureLength)
+	compactSig[0] = sig[64] + 27
+	copy(compactSig[1:33], sig[:32])
+	copy(compactSig[33:], sig[32:64])
+
+	pub, _, err := secp256k1ecdsa.RecoverCompact(compactSig, hash)
+	if err != nil {
+		return nil, err
+	}
+	return pub.SerializeUncompressed(), nil
 }
 
 // Sign calculates an ECDSA signature.
@@ -84,12 +101,22 @@ func Sign(digestHash []byte, prv *ecdsa.PrivateKey) (sig []byte, err error) {
 	defer func() {
 		clear(seckey)
 	}()
-	return secp256k1.Sign(digestHash, seckey)
+	key := secp256k1.PrivKeyFromBytes(seckey)
+	compactSig := secp256k1ecdsa.SignCompact(key, digestHash, false)
+
+	sig = make([]byte, SignatureLength)
+	copy(sig[:64], compactSig[1:])
+	sig[64] = compactSig[0] - 27
+	return sig, nil
 }
 
 // GenerateKey generates a new private key.
 func GenerateKey() (*ecdsa.PrivateKey, error) {
-	return ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	key, err := secp256k1.GeneratePrivateKeyFromRand(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	return key.ToECDSA(), nil
 }
 
 // CreateAddress creates an ethereum address given the bytes and the nonce

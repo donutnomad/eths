@@ -7,6 +7,7 @@ import (
 )
 
 type Address = common.Address
+type MixedcaseAddress = common.MixedcaseAddress
 type Hash = common.Hash
 
 var Big1 = common.Big1
@@ -20,6 +21,9 @@ var MaxHash = common.MaxHash
 var MaxAddress = common.MaxAddress
 
 func HexToAddress(s string) Address { return common.HexToAddress(s) }
+func IsHexAddress(s string) bool {
+	return common.IsHexAddress(s)
+}
 
 // Bytes2Hex returns the hexadecimal encoding of d.
 func Bytes2Hex(d []byte) string {

@@ -11,7 +11,6 @@ import (
 	rpc "github.com/donutnomad/eths/ethrpc"
 	"github.com/donutnomad/eths/ethtype"
 	"github.com/donutnomad/eths/hexutil"
-	"github.com/ethereum/go-ethereum"
 )
 
 const sepoliaRPC = "https://ethereum-sepolia-rpc.publicnode.com"
@@ -173,8 +172,8 @@ func TestHeaderByNumber_NotFound_Sepolia(t *testing.T) {
 	defer cancel()
 
 	_, err := ec.HeaderByNumber(ctx, big.NewInt(0x7fffffffffffffff))
-	if err != ethereum.NotFound {
-		t.Fatalf("expected ethereum.NotFound, got %v", err)
+	if err != NotFound {
+		t.Fatalf("expected NotFound, got %v", err)
 	}
 }
 
@@ -238,8 +237,8 @@ func TestLiteBlockByNumber_NotFound_Sepolia(t *testing.T) {
 	defer cancel()
 
 	_, err := ec.LiteBlockByNumber(ctx, big.NewInt(0x7fffffffffffffff))
-	if err != ethereum.NotFound {
-		t.Fatalf("expected ethereum.NotFound, got %v", err)
+	if err != NotFound {
+		t.Fatalf("expected NotFound, got %v", err)
 	}
 }
 
@@ -297,8 +296,8 @@ func TestBlockByNumber_NotFound_Sepolia(t *testing.T) {
 	defer cancel()
 
 	_, err := ec.BlockByNumber(ctx, big.NewInt(0x7fffffffffffffff))
-	if err != ethereum.NotFound {
-		t.Fatalf("expected ethereum.NotFound, got %v", err)
+	if err != NotFound {
+		t.Fatalf("expected NotFound, got %v", err)
 	}
 }
 
@@ -338,8 +337,8 @@ func TestTransactionByHash_NotFound_Sepolia(t *testing.T) {
 	defer cancel()
 
 	_, _, err := ec.TransactionByHash(ctx, fakeHash)
-	if err != ethereum.NotFound {
-		t.Fatalf("expected ethereum.NotFound, got %v", err)
+	if err != NotFound {
+		t.Fatalf("expected NotFound, got %v", err)
 	}
 }
 
@@ -391,8 +390,8 @@ func TestTransactionInBlock_NotFound_Sepolia(t *testing.T) {
 	defer cancel()
 
 	_, err := ec.TransactionInBlock(ctx, knownBlockHash, 9999)
-	if err != ethereum.NotFound {
-		t.Fatalf("expected ethereum.NotFound, got %v", err)
+	if err != NotFound {
+		t.Fatalf("expected NotFound, got %v", err)
 	}
 }
 
@@ -438,8 +437,8 @@ func TestTransactionReceipt_NotFound_Sepolia(t *testing.T) {
 	defer cancel()
 
 	_, err := ec.TransactionReceipt(ctx, fakeHash)
-	if err != ethereum.NotFound {
-		t.Fatalf("expected ethereum.NotFound, got %v", err)
+	if err != NotFound {
+		t.Fatalf("expected NotFound, got %v", err)
 	}
 }
 
@@ -748,7 +747,7 @@ func TestEstimateGas_Sepolia(t *testing.T) {
 
 	to := common.HexToAddress("0x0000000000000000000000000000000000000001")
 	sender := knownTxSender.To()
-	gas, err := ec.EstimateGas(ctx, ethereum.CallMsg{
+	gas, err := ec.EstimateGas(ctx, CallMsg{
 		From:  sender,
 		To:    &to,
 		Value: big.NewInt(0),
@@ -775,7 +774,7 @@ func TestCallContract_Sepolia(t *testing.T) {
 	// Call ERC-20 totalSupply() = 0x18160ddd
 	data := ecommon.FromHex("0x18160ddd")
 	callTo := knownTxTo.To()
-	result, err := ec.CallContract(ctx, ethereum.CallMsg{
+	result, err := ec.CallContract(ctx, CallMsg{
 		To:   &callTo,
 		Data: data,
 	}, nil)

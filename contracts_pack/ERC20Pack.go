@@ -11,7 +11,7 @@ import (
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/abi/bind/v2"
 	"github.com/donutnomad/eths/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethtype"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -20,7 +20,6 @@ var (
 	_ = errors.New
 	_ = big.NewInt
 	_ = common.Big1
-	_ = types.BloomLookup
 	_ = abi.ConvertType
 )
 
@@ -370,7 +369,7 @@ type ERC20Approval struct {
 	Owner   common.Address
 	Spender common.Address
 	Value   *big.Int
-	Raw     *types.Log // Blockchain specific contextual infos
+	Raw     *ethtype.ELog // Blockchain specific contextual infos
 }
 
 const ERC20ApprovalEventName = "Approval"
@@ -384,7 +383,7 @@ func (ERC20Approval) ContractEventName() string {
 // by contract.
 //
 // Solidity: event Approval(address indexed owner, address indexed spender, uint256 value)
-func (eRC20 *ERC20) UnpackApprovalEvent(log *types.Log) (*ERC20Approval, error) {
+func (eRC20 *ERC20) UnpackApprovalEvent(log *ethtype.ELog) (*ERC20Approval, error) {
 	event := "Approval"
 	if len(log.Topics) == 0 || log.Topics[0] != eRC20.abi.Events[event].ID {
 		return nil, errors.New("event signature mismatch")
@@ -413,7 +412,7 @@ type ERC20Transfer struct {
 	From  common.Address
 	To    common.Address
 	Value *big.Int
-	Raw   *types.Log // Blockchain specific contextual infos
+	Raw   *ethtype.ELog // Blockchain specific contextual infos
 }
 
 const ERC20TransferEventName = "Transfer"
@@ -427,7 +426,7 @@ func (ERC20Transfer) ContractEventName() string {
 // by contract.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (eRC20 *ERC20) UnpackTransferEvent(log *types.Log) (*ERC20Transfer, error) {
+func (eRC20 *ERC20) UnpackTransferEvent(log *ethtype.ELog) (*ERC20Transfer, error) {
 	event := "Transfer"
 	if len(log.Topics) == 0 || log.Topics[0] != eRC20.abi.Events[event].ID {
 		return nil, errors.New("event signature mismatch")
@@ -624,7 +623,7 @@ func (eRC20 *ERC20) UnpackERC20InvalidSpenderError(raw []byte) (*ERC20ERC20Inval
 }
 
 // UnpackEvent unpacks event log based on topic0.
-func (eRC20 *ERC20) UnpackEvent(log *types.Log) (interface {
+func (eRC20 *ERC20) UnpackEvent(log *ethtype.ELog) (interface {
 	ContractEventName() string
 	Topic0() common.Hash
 }, error) {

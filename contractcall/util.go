@@ -12,10 +12,23 @@ import (
 	"github.com/donutnomad/eths/crypto"
 	"github.com/donutnomad/eths/ethclient"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
+)
+
+// github.com/ethereum/go-ethereum/params
+const (
+	CallNewAccountGas     uint64 = 25000 // Paid for CALL when the destination address didn't exist prior.
+	TxGas                 uint64 = 21000 // Per transaction not creating a contract. NOTE: Not payable on data of calls between transactions.
+	TxGasContractCreation uint64 = 53000 // Per transaction that creates a contract. NOTE: Not payable on data of calls between transactions.
+	TxDataZeroGas         uint64 = 4     // Per byte of data attached to a transaction that equals zero. NOTE: Not payable on data of calls between transactions.
+	InitCodeWordGas       uint64 = 2     // Once per word of the init code when creating a contract.
+
+	TxDataNonZeroGasFrontier  uint64 = 68   // Per byte of data attached to a transaction that is not equal to zero. NOTE: Not payable on data of calls between transactions.
+	TxDataNonZeroGasEIP2028   uint64 = 16   // Per byte of non zero data attached to a transaction after EIP 2028 (part in Istanbul)
+	TxAccessListAddressGas    uint64 = 2400 // Per address specified in EIP 2930 access list
+	TxAccessListStorageKeyGas uint64 = 1900 // Per storage key specified in EIP 2930 access list
 )
 
 func covertGweiToWei(gwei string) *big.Int {
@@ -63,9 +76,9 @@ func IntrinsicGas(data []byte, accessList ethtype.AccessList, authList []ethtype
 	// Set the starting gas for the raw transaction
 	var gas uint64
 	if isContractCreation && isHomestead {
-		gas = params.TxGasContractCreation
+		gas = TxGasContractCreation
 	} else {
-		gas = params.TxGas
+		gas = TxGas
 	}
 	dataLen := uint64(len(data))
 	// Bump the required gas by the amount of transactional data
@@ -75,34 +88,34 @@ func IntrinsicGas(data []byte, accessList ethtype.AccessList, authList []ethtype
 		nz := dataLen - z
 
 		// Make sure we don't exceed uint64 for all data combinations
-		nonZeroGas := params.TxDataNonZeroGasFrontier
+		nonZeroGas := TxDataNonZeroGasFrontier
 		if isEIP2028 {
-			nonZeroGas = params.TxDataNonZeroGasEIP2028
+			nonZeroGas = TxDataNonZeroGasEIP2028
 		}
 		if (math.MaxUint64-gas)/nonZeroGas < nz {
 			return 0, ErrGasUintOverflow
 		}
 		gas += nz * nonZeroGas
 
-		if (math.MaxUint64-gas)/params.TxDataZeroGas < z {
+		if (math.MaxUint64-gas)/TxDataZeroGas < z {
 			return 0, ErrGasUintOverflow
 		}
-		gas += z * params.TxDataZeroGas
+		gas += z * TxDataZeroGas
 
 		if isContractCreation && isEIP3860 {
 			lenWords := toWordSize(dataLen)
-			if (math.MaxUint64-gas)/params.InitCodeWordGas < lenWords {
+			if (math.MaxUint64-gas)/InitCodeWordGas < lenWords {
 				return 0, ErrGasUintOverflow
 			}
-			gas += lenWords * params.InitCodeWordGas
+			gas += lenWords * InitCodeWordGas
 		}
 	}
 	if accessList != nil {
-		gas += uint64(len(accessList)) * params.TxAccessListAddressGas
-		gas += uint64(accessList.StorageKeys()) * params.TxAccessListStorageKeyGas
+		gas += uint64(len(accessList)) * TxAccessListAddressGas
+		gas += uint64(accessList.StorageKeys()) * TxAccessListStorageKeyGas
 	}
 	if authList != nil {
-		gas += uint64(len(authList)) * params.CallNewAccountGas
+		gas += uint64(len(authList)) * CallNewAccountGas
 	}
 	return gas, nil
 }

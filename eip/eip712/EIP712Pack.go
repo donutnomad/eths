@@ -11,7 +11,7 @@ import (
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/abi/bind/v2"
 	"github.com/donutnomad/eths/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethtype"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -20,7 +20,6 @@ var (
 	_ = errors.New
 	_ = big.NewInt
 	_ = common.Big1
-	_ = types.BloomLookup
 	_ = abi.ConvertType
 )
 
@@ -97,7 +96,7 @@ func (eIP712 *EIP712) UnpackEip712Domain(data []byte) (Eip712DomainOutput, error
 
 // EIP712EIP712DomainChanged represents a EIP712DomainChanged event raised by the EIP712 contract.
 type EIP712EIP712DomainChanged struct {
-	Raw *types.Log // Blockchain specific contextual infos
+	Raw *ethtype.ELog // Blockchain specific contextual infos
 }
 
 const EIP712EIP712DomainChangedEventName = "EIP712DomainChanged"
@@ -111,7 +110,7 @@ func (EIP712EIP712DomainChanged) ContractEventName() string {
 // by contract.
 //
 // Solidity: event EIP712DomainChanged()
-func (eIP712 *EIP712) UnpackEIP712DomainChangedEvent(log *types.Log) (*EIP712EIP712DomainChanged, error) {
+func (eIP712 *EIP712) UnpackEIP712DomainChangedEvent(log *ethtype.ELog) (*EIP712EIP712DomainChanged, error) {
 	event := "EIP712DomainChanged"
 	if log.Topics[0] != eIP712.abi.Events[event].ID {
 		return nil, errors.New("event signature mismatch")

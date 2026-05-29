@@ -11,7 +11,6 @@ import (
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/abi/bind/v2"
 	"github.com/donutnomad/eths/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -20,7 +19,6 @@ var (
 	_ = errors.New
 	_ = big.NewInt
 	_ = common.Big1
-	_ = types.BloomLookup
 	_ = abi.ConvertType
 )
 

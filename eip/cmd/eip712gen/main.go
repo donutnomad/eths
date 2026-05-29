@@ -260,7 +260,7 @@ func buildImports(needsHexutil bool, isFullCode bool) string {
 	}
 
 	if isFullCode {
-		imports = append(imports, `"github.com/ethereum/go-ethereum/signer/core/apitypes"`)
+		imports = append(imports, `"github.com/donutnomad/eths/ethtype"`)
 	}
 
 	return strings.Join(imports, "\n\t")
@@ -314,27 +314,27 @@ type {{.StructDef.Name}} struct {
 }
 
 func (data *{{.StructDef.Name}}) ToMessage() map[string]any {
-	return apitypes.TypedDataMessage{
+	return ethtype.TypedDataMessage{
 {{- range .StructDef.Fields}}
 		"{{.JSONTag}}": {{printf .Accessor (printf "data.%s" (.Name | title))}},
 {{- end}}
 	}
 }
 
-func Generate{{.StructDef.Name}}HashWith(contract common.Address, client bind.ContractCaller, data {{.StructDef.Name}}) ([]byte, apitypes.TypedData, error) {
+func Generate{{.StructDef.Name}}HashWith(contract common.Address, client bind.ContractCaller, data {{.StructDef.Name}}) ([]byte, ethtype.TypedData, error) {
 	domain, err := eip712.GetEIP712Domain(contract, client)
 	if err != nil {
-		return nil, apitypes.TypedData{}, err
+		return nil, ethtype.TypedData{}, err
 	}
 	return Generate{{.StructDef.Name}}Hash(*domain, data)
 }
 
-func Generate{{.StructDef.Name}}Hash(domain eip712.Eip712DomainOutput, data {{.StructDef.Name}}) ([]byte, apitypes.TypedData, error) {
+func Generate{{.StructDef.Name}}Hash(domain eip712.Eip712DomainOutput, data {{.StructDef.Name}}) ([]byte, ethtype.TypedData, error) {
 	domainTypes, dataDomain := eip712.GetDomainTypes(domain)
-	typedData := apitypes.TypedData{
-		Types: apitypes.Types{
+	typedData := ethtype.TypedData{
+		Types: ethtype.Types{
 			"EIP712Domain": domainTypes,
-			"{{.StructDef.Name}}": []apitypes.Type{
+			"{{.StructDef.Name}}": []ethtype.Type{
 {{- range .StructDef.Fields}}
 				{Name: "{{.JSONTag}}", Type: "{{.Type}}"},
 {{- end}}
@@ -344,9 +344,9 @@ func Generate{{.StructDef.Name}}Hash(domain eip712.Eip712DomainOutput, data {{.S
 		Domain:      dataDomain,
 		Message: data.ToMessage(),
 	}
-	hash, _, err := apitypes.TypedDataAndHash(typedData)
+	hash, _, err := ethtype.TypedDataAndHash(typedData)
 	if err != nil {
-		return nil, apitypes.TypedData{}, err
+		return nil, ethtype.TypedData{}, err
 	}
 	return hash, typedData, nil
 }

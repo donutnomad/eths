@@ -11,7 +11,7 @@ import (
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/abi/bind/v2"
 	"github.com/donutnomad/eths/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethtype"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -20,7 +20,6 @@ var (
 	_ = errors.New
 	_ = big.NewInt
 	_ = common.Big1
-	_ = types.BloomLookup
 	_ = abi.ConvertType
 )
 
@@ -660,7 +659,7 @@ func (createx *Createx) UnpackDeployCreateClone(data []byte) (common.Address, er
 type CreatexContractCreation struct {
 	NewContract common.Address
 	Salt        [32]byte
-	Raw         *types.Log // Blockchain specific contextual infos
+	Raw         *ethtype.ELog // Blockchain specific contextual infos
 }
 
 const CreatexContractCreationEventName = "ContractCreation"
@@ -674,7 +673,7 @@ func (CreatexContractCreation) ContractEventName() string {
 // by contract.
 //
 // Solidity: event ContractCreation(address indexed newContract, bytes32 indexed salt)
-func (createx *Createx) UnpackContractCreationEvent(log *types.Log) (*CreatexContractCreation, error) {
+func (createx *Createx) UnpackContractCreationEvent(log *ethtype.ELog) (*CreatexContractCreation, error) {
 	event := "ContractCreation"
 	if log.Topics[0] != createx.abi.Events[event].ID {
 		return nil, errors.New("event signature mismatch")
@@ -701,7 +700,7 @@ func (createx *Createx) UnpackContractCreationEvent(log *types.Log) (*CreatexCon
 // CreatexContractCreation0 represents a ContractCreation0 event raised by the Createx contract.
 type CreatexContractCreation0 struct {
 	NewContract common.Address
-	Raw         *types.Log // Blockchain specific contextual infos
+	Raw         *ethtype.ELog // Blockchain specific contextual infos
 }
 
 const CreatexContractCreation0EventName = "ContractCreation0"
@@ -715,7 +714,7 @@ func (CreatexContractCreation0) ContractEventName() string {
 // by contract.
 //
 // Solidity: event ContractCreation(address indexed newContract)
-func (createx *Createx) UnpackContractCreation0Event(log *types.Log) (*CreatexContractCreation0, error) {
+func (createx *Createx) UnpackContractCreation0Event(log *ethtype.ELog) (*CreatexContractCreation0, error) {
 	event := "ContractCreation0"
 	if log.Topics[0] != createx.abi.Events[event].ID {
 		return nil, errors.New("event signature mismatch")
@@ -743,7 +742,7 @@ func (createx *Createx) UnpackContractCreation0Event(log *types.Log) (*CreatexCo
 type CreatexCreate3ProxyContractCreation struct {
 	NewContract common.Address
 	Salt        [32]byte
-	Raw         *types.Log // Blockchain specific contextual infos
+	Raw         *ethtype.ELog // Blockchain specific contextual infos
 }
 
 const CreatexCreate3ProxyContractCreationEventName = "Create3ProxyContractCreation"
@@ -757,7 +756,7 @@ func (CreatexCreate3ProxyContractCreation) ContractEventName() string {
 // by contract.
 //
 // Solidity: event Create3ProxyContractCreation(address indexed newContract, bytes32 indexed salt)
-func (createx *Createx) UnpackCreate3ProxyContractCreationEvent(log *types.Log) (*CreatexCreate3ProxyContractCreation, error) {
+func (createx *Createx) UnpackCreate3ProxyContractCreationEvent(log *ethtype.ELog) (*CreatexCreate3ProxyContractCreation, error) {
 	event := "Create3ProxyContractCreation"
 	if log.Topics[0] != createx.abi.Events[event].ID {
 		return nil, errors.New("event signature mismatch")

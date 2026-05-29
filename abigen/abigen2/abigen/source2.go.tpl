@@ -12,8 +12,8 @@ import (
 	"github.com/donutnomad/eths/contractcall"
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/abi/bind/v2"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/ethtype"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -24,7 +24,6 @@ var (
 	_ = big.NewInt
 	_ = contractcall.SendTxE
 	_ = common.Big1
-	_ = types.BloomLookup
 	_ = abi.ConvertType
 )
 
@@ -220,7 +219,7 @@ type ContractError interface {
 			addr common.Address,
 			tx contractcall.TxOpts,
 			input {{inputtypename $contract.Type .Normalized.Name}},
-		) (*types.Transaction, error) {
+		) (*ethtype.ETransaction, error) {
 			return contractcall.SendTxE(ctx, client, tx.ChainID, tx.Value, m.Pack(input), &addr, tx.Payer, tx.Manager, tx.BeforeSend, tx.NoSend, true, tx.Options...)
 		}
 		{{- else}}
@@ -232,7 +231,7 @@ type ContractError interface {
 			{{- range .Normalized.Inputs}}
 			{{.Name}} {{bindtype .Type $structs}},
 			{{- end}}
-		) (*types.Transaction, error) {
+		) (*ethtype.ETransaction, error) {
 			return contractcall.SendTxE(ctx, client, tx.ChainID, tx.Value, m.Pack({{range .Normalized.Inputs}} {{.Name}}, {{end}}), &addr, tx.Payer, tx.Manager, tx.BeforeSend, tx.NoSend, true, tx.Options...)
 		}
 		{{- end}}
@@ -308,13 +307,13 @@ type ContractError interface {
 			{{ capitalise .Name}}
 			{{- if .Indexed}} {{ bindtopictype .Type $structs}}{{- else}} {{ bindtype .Type $structs}}{{ end }}
 		{{- end}}
-		Raw *types.Log // Blockchain specific contextual infos
+		Raw *ethtype.ELog // Blockchain specific contextual infos
 	}
 
 	const {{eventtypename $contract.Type .Normalized.Name}}Name = "{{.Original.Name}}"
 	func (e {{eventtypename $contract.Type .Normalized.Name}}) Name() string { return {{eventtypename $contract.Type .Normalized.Name}}Name }
 	func (e {{eventtypename $contract.Type .Normalized.Name}}) Topic0() common.Hash { return common.HexToHash("{{.Original.ID}}") }
-	func (e {{eventtypename $contract.Type .Normalized.Name}}) Unpack(log *types.Log) (*{{eventtypename $contract.Type .Normalized.Name}}, error) {
+	func (e {{eventtypename $contract.Type .Normalized.Name}}) Unpack(log *ethtype.ELog) (*{{eventtypename $contract.Type .Normalized.Name}}, error) {
 		return {{decapitalise $contract.Type}}UnpackEvent[{{eventtypename $contract.Type .Normalized.Name}}](e.Name(), log)
 	}
 	func (out *{{eventtypename $contract.Type .Normalized.Name}}) unpack(values []any) {
@@ -326,7 +325,7 @@ type ContractError interface {
 		{{- end}}
 		{{- end}}
 	}
-	func (out *{{eventtypename $contract.Type .Normalized.Name}}) setRaw(log *types.Log) { out.Raw = log }
+	func (out *{{eventtypename $contract.Type .Normalized.Name}}) setRaw(log *ethtype.ELog) { out.Raw = log }
 	{{end}}
 
 	{{range .Errors}}
@@ -351,7 +350,7 @@ type ContractError interface {
 
 	{{ if .Events }}
 	// UnpackEvent unpacks event log based on topic0.
-		func ({{ decapitalise $contract.Type}} *{{$contract.Type}}) UnpackEvent(log *types.Log) (any, error) {
+		func ({{ decapitalise $contract.Type}} *{{$contract.Type}}) UnpackEvent(log *ethtype.ELog) (any, error) {
 				if len(log.Topics) == 0 {
 					return nil, errNoEventSignature
 				}
@@ -384,7 +383,7 @@ type ContractError interface {
 
 	type {{decapitalise .Type}}EventUnpacker struct {
 		id common.Hash
-		unpack func(*types.Log) (any, error)
+		unpack func(*ethtype.ELog) (any, error)
 	}
 
 	type {{decapitalise .Type}}ErrorUnpacker struct {
@@ -395,7 +394,7 @@ type ContractError interface {
 	{{ if .Events }}
 	var {{decapitalise .Type}}EventUnpackers = []{{decapitalise .Type}}EventUnpacker{
 		{{- range .Events}}
-		{id: common.HexToHash("{{.Original.ID}}"), unpack: func(log *types.Log) (any, error) {
+		{id: common.HexToHash("{{.Original.ID}}"), unpack: func(log *ethtype.ELog) (any, error) {
 			return ({{eventtypename $contract.Type .Normalized.Name}}{}).Unpack(log)
 		}},
 		{{- end}}
@@ -449,7 +448,7 @@ type ContractError interface {
 		return input, nil
 	}
 
-	func {{decapitalise .Type}}UnpackEvent[T any](name string, log *types.Log) (*T, error) {
+	func {{decapitalise .Type}}UnpackEvent[T any](name string, log *ethtype.ELog) (*T, error) {
 		event, ok := _{{.Type}}ABI.Events[name]
 		if !ok {
 			return nil, errors.New("event '" + name + "' not found")
@@ -471,7 +470,7 @@ type ContractError interface {
 		out := new(T)
 		eventData := any(out).(interface {
 			unpack([]any)
-			setRaw(*types.Log)
+			setRaw(*ethtype.ELog)
 		})
 		eventData.unpack(values)
 		var indexed abi.Arguments

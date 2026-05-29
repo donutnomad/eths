@@ -11,7 +11,7 @@ import (
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/abi/bind/v2"
 	"github.com/donutnomad/eths/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethtype"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -20,7 +20,6 @@ var (
 	_ = errors.New
 	_ = big.NewInt
 	_ = common.Big1
-	_ = types.BloomLookup
 	_ = abi.ConvertType
 )
 
@@ -65,7 +64,7 @@ func (eRC1967Proxy *ERC1967Proxy) PackConstructor(implementation common.Address,
 // ERC1967ProxyUpgraded represents a Upgraded event raised by the ERC1967Proxy contract.
 type ERC1967ProxyUpgraded struct {
 	Implementation common.Address
-	Raw            *types.Log // Blockchain specific contextual infos
+	Raw            *ethtype.ELog // Blockchain specific contextual infos
 }
 
 const ERC1967ProxyUpgradedEventName = "Upgraded"
@@ -79,7 +78,7 @@ func (ERC1967ProxyUpgraded) ContractEventName() string {
 // by contract.
 //
 // Solidity: event Upgraded(address indexed implementation)
-func (eRC1967Proxy *ERC1967Proxy) UnpackUpgradedEvent(log *types.Log) (*ERC1967ProxyUpgraded, error) {
+func (eRC1967Proxy *ERC1967Proxy) UnpackUpgradedEvent(log *ethtype.ELog) (*ERC1967ProxyUpgraded, error) {
 	event := "Upgraded"
 	if log.Topics[0] != eRC1967Proxy.abi.Events[event].ID {
 		return nil, errors.New("event signature mismatch")

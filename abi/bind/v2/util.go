@@ -22,9 +22,9 @@ import (
 	"time"
 
 	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/ethclient"
 	"github.com/donutnomad/eths/ethtype"
 	"github.com/donutnomad/eths/internal/log"
-	"github.com/ethereum/go-ethereum"
 )
 
 // WaitMined waits for tx to be mined on the blockchain.
@@ -40,7 +40,7 @@ func WaitMined(ctx context.Context, b DeployBackend, txHash common.Hash) (*ethty
 			return receipt, nil
 		}
 
-		if errors.Is(err, ethereum.NotFound) {
+		if errors.Is(err, ethclient.NotFound) {
 			logger.Trace("Transaction not yet mined")
 		} else {
 			logger.Trace("Receipt retrieval failed", "err", err)
