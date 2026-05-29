@@ -1,0 +1,257 @@
+// Code generated via abigen V2 - DO NOT EDIT.
+// This file is a generated binding and any manual changes will be lost.
+
+package bindtests
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"math/big"
+
+	"github.com/donutnomad/eths/contractcall"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+)
+
+// Reference imports to suppress errors if they are not otherwise used.
+var (
+	_ = bytes.Equal
+	_ = context.Background
+	_ = errors.New
+	_ = big.NewInt
+	_ = contractcall.SendTxE
+	_ = common.Big1
+	_ = types.BloomLookup
+	_ = abi.ConvertType
+)
+
+var (
+	errNoEventSignature        = errors.New("missing event signature")
+	errEventSignatureMismatch  = errors.New("event signature mismatch")
+	errMethodSignatureMismatch = errors.New("method signature mismatch")
+	errErrorSignatureMismatch  = errors.New("error signature mismatch")
+)
+
+type ContractEvent interface {
+	Name() string
+	Topic0() common.Hash
+}
+
+type ContractError interface {
+	Name() string
+	ErrorID() common.Hash
+}
+
+// Struct0 is an auto generated low-level Go binding around an user-defined struct.
+type Struct0 struct {
+	B [32]byte
+}
+
+// StructsMetaData contains all meta data concerning the Structs contract.
+var StructsMetaData = bind.MetaData{
+	ABI: "[{\"inputs\":[],\"name\":\"F\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"B\",\"type\":\"bytes32\"}],\"internalType\":\"structStructs.A[]\",\"name\":\"a\",\"type\":\"tuple[]\"},{\"internalType\":\"uint256[]\",\"name\":\"c\",\"type\":\"uint256[]\"},{\"internalType\":\"bool[]\",\"name\":\"d\",\"type\":\"bool[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"G\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"B\",\"type\":\"bytes32\"}],\"internalType\":\"structStructs.A[]\",\"name\":\"a\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ID:  "920a35318e7581766aec7a17218628a91d",
+	Bin: "0x608060405234801561001057600080fd5b50610278806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c806328811f591461003b5780636fecb6231461005b575b600080fd5b610043610070565b604051610052939291906101a0565b60405180910390f35b6100636100d6565b6040516100529190610186565b604080516002808252606082810190935282918291829190816020015b610095610131565b81526020019060019003908161008d575050805190915061026960611b9082906000906100be57fe5b60209081029190910101515293606093508392509050565b6040805160028082526060828101909352829190816020015b6100f7610131565b8152602001906001900390816100ef575050805190915061026960611b90829060009061012057fe5b602090810291909101015152905090565b60408051602081019091526000815290565b815260200190565b6000815180845260208085019450808401835b8381101561017b578151518752958201959082019060010161015e565b509495945050505050565b600060208252610199602083018461014b565b9392505050565b6000606082526101b3606083018661014b565b6020838203818501528186516101c98185610239565b91508288019350845b818110156101f3576101e5838651610143565b9484019492506001016101d2565b505084810360408601528551808252908201925081860190845b8181101561022b57825115158552938301939183019160010161020d565b509298975050505050505050565b9081526020019056fea2646970667358221220eb85327e285def14230424c52893aebecec1e387a50bb6b75fc4fdbed647f45f64736f6c63430006050033",
+}
+
+var _StructsABI *abi.ABI
+
+func init() {
+	var err error
+	_StructsABI, err = StructsMetaData.ParseABI()
+	if err != nil {
+		panic(errors.New("invalid ABI: " + err.Error()))
+	}
+}
+
+// Structs is an auto generated Go binding around an Ethereum contract.
+type Structs struct {
+	F Structs_F_Method
+	G Structs_G_Method
+}
+
+// NewStructs creates a new instance of Structs.
+func NewStructs() *Structs {
+	return &Structs{}
+}
+
+// Instance creates a wrapper for a deployed contract instance at the given address.
+// Use this to create the instance object passed to abigen v2 library functions Call, Transact, etc.
+func (c *Structs) Instance(backend bind.ContractBackend, addr common.Address) *bind.BoundContract {
+	return bind.NewBoundContract(addr, *_StructsABI, backend, backend, backend)
+}
+
+// Structs_F_Method is the Go binding around the F contract method.
+// MethodID: 0x28811f59
+// Solidity: function F() view returns((bytes32)[] a, uint256[] c, bool[] d)
+type Structs_F_Method struct {
+}
+
+func (m Structs_F_Method) Name() string      { return "F" }
+func (m Structs_F_Method) MethodID() [4]byte { return [4]byte{0x28, 0x81, 0x1f, 0x59} }
+func (m Structs_F_Method) Pack() []byte {
+	return structsMust(m.TryPack())
+}
+func (m Structs_F_Method) TryPack() ([]byte, error) {
+	return _StructsABI.Pack(m.Name())
+}
+func (m Structs_F_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts) (Structs_F_Output, error) {
+	output, err := structsCallRaw(ctx, client, addr, opts, m.Pack())
+	if err != nil {
+		return *new(Structs_F_Output), err
+	}
+	return m.Unpack(output)
+}
+
+// Structs_F_Output serves as a container for the return parameters of contract
+// method F.
+type Structs_F_Output struct {
+	A []Struct0
+	C []*big.Int
+	D []bool
+}
+
+func (m Structs_F_Method) Unpack(data []byte) (Structs_F_Output, error) {
+	out, err := _StructsABI.Unpack(m.Name(), data)
+	outstruct := new(Structs_F_Output)
+	if err != nil {
+		return *outstruct, err
+	}
+	outstruct.A = structsConvertType[[]Struct0](out[0])
+	outstruct.C = structsConvertType[[]*big.Int](out[1])
+	outstruct.D = structsConvertType[[]bool](out[2])
+	return *outstruct, nil
+}
+
+// Structs_G_Method is the Go binding around the G contract method.
+// MethodID: 0x6fecb623
+// Solidity: function G() view returns((bytes32)[] a)
+type Structs_G_Method struct {
+}
+
+func (m Structs_G_Method) Name() string      { return "G" }
+func (m Structs_G_Method) MethodID() [4]byte { return [4]byte{0x6f, 0xec, 0xb6, 0x23} }
+func (m Structs_G_Method) Pack() []byte {
+	return structsMust(m.TryPack())
+}
+func (m Structs_G_Method) TryPack() ([]byte, error) {
+	return _StructsABI.Pack(m.Name())
+}
+func (m Structs_G_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts) ([]Struct0, error) {
+	output, err := structsCallRaw(ctx, client, addr, opts, m.Pack())
+	if err != nil {
+		return *new([]Struct0), err
+	}
+	return m.Unpack(output)
+}
+
+func (m Structs_G_Method) Unpack(data []byte) ([]Struct0, error) {
+	out, err := _StructsABI.Unpack(m.Name(), data)
+	if err != nil {
+		return *new([]Struct0), err
+	}
+	out0 := structsConvertType[[]Struct0](out[0])
+	return out0, nil
+}
+
+// UnpackInput attempts to decode the provided call data using contract method definitions.
+func (structs *Structs) UnpackInput(callData []byte) (any, error) {
+	if len(callData) < 4 {
+		return nil, errMethodSignatureMismatch
+	}
+	if bytes.Equal(callData[:4], _StructsABI.Methods["F"].ID[:4]) {
+		return structs.F, nil
+	}
+	if bytes.Equal(callData[:4], _StructsABI.Methods["G"].ID[:4]) {
+		return structs.G, nil
+	}
+	return nil, errMethodSignatureMismatch
+}
+
+type structsEventUnpacker struct {
+	id     common.Hash
+	unpack func(*types.Log) (any, error)
+}
+
+type structsErrorUnpacker struct {
+	id     [4]byte
+	unpack func([]byte) (any, error)
+}
+
+func structsMust[T any](val T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+func structsConvertType[T any](value any) T {
+	return *abi.ConvertType(value, new(T)).(*T)
+}
+
+func structsCallRaw(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, input []byte) ([]byte, error) {
+	var callOpts bind.CallOpts
+	if opts != nil {
+		callOpts = *opts
+	}
+	callOpts.Context = ctx
+	return bind.NewBoundContract(addr, *_StructsABI, client, nil, nil).CallRaw(&callOpts, input)
+}
+
+func structsUnpackInput[T any](name string, callData []byte) (*T, error) {
+	method, ok := _StructsABI.Methods[name]
+	if !ok {
+		return nil, errors.New("method '" + name + "' not found")
+	}
+	if len(callData) < 4 || !bytes.Equal(callData[:4], method.ID[:4]) {
+		return nil, errMethodSignatureMismatch
+	}
+	arguments, err := method.Inputs.Unpack(callData[4:])
+	if err != nil {
+		return nil, err
+	}
+	input := new(T)
+	any(input).(interface{ unpack([]any) }).unpack(arguments)
+	return input, nil
+}
+
+func structsUnpackEvent[T any](name string, log *types.Log) (*T, error) {
+	event, ok := _StructsABI.Events[name]
+	if !ok {
+		return nil, errors.New("event '" + name + "' not found")
+	}
+	if len(log.Topics) == 0 {
+		return nil, errNoEventSignature
+	}
+	if log.Topics[0] != event.ID {
+		return nil, errEventSignatureMismatch
+	}
+	var values []any
+	if len(log.Data) > 0 {
+		var err error
+		values, err = event.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	out := new(T)
+	eventData := any(out).(interface {
+		unpack([]any)
+		setRaw(*types.Log)
+	})
+	eventData.unpack(values)
+	var indexed abi.Arguments
+	for _, arg := range event.Inputs {
+		if arg.Indexed {
+			indexed = append(indexed, arg)
+		}
+	}
+	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
+		return nil, err
+	}
+	eventData.setRaw(log)
+	return out, nil
+}

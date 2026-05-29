@@ -1,0 +1,522 @@
+// Code generated via abigen V2 - DO NOT EDIT.
+// This file is a generated binding and any manual changes will be lost.
+
+package bindtests
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"math/big"
+
+	"github.com/donutnomad/eths/contractcall"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+)
+
+// Reference imports to suppress errors if they are not otherwise used.
+var (
+	_ = bytes.Equal
+	_ = context.Background
+	_ = errors.New
+	_ = big.NewInt
+	_ = contractcall.SendTxE
+	_ = common.Big1
+	_ = types.BloomLookup
+	_ = abi.ConvertType
+)
+
+var (
+	errNoEventSignature        = errors.New("missing event signature")
+	errEventSignatureMismatch  = errors.New("event signature mismatch")
+	errMethodSignatureMismatch = errors.New("method signature mismatch")
+	errErrorSignatureMismatch  = errors.New("error signature mismatch")
+)
+
+type ContractEvent interface {
+	Name() string
+	Topic0() common.Hash
+}
+
+type ContractError interface {
+	Name() string
+	ErrorID() common.Hash
+}
+
+// CrowdsaleMetaData contains all meta data concerning the Crowdsale contract.
+var CrowdsaleMetaData = bind.MetaData{
+	ABI: "[{\"constant\":false,\"inputs\":[],\"name\":\"checkGoalReached\",\"outputs\":[],\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"deadline\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"beneficiary\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"tokenReward\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"fundingGoal\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"amountRaised\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"price\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"funders\",\"outputs\":[{\"name\":\"addr\",\"type\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\"}],\"type\":\"function\"},{\"inputs\":[{\"name\":\"ifSuccessfulSendTo\",\"type\":\"address\"},{\"name\":\"fundingGoalInEthers\",\"type\":\"uint256\"},{\"name\":\"durationInMinutes\",\"type\":\"uint256\"},{\"name\":\"etherCostOfEachToken\",\"type\":\"uint256\"},{\"name\":\"addressOfTokenUsedAsReward\",\"type\":\"address\"}],\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"backer\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"isContribution\",\"type\":\"bool\"}],\"name\":\"FundTransfer\",\"type\":\"event\"}]",
+	ID:  "84d7e935785c5c648282d326307bb8fa0d",
+	Bin: "0x606060408190526007805460ff1916905560a0806105a883396101006040529051608051915160c05160e05160008054600160a060020a03199081169095178155670de0b6b3a7640000958602600155603c9093024201600355930260045560058054909216909217905561052f90819061007990396000f36060604052361561006c5760e060020a600035046301cb3b20811461008257806329dcb0cf1461014457806338af3eed1461014d5780636e66f6e91461015f5780637a3a0e84146101715780637b3e5e7b1461017a578063a035b1fe14610183578063dc0d3dff1461018c575b61020060075460009060ff161561032357610002565b61020060035460009042106103205760025460015490106103cb576002548154600160a060020a0316908290606082818181858883f150915460025460408051600160a060020a039390931683526020830191909152818101869052517fe842aea7a5f1b01049d752008c53c52890b1a6daf660cf39e8eec506112bbdf6945090819003909201919050a15b60405160008054600160a060020a039081169230909116319082818181858883f150506007805460ff1916600117905550505050565b6103a160035481565b6103ab600054600160a060020a031681565b6103ab600554600160a060020a031681565b6103a160015481565b6103a160025481565b6103a160045481565b6103be60043560068054829081101561000257506000526002027ff652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d3f8101547ff652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d409190910154600160a060020a03919091169082565b005b505050815481101561000257906000526020600020906002020160005060008201518160000160006101000a815481600160a060020a030219169083021790555060208201518160010160005055905050806002600082828250540192505081905550600560009054906101000a9004600160a060020a0316600160a060020a031663a9059cbb3360046000505484046040518360e060020a0281526004018083600160a060020a03168152602001828152602001925050506000604051808303816000876161da5a03f11561000257505060408051600160a060020a03331681526020810184905260018183015290517fe842aea7a5f1b01049d752008c53c52890b1a6daf660cf39e8eec506112bbdf692509081900360600190a15b50565b5060a0604052336060908152346080819052600680546001810180835592939282908280158290116102025760020281600202836000526020600020918201910161020291905b8082111561039d57805473ffffffffffffffffffffffffffffffffffffffff19168155600060019190910190815561036a565b5090565b6060908152602090f35b600160a060020a03166060908152602090f35b6060918252608052604090f35b5b60065481101561010e576006805482908110156100025760009182526002027ff652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d3f0190600680549254600160a060020a0316928490811015610002576002027ff652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d40015460405190915082818181858883f19350505050507fe842aea7a5f1b01049d752008c53c52890b1a6daf660cf39e8eec506112bbdf660066000508281548110156100025760008290526002027ff652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d3f01548154600160a060020a039190911691908490811015610002576002027ff652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d40015460408051600160a060020a0394909416845260208401919091526000838201525191829003606001919050a16001016103cc56",
+}
+
+var _CrowdsaleABI *abi.ABI
+
+func init() {
+	var err error
+	_CrowdsaleABI, err = CrowdsaleMetaData.ParseABI()
+	if err != nil {
+		panic(errors.New("invalid ABI: " + err.Error()))
+	}
+}
+
+// Crowdsale is an auto generated Go binding around an Ethereum contract.
+type Crowdsale struct {
+	AmountRaised     Crowdsale_AmountRaised_Method
+	Beneficiary      Crowdsale_Beneficiary_Method
+	CheckGoalReached Crowdsale_CheckGoalReached_Method
+	Deadline         Crowdsale_Deadline_Method
+	Funders          Crowdsale_Funders_Method
+	FundingGoal      Crowdsale_FundingGoal_Method
+	Price            Crowdsale_Price_Method
+	TokenReward      Crowdsale_TokenReward_Method
+
+	FundTransferEvent Crowdsale_FundTransfer_Event
+}
+
+// NewCrowdsale creates a new instance of Crowdsale.
+func NewCrowdsale() *Crowdsale {
+	return &Crowdsale{}
+}
+
+// Instance creates a wrapper for a deployed contract instance at the given address.
+// Use this to create the instance object passed to abigen v2 library functions Call, Transact, etc.
+func (c *Crowdsale) Instance(backend bind.ContractBackend, addr common.Address) *bind.BoundContract {
+	return bind.NewBoundContract(addr, *_CrowdsaleABI, backend, backend, backend)
+}
+
+// PackConstructor is the Go binding used to pack the parameters required for
+// contract deployment.
+// Solidity: constructor(address ifSuccessfulSendTo, uint256 fundingGoalInEthers, uint256 durationInMinutes, uint256 etherCostOfEachToken, address addressOfTokenUsedAsReward) returns()
+func (crowdsale *Crowdsale) PackConstructor(ifSuccessfulSendTo common.Address, fundingGoalInEthers *big.Int, durationInMinutes *big.Int, etherCostOfEachToken *big.Int, addressOfTokenUsedAsReward common.Address) []byte {
+	return crowdsaleMust(_CrowdsaleABI.Pack("", ifSuccessfulSendTo, fundingGoalInEthers, durationInMinutes, etherCostOfEachToken, addressOfTokenUsedAsReward))
+}
+
+// Crowdsale_AmountRaised_Method is the Go binding around the amountRaised contract method.
+// MethodID: 0x7b3e5e7b
+// Solidity: function amountRaised() returns(uint256)
+type Crowdsale_AmountRaised_Method struct {
+}
+
+func (m Crowdsale_AmountRaised_Method) Name() string      { return "amountRaised" }
+func (m Crowdsale_AmountRaised_Method) MethodID() [4]byte { return [4]byte{0x7b, 0x3e, 0x5e, 0x7b} }
+func (m Crowdsale_AmountRaised_Method) Pack() []byte {
+	return crowdsaleMust(m.TryPack())
+}
+func (m Crowdsale_AmountRaised_Method) TryPack() ([]byte, error) {
+	return _CrowdsaleABI.Pack(m.Name())
+}
+func (m Crowdsale_AmountRaised_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	output, err := crowdsaleCallRaw(ctx, client, addr, opts, m.Pack())
+	if err != nil {
+		return new(big.Int), err
+	}
+	return m.Unpack(output)
+}
+
+func (m Crowdsale_AmountRaised_Method) Unpack(data []byte) (*big.Int, error) {
+	out, err := _CrowdsaleABI.Unpack(m.Name(), data)
+	if err != nil {
+		return new(big.Int), err
+	}
+	out0 := crowdsaleConvertType[*big.Int](out[0])
+	return out0, nil
+}
+
+// Crowdsale_Beneficiary_Method is the Go binding around the beneficiary contract method.
+// MethodID: 0x38af3eed
+// Solidity: function beneficiary() returns(address)
+type Crowdsale_Beneficiary_Method struct {
+}
+
+func (m Crowdsale_Beneficiary_Method) Name() string      { return "beneficiary" }
+func (m Crowdsale_Beneficiary_Method) MethodID() [4]byte { return [4]byte{0x38, 0xaf, 0x3e, 0xed} }
+func (m Crowdsale_Beneficiary_Method) Pack() []byte {
+	return crowdsaleMust(m.TryPack())
+}
+func (m Crowdsale_Beneficiary_Method) TryPack() ([]byte, error) {
+	return _CrowdsaleABI.Pack(m.Name())
+}
+func (m Crowdsale_Beneficiary_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts) (common.Address, error) {
+	output, err := crowdsaleCallRaw(ctx, client, addr, opts, m.Pack())
+	if err != nil {
+		return *new(common.Address), err
+	}
+	return m.Unpack(output)
+}
+
+func (m Crowdsale_Beneficiary_Method) Unpack(data []byte) (common.Address, error) {
+	out, err := _CrowdsaleABI.Unpack(m.Name(), data)
+	if err != nil {
+		return *new(common.Address), err
+	}
+	out0 := crowdsaleConvertType[common.Address](out[0])
+	return out0, nil
+}
+
+// Crowdsale_CheckGoalReached_Method is the Go binding around the checkGoalReached contract method.
+// MethodID: 0x01cb3b20
+// Solidity: function checkGoalReached() returns()
+type Crowdsale_CheckGoalReached_Method struct {
+}
+
+func (m Crowdsale_CheckGoalReached_Method) Name() string      { return "checkGoalReached" }
+func (m Crowdsale_CheckGoalReached_Method) MethodID() [4]byte { return [4]byte{0x01, 0xcb, 0x3b, 0x20} }
+func (m Crowdsale_CheckGoalReached_Method) Pack() []byte {
+	return crowdsaleMust(m.TryPack())
+}
+func (m Crowdsale_CheckGoalReached_Method) TryPack() ([]byte, error) {
+	return _CrowdsaleABI.Pack(m.Name())
+}
+func (m Crowdsale_CheckGoalReached_Method) Call(
+	ctx context.Context,
+	client contractcall.ISendTxClient,
+	addr common.Address,
+	tx contractcall.TxOpts,
+) (*types.Transaction, error) {
+	return contractcall.SendTxE(ctx, client, tx.ChainID, tx.Value, m.Pack(), &addr, tx.Payer, tx.Manager, tx.BeforeSend, tx.NoSend, true, tx.Options...)
+}
+
+// Crowdsale_Deadline_Method is the Go binding around the deadline contract method.
+// MethodID: 0x29dcb0cf
+// Solidity: function deadline() returns(uint256)
+type Crowdsale_Deadline_Method struct {
+}
+
+func (m Crowdsale_Deadline_Method) Name() string      { return "deadline" }
+func (m Crowdsale_Deadline_Method) MethodID() [4]byte { return [4]byte{0x29, 0xdc, 0xb0, 0xcf} }
+func (m Crowdsale_Deadline_Method) Pack() []byte {
+	return crowdsaleMust(m.TryPack())
+}
+func (m Crowdsale_Deadline_Method) TryPack() ([]byte, error) {
+	return _CrowdsaleABI.Pack(m.Name())
+}
+func (m Crowdsale_Deadline_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	output, err := crowdsaleCallRaw(ctx, client, addr, opts, m.Pack())
+	if err != nil {
+		return new(big.Int), err
+	}
+	return m.Unpack(output)
+}
+
+func (m Crowdsale_Deadline_Method) Unpack(data []byte) (*big.Int, error) {
+	out, err := _CrowdsaleABI.Unpack(m.Name(), data)
+	if err != nil {
+		return new(big.Int), err
+	}
+	out0 := crowdsaleConvertType[*big.Int](out[0])
+	return out0, nil
+}
+
+// Crowdsale_Funders_Method is the Go binding around the funders contract method.
+// MethodID: 0xdc0d3dff
+// Solidity: function funders(uint256 ) returns(address addr, uint256 amount)
+type Crowdsale_Funders_Method struct {
+}
+
+// Crowdsale_Funders_Input is the Go binding for the funders method input parameters.
+type Crowdsale_Funders_Input struct {
+	Arg0 *big.Int
+}
+
+func (m Crowdsale_Funders_Method) Name() string      { return "funders" }
+func (m Crowdsale_Funders_Method) MethodID() [4]byte { return [4]byte{0xdc, 0x0d, 0x3d, 0xff} }
+func (m Crowdsale_Funders_Method) Pack(arg0 *big.Int) []byte {
+	return crowdsaleMust(m.TryPack(arg0))
+}
+func (m Crowdsale_Funders_Method) TryPack(arg0 *big.Int) ([]byte, error) {
+	return _CrowdsaleABI.Pack(m.Name(), arg0)
+}
+func (m Crowdsale_Funders_Method) UnpackInput(callData []byte) (arg0 *big.Int, err error) {
+	input, err := crowdsaleUnpackInput[Crowdsale_Funders_Input](m.Name(), callData)
+	if err != nil {
+		return new(big.Int), err
+	}
+	return input.Arg0, nil
+}
+func (m Crowdsale_Funders_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, arg0 *big.Int) (Crowdsale_Funders_Output, error) {
+	output, err := crowdsaleCallRaw(ctx, client, addr, opts, m.Pack(arg0))
+	if err != nil {
+		return *new(Crowdsale_Funders_Output), err
+	}
+	return m.Unpack(output)
+}
+
+// Crowdsale_Funders_Output serves as a container for the return parameters of contract
+// method Funders.
+type Crowdsale_Funders_Output struct {
+	Addr   common.Address
+	Amount *big.Int
+}
+
+func (m Crowdsale_Funders_Method) Unpack(data []byte) (Crowdsale_Funders_Output, error) {
+	out, err := _CrowdsaleABI.Unpack(m.Name(), data)
+	outstruct := new(Crowdsale_Funders_Output)
+	if err != nil {
+		return *outstruct, err
+	}
+	outstruct.Addr = crowdsaleConvertType[common.Address](out[0])
+	outstruct.Amount = crowdsaleConvertType[*big.Int](out[1])
+	return *outstruct, nil
+}
+
+func (input *Crowdsale_Funders_Input) unpack(arguments []any) {
+	input.Arg0 = crowdsaleConvertType[*big.Int](arguments[0])
+}
+
+// Crowdsale_FundingGoal_Method is the Go binding around the fundingGoal contract method.
+// MethodID: 0x7a3a0e84
+// Solidity: function fundingGoal() returns(uint256)
+type Crowdsale_FundingGoal_Method struct {
+}
+
+func (m Crowdsale_FundingGoal_Method) Name() string      { return "fundingGoal" }
+func (m Crowdsale_FundingGoal_Method) MethodID() [4]byte { return [4]byte{0x7a, 0x3a, 0x0e, 0x84} }
+func (m Crowdsale_FundingGoal_Method) Pack() []byte {
+	return crowdsaleMust(m.TryPack())
+}
+func (m Crowdsale_FundingGoal_Method) TryPack() ([]byte, error) {
+	return _CrowdsaleABI.Pack(m.Name())
+}
+func (m Crowdsale_FundingGoal_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	output, err := crowdsaleCallRaw(ctx, client, addr, opts, m.Pack())
+	if err != nil {
+		return new(big.Int), err
+	}
+	return m.Unpack(output)
+}
+
+func (m Crowdsale_FundingGoal_Method) Unpack(data []byte) (*big.Int, error) {
+	out, err := _CrowdsaleABI.Unpack(m.Name(), data)
+	if err != nil {
+		return new(big.Int), err
+	}
+	out0 := crowdsaleConvertType[*big.Int](out[0])
+	return out0, nil
+}
+
+// Crowdsale_Price_Method is the Go binding around the price contract method.
+// MethodID: 0xa035b1fe
+// Solidity: function price() returns(uint256)
+type Crowdsale_Price_Method struct {
+}
+
+func (m Crowdsale_Price_Method) Name() string      { return "price" }
+func (m Crowdsale_Price_Method) MethodID() [4]byte { return [4]byte{0xa0, 0x35, 0xb1, 0xfe} }
+func (m Crowdsale_Price_Method) Pack() []byte {
+	return crowdsaleMust(m.TryPack())
+}
+func (m Crowdsale_Price_Method) TryPack() ([]byte, error) {
+	return _CrowdsaleABI.Pack(m.Name())
+}
+func (m Crowdsale_Price_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	output, err := crowdsaleCallRaw(ctx, client, addr, opts, m.Pack())
+	if err != nil {
+		return new(big.Int), err
+	}
+	return m.Unpack(output)
+}
+
+func (m Crowdsale_Price_Method) Unpack(data []byte) (*big.Int, error) {
+	out, err := _CrowdsaleABI.Unpack(m.Name(), data)
+	if err != nil {
+		return new(big.Int), err
+	}
+	out0 := crowdsaleConvertType[*big.Int](out[0])
+	return out0, nil
+}
+
+// Crowdsale_TokenReward_Method is the Go binding around the tokenReward contract method.
+// MethodID: 0x6e66f6e9
+// Solidity: function tokenReward() returns(address)
+type Crowdsale_TokenReward_Method struct {
+}
+
+func (m Crowdsale_TokenReward_Method) Name() string      { return "tokenReward" }
+func (m Crowdsale_TokenReward_Method) MethodID() [4]byte { return [4]byte{0x6e, 0x66, 0xf6, 0xe9} }
+func (m Crowdsale_TokenReward_Method) Pack() []byte {
+	return crowdsaleMust(m.TryPack())
+}
+func (m Crowdsale_TokenReward_Method) TryPack() ([]byte, error) {
+	return _CrowdsaleABI.Pack(m.Name())
+}
+func (m Crowdsale_TokenReward_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts) (common.Address, error) {
+	output, err := crowdsaleCallRaw(ctx, client, addr, opts, m.Pack())
+	if err != nil {
+		return *new(common.Address), err
+	}
+	return m.Unpack(output)
+}
+
+func (m Crowdsale_TokenReward_Method) Unpack(data []byte) (common.Address, error) {
+	out, err := _CrowdsaleABI.Unpack(m.Name(), data)
+	if err != nil {
+		return *new(common.Address), err
+	}
+	out0 := crowdsaleConvertType[common.Address](out[0])
+	return out0, nil
+}
+
+// UnpackInput attempts to decode the provided call data using contract method definitions.
+func (crowdsale *Crowdsale) UnpackInput(callData []byte) (any, error) {
+	if len(callData) < 4 {
+		return nil, errMethodSignatureMismatch
+	}
+	if bytes.Equal(callData[:4], _CrowdsaleABI.Methods["amountRaised"].ID[:4]) {
+		return crowdsale.AmountRaised, nil
+	}
+	if bytes.Equal(callData[:4], _CrowdsaleABI.Methods["beneficiary"].ID[:4]) {
+		return crowdsale.Beneficiary, nil
+	}
+	if bytes.Equal(callData[:4], _CrowdsaleABI.Methods["checkGoalReached"].ID[:4]) {
+		return crowdsale.CheckGoalReached, nil
+	}
+	if bytes.Equal(callData[:4], _CrowdsaleABI.Methods["deadline"].ID[:4]) {
+		return crowdsale.Deadline, nil
+	}
+	if bytes.Equal(callData[:4], _CrowdsaleABI.Methods["funders"].ID[:4]) {
+		return crowdsaleUnpackInput[Crowdsale_Funders_Input]("funders", callData)
+	}
+	if bytes.Equal(callData[:4], _CrowdsaleABI.Methods["fundingGoal"].ID[:4]) {
+		return crowdsale.FundingGoal, nil
+	}
+	if bytes.Equal(callData[:4], _CrowdsaleABI.Methods["price"].ID[:4]) {
+		return crowdsale.Price, nil
+	}
+	if bytes.Equal(callData[:4], _CrowdsaleABI.Methods["tokenReward"].ID[:4]) {
+		return crowdsale.TokenReward, nil
+	}
+	return nil, errMethodSignatureMismatch
+}
+
+// Crowdsale_FundTransfer_Event is the Go binding around the FundTransfer contract event.
+// Topic0: 0xe842aea7a5f1b01049d752008c53c52890b1a6daf660cf39e8eec506112bbdf6
+// Solidity: event FundTransfer(address backer, uint256 amount, bool isContribution)
+type Crowdsale_FundTransfer_Event struct {
+	Backer         common.Address
+	Amount         *big.Int
+	IsContribution bool
+	Raw            *types.Log // Blockchain specific contextual infos
+}
+
+const Crowdsale_FundTransfer_EventName = "FundTransfer"
+
+func (e Crowdsale_FundTransfer_Event) Name() string { return Crowdsale_FundTransfer_EventName }
+func (e Crowdsale_FundTransfer_Event) Topic0() common.Hash {
+	return common.HexToHash("0xe842aea7a5f1b01049d752008c53c52890b1a6daf660cf39e8eec506112bbdf6")
+}
+func (e Crowdsale_FundTransfer_Event) Unpack(log *types.Log) (*Crowdsale_FundTransfer_Event, error) {
+	return crowdsaleUnpackEvent[Crowdsale_FundTransfer_Event](e.Name(), log)
+}
+func (out *Crowdsale_FundTransfer_Event) unpack(values []any) {
+	out.Backer = crowdsaleConvertType[common.Address](values[0])
+	out.Amount = crowdsaleConvertType[*big.Int](values[1])
+	out.IsContribution = crowdsaleConvertType[bool](values[2])
+}
+func (out *Crowdsale_FundTransfer_Event) setRaw(log *types.Log) { out.Raw = log }
+
+// UnpackEvent unpacks event log based on topic0.
+func (crowdsale *Crowdsale) UnpackEvent(log *types.Log) (any, error) {
+	if len(log.Topics) == 0 {
+		return nil, errNoEventSignature
+	}
+	for _, item := range crowdsaleEventUnpackers {
+		if item.id == log.Topics[0] {
+			return item.unpack(log)
+		}
+	}
+	return nil, errEventSignatureMismatch
+}
+
+type crowdsaleEventUnpacker struct {
+	id     common.Hash
+	unpack func(*types.Log) (any, error)
+}
+
+type crowdsaleErrorUnpacker struct {
+	id     [4]byte
+	unpack func([]byte) (any, error)
+}
+
+var crowdsaleEventUnpackers = []crowdsaleEventUnpacker{
+	{id: common.HexToHash("0xe842aea7a5f1b01049d752008c53c52890b1a6daf660cf39e8eec506112bbdf6"), unpack: func(log *types.Log) (any, error) {
+		return (Crowdsale_FundTransfer_Event{}).Unpack(log)
+	}},
+}
+
+func crowdsaleMust[T any](val T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+func crowdsaleConvertType[T any](value any) T {
+	return *abi.ConvertType(value, new(T)).(*T)
+}
+
+func crowdsaleCallRaw(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, input []byte) ([]byte, error) {
+	var callOpts bind.CallOpts
+	if opts != nil {
+		callOpts = *opts
+	}
+	callOpts.Context = ctx
+	return bind.NewBoundContract(addr, *_CrowdsaleABI, client, nil, nil).CallRaw(&callOpts, input)
+}
+
+func crowdsaleUnpackInput[T any](name string, callData []byte) (*T, error) {
+	method, ok := _CrowdsaleABI.Methods[name]
+	if !ok {
+		return nil, errors.New("method '" + name + "' not found")
+	}
+	if len(callData) < 4 || !bytes.Equal(callData[:4], method.ID[:4]) {
+		return nil, errMethodSignatureMismatch
+	}
+	arguments, err := method.Inputs.Unpack(callData[4:])
+	if err != nil {
+		return nil, err
+	}
+	input := new(T)
+	any(input).(interface{ unpack([]any) }).unpack(arguments)
+	return input, nil
+}
+
+func crowdsaleUnpackEvent[T any](name string, log *types.Log) (*T, error) {
+	event, ok := _CrowdsaleABI.Events[name]
+	if !ok {
+		return nil, errors.New("event '" + name + "' not found")
+	}
+	if len(log.Topics) == 0 {
+		return nil, errNoEventSignature
+	}
+	if log.Topics[0] != event.ID {
+		return nil, errEventSignatureMismatch
+	}
+	var values []any
+	if len(log.Data) > 0 {
+		var err error
+		values, err = event.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	out := new(T)
+	eventData := any(out).(interface {
+		unpack([]any)
+		setRaw(*types.Log)
+	})
+	eventData.unpack(values)
+	var indexed abi.Arguments
+	for _, arg := range event.Inputs {
+		if arg.Indexed {
+			indexed = append(indexed, arg)
+		}
+	}
+	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
+		return nil, err
+	}
+	eventData.setRaw(log)
+	return out, nil
+}

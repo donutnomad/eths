@@ -1,0 +1,394 @@
+// Code generated via abigen V2 - DO NOT EDIT.
+// This file is a generated binding and any manual changes will be lost.
+
+package bindtests
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"math/big"
+
+	"github.com/donutnomad/eths/contractcall"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+)
+
+// Reference imports to suppress errors if they are not otherwise used.
+var (
+	_ = bytes.Equal
+	_ = context.Background
+	_ = errors.New
+	_ = big.NewInt
+	_ = contractcall.SendTxE
+	_ = common.Big1
+	_ = types.BloomLookup
+	_ = abi.ConvertType
+)
+
+var (
+	errNoEventSignature        = errors.New("missing event signature")
+	errEventSignatureMismatch  = errors.New("event signature mismatch")
+	errMethodSignatureMismatch = errors.New("method signature mismatch")
+	errErrorSignatureMismatch  = errors.New("error signature mismatch")
+)
+
+type ContractEvent interface {
+	Name() string
+	Topic0() common.Hash
+}
+
+type ContractError interface {
+	Name() string
+	ErrorID() common.Hash
+}
+
+// InputCheckerMetaData contains all meta data concerning the InputChecker contract.
+var InputCheckerMetaData = bind.MetaData{
+	ABI: "[{\"type\":\"function\",\"name\":\"noInput\",\"constant\":true,\"inputs\":[],\"outputs\":[]},{\"type\":\"function\",\"name\":\"namedInput\",\"constant\":true,\"inputs\":[{\"name\":\"str\",\"type\":\"string\"}],\"outputs\":[]},{\"type\":\"function\",\"name\":\"anonInput\",\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"string\"}],\"outputs\":[]},{\"type\":\"function\",\"name\":\"namedInputs\",\"constant\":true,\"inputs\":[{\"name\":\"str1\",\"type\":\"string\"},{\"name\":\"str2\",\"type\":\"string\"}],\"outputs\":[]},{\"type\":\"function\",\"name\":\"anonInputs\",\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"string\"},{\"name\":\"\",\"type\":\"string\"}],\"outputs\":[]},{\"type\":\"function\",\"name\":\"mixedInputs\",\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"string\"},{\"name\":\"str\",\"type\":\"string\"}],\"outputs\":[]}]",
+	ID:  "e551ce092312e54f54f45ffdf06caa4cdc",
+}
+
+var _InputCheckerABI *abi.ABI
+
+func init() {
+	var err error
+	_InputCheckerABI, err = InputCheckerMetaData.ParseABI()
+	if err != nil {
+		panic(errors.New("invalid ABI: " + err.Error()))
+	}
+}
+
+// InputChecker is an auto generated Go binding around an Ethereum contract.
+type InputChecker struct {
+	AnonInput   InputChecker_AnonInput_Method
+	AnonInputs  InputChecker_AnonInputs_Method
+	MixedInputs InputChecker_MixedInputs_Method
+	NamedInput  InputChecker_NamedInput_Method
+	NamedInputs InputChecker_NamedInputs_Method
+	NoInput     InputChecker_NoInput_Method
+}
+
+// NewInputChecker creates a new instance of InputChecker.
+func NewInputChecker() *InputChecker {
+	return &InputChecker{}
+}
+
+// Instance creates a wrapper for a deployed contract instance at the given address.
+// Use this to create the instance object passed to abigen v2 library functions Call, Transact, etc.
+func (c *InputChecker) Instance(backend bind.ContractBackend, addr common.Address) *bind.BoundContract {
+	return bind.NewBoundContract(addr, *_InputCheckerABI, backend, backend, backend)
+}
+
+// InputChecker_AnonInput_Method is the Go binding around the anonInput contract method.
+// MethodID: 0x3e708e82
+// Solidity: function anonInput(string ) returns()
+type InputChecker_AnonInput_Method struct {
+}
+
+// InputChecker_AnonInput_Input is the Go binding for the anonInput method input parameters.
+type InputChecker_AnonInput_Input struct {
+	Arg0 string
+}
+
+func (m InputChecker_AnonInput_Method) Name() string      { return "anonInput" }
+func (m InputChecker_AnonInput_Method) MethodID() [4]byte { return [4]byte{0x3e, 0x70, 0x8e, 0x82} }
+func (m InputChecker_AnonInput_Method) Pack(arg0 string) []byte {
+	return inputCheckerMust(m.TryPack(arg0))
+}
+func (m InputChecker_AnonInput_Method) TryPack(arg0 string) ([]byte, error) {
+	return _InputCheckerABI.Pack(m.Name(), arg0)
+}
+func (m InputChecker_AnonInput_Method) UnpackInput(callData []byte) (arg0 string, err error) {
+	input, err := inputCheckerUnpackInput[InputChecker_AnonInput_Input](m.Name(), callData)
+	if err != nil {
+		return *new(string), err
+	}
+	return input.Arg0, nil
+}
+func (m InputChecker_AnonInput_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, arg0 string) error {
+	_, err := inputCheckerCallRaw(ctx, client, addr, opts, m.Pack(arg0))
+	return err
+}
+
+func (input *InputChecker_AnonInput_Input) unpack(arguments []any) {
+	input.Arg0 = inputCheckerConvertType[string](arguments[0])
+}
+
+// InputChecker_AnonInputs_Method is the Go binding around the anonInputs contract method.
+// MethodID: 0x28160527
+// Solidity: function anonInputs(string , string ) returns()
+type InputChecker_AnonInputs_Method struct {
+}
+
+// InputChecker_AnonInputs_Input is the Go binding for the anonInputs method input parameters.
+type InputChecker_AnonInputs_Input struct {
+	Arg0 string
+	Arg1 string
+}
+
+func (m InputChecker_AnonInputs_Method) Name() string      { return "anonInputs" }
+func (m InputChecker_AnonInputs_Method) MethodID() [4]byte { return [4]byte{0x28, 0x16, 0x05, 0x27} }
+func (m InputChecker_AnonInputs_Method) Pack(arg0 string, arg1 string) []byte {
+	return inputCheckerMust(m.TryPack(arg0, arg1))
+}
+func (m InputChecker_AnonInputs_Method) TryPack(arg0 string, arg1 string) ([]byte, error) {
+	return _InputCheckerABI.Pack(m.Name(), arg0, arg1)
+}
+func (m InputChecker_AnonInputs_Method) UnpackInput(callData []byte) (arg0 string, arg1 string, err error) {
+	input, err := inputCheckerUnpackInput[InputChecker_AnonInputs_Input](m.Name(), callData)
+	if err != nil {
+		return *new(string), *new(string), err
+	}
+	return input.Arg0, input.Arg1, nil
+}
+func (m InputChecker_AnonInputs_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, arg0 string, arg1 string) error {
+	_, err := inputCheckerCallRaw(ctx, client, addr, opts, m.Pack(arg0, arg1))
+	return err
+}
+
+func (input *InputChecker_AnonInputs_Input) unpack(arguments []any) {
+	input.Arg0 = inputCheckerConvertType[string](arguments[0])
+	input.Arg1 = inputCheckerConvertType[string](arguments[1])
+}
+
+// InputChecker_MixedInputs_Method is the Go binding around the mixedInputs contract method.
+// MethodID: 0xc689ebdc
+// Solidity: function mixedInputs(string , string str) returns()
+type InputChecker_MixedInputs_Method struct {
+}
+
+// InputChecker_MixedInputs_Input is the Go binding for the mixedInputs method input parameters.
+type InputChecker_MixedInputs_Input struct {
+	Arg0 string
+	Str  string
+}
+
+func (m InputChecker_MixedInputs_Method) Name() string      { return "mixedInputs" }
+func (m InputChecker_MixedInputs_Method) MethodID() [4]byte { return [4]byte{0xc6, 0x89, 0xeb, 0xdc} }
+func (m InputChecker_MixedInputs_Method) Pack(arg0 string, str string) []byte {
+	return inputCheckerMust(m.TryPack(arg0, str))
+}
+func (m InputChecker_MixedInputs_Method) TryPack(arg0 string, str string) ([]byte, error) {
+	return _InputCheckerABI.Pack(m.Name(), arg0, str)
+}
+func (m InputChecker_MixedInputs_Method) UnpackInput(callData []byte) (arg0 string, str string, err error) {
+	input, err := inputCheckerUnpackInput[InputChecker_MixedInputs_Input](m.Name(), callData)
+	if err != nil {
+		return *new(string), *new(string), err
+	}
+	return input.Arg0, input.Str, nil
+}
+func (m InputChecker_MixedInputs_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, arg0 string, str string) error {
+	_, err := inputCheckerCallRaw(ctx, client, addr, opts, m.Pack(arg0, str))
+	return err
+}
+
+func (input *InputChecker_MixedInputs_Input) unpack(arguments []any) {
+	input.Arg0 = inputCheckerConvertType[string](arguments[0])
+	input.Str = inputCheckerConvertType[string](arguments[1])
+}
+
+// InputChecker_NamedInput_Method is the Go binding around the namedInput contract method.
+// MethodID: 0x0d402005
+// Solidity: function namedInput(string str) returns()
+type InputChecker_NamedInput_Method struct {
+}
+
+// InputChecker_NamedInput_Input is the Go binding for the namedInput method input parameters.
+type InputChecker_NamedInput_Input struct {
+	Str string
+}
+
+func (m InputChecker_NamedInput_Method) Name() string      { return "namedInput" }
+func (m InputChecker_NamedInput_Method) MethodID() [4]byte { return [4]byte{0x0d, 0x40, 0x20, 0x05} }
+func (m InputChecker_NamedInput_Method) Pack(str string) []byte {
+	return inputCheckerMust(m.TryPack(str))
+}
+func (m InputChecker_NamedInput_Method) TryPack(str string) ([]byte, error) {
+	return _InputCheckerABI.Pack(m.Name(), str)
+}
+func (m InputChecker_NamedInput_Method) UnpackInput(callData []byte) (str string, err error) {
+	input, err := inputCheckerUnpackInput[InputChecker_NamedInput_Input](m.Name(), callData)
+	if err != nil {
+		return *new(string), err
+	}
+	return input.Str, nil
+}
+func (m InputChecker_NamedInput_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, str string) error {
+	_, err := inputCheckerCallRaw(ctx, client, addr, opts, m.Pack(str))
+	return err
+}
+
+func (input *InputChecker_NamedInput_Input) unpack(arguments []any) {
+	input.Str = inputCheckerConvertType[string](arguments[0])
+}
+
+// InputChecker_NamedInputs_Method is the Go binding around the namedInputs contract method.
+// MethodID: 0x63c796ed
+// Solidity: function namedInputs(string str1, string str2) returns()
+type InputChecker_NamedInputs_Method struct {
+}
+
+// InputChecker_NamedInputs_Input is the Go binding for the namedInputs method input parameters.
+type InputChecker_NamedInputs_Input struct {
+	Str1 string
+	Str2 string
+}
+
+func (m InputChecker_NamedInputs_Method) Name() string      { return "namedInputs" }
+func (m InputChecker_NamedInputs_Method) MethodID() [4]byte { return [4]byte{0x63, 0xc7, 0x96, 0xed} }
+func (m InputChecker_NamedInputs_Method) Pack(str1 string, str2 string) []byte {
+	return inputCheckerMust(m.TryPack(str1, str2))
+}
+func (m InputChecker_NamedInputs_Method) TryPack(str1 string, str2 string) ([]byte, error) {
+	return _InputCheckerABI.Pack(m.Name(), str1, str2)
+}
+func (m InputChecker_NamedInputs_Method) UnpackInput(callData []byte) (str1 string, str2 string, err error) {
+	input, err := inputCheckerUnpackInput[InputChecker_NamedInputs_Input](m.Name(), callData)
+	if err != nil {
+		return *new(string), *new(string), err
+	}
+	return input.Str1, input.Str2, nil
+}
+func (m InputChecker_NamedInputs_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, str1 string, str2 string) error {
+	_, err := inputCheckerCallRaw(ctx, client, addr, opts, m.Pack(str1, str2))
+	return err
+}
+
+func (input *InputChecker_NamedInputs_Input) unpack(arguments []any) {
+	input.Str1 = inputCheckerConvertType[string](arguments[0])
+	input.Str2 = inputCheckerConvertType[string](arguments[1])
+}
+
+// InputChecker_NoInput_Method is the Go binding around the noInput contract method.
+// MethodID: 0x53539029
+// Solidity: function noInput() returns()
+type InputChecker_NoInput_Method struct {
+}
+
+func (m InputChecker_NoInput_Method) Name() string      { return "noInput" }
+func (m InputChecker_NoInput_Method) MethodID() [4]byte { return [4]byte{0x53, 0x53, 0x90, 0x29} }
+func (m InputChecker_NoInput_Method) Pack() []byte {
+	return inputCheckerMust(m.TryPack())
+}
+func (m InputChecker_NoInput_Method) TryPack() ([]byte, error) {
+	return _InputCheckerABI.Pack(m.Name())
+}
+func (m InputChecker_NoInput_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts) error {
+	_, err := inputCheckerCallRaw(ctx, client, addr, opts, m.Pack())
+	return err
+}
+
+// UnpackInput attempts to decode the provided call data using contract method definitions.
+func (inputChecker *InputChecker) UnpackInput(callData []byte) (any, error) {
+	if len(callData) < 4 {
+		return nil, errMethodSignatureMismatch
+	}
+	if bytes.Equal(callData[:4], _InputCheckerABI.Methods["anonInput"].ID[:4]) {
+		return inputCheckerUnpackInput[InputChecker_AnonInput_Input]("anonInput", callData)
+	}
+	if bytes.Equal(callData[:4], _InputCheckerABI.Methods["anonInputs"].ID[:4]) {
+		return inputCheckerUnpackInput[InputChecker_AnonInputs_Input]("anonInputs", callData)
+	}
+	if bytes.Equal(callData[:4], _InputCheckerABI.Methods["mixedInputs"].ID[:4]) {
+		return inputCheckerUnpackInput[InputChecker_MixedInputs_Input]("mixedInputs", callData)
+	}
+	if bytes.Equal(callData[:4], _InputCheckerABI.Methods["namedInput"].ID[:4]) {
+		return inputCheckerUnpackInput[InputChecker_NamedInput_Input]("namedInput", callData)
+	}
+	if bytes.Equal(callData[:4], _InputCheckerABI.Methods["namedInputs"].ID[:4]) {
+		return inputCheckerUnpackInput[InputChecker_NamedInputs_Input]("namedInputs", callData)
+	}
+	if bytes.Equal(callData[:4], _InputCheckerABI.Methods["noInput"].ID[:4]) {
+		return inputChecker.NoInput, nil
+	}
+	return nil, errMethodSignatureMismatch
+}
+
+type inputCheckerEventUnpacker struct {
+	id     common.Hash
+	unpack func(*types.Log) (any, error)
+}
+
+type inputCheckerErrorUnpacker struct {
+	id     [4]byte
+	unpack func([]byte) (any, error)
+}
+
+func inputCheckerMust[T any](val T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+func inputCheckerConvertType[T any](value any) T {
+	return *abi.ConvertType(value, new(T)).(*T)
+}
+
+func inputCheckerCallRaw(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, input []byte) ([]byte, error) {
+	var callOpts bind.CallOpts
+	if opts != nil {
+		callOpts = *opts
+	}
+	callOpts.Context = ctx
+	return bind.NewBoundContract(addr, *_InputCheckerABI, client, nil, nil).CallRaw(&callOpts, input)
+}
+
+func inputCheckerUnpackInput[T any](name string, callData []byte) (*T, error) {
+	method, ok := _InputCheckerABI.Methods[name]
+	if !ok {
+		return nil, errors.New("method '" + name + "' not found")
+	}
+	if len(callData) < 4 || !bytes.Equal(callData[:4], method.ID[:4]) {
+		return nil, errMethodSignatureMismatch
+	}
+	arguments, err := method.Inputs.Unpack(callData[4:])
+	if err != nil {
+		return nil, err
+	}
+	input := new(T)
+	any(input).(interface{ unpack([]any) }).unpack(arguments)
+	return input, nil
+}
+
+func inputCheckerUnpackEvent[T any](name string, log *types.Log) (*T, error) {
+	event, ok := _InputCheckerABI.Events[name]
+	if !ok {
+		return nil, errors.New("event '" + name + "' not found")
+	}
+	if len(log.Topics) == 0 {
+		return nil, errNoEventSignature
+	}
+	if log.Topics[0] != event.ID {
+		return nil, errEventSignatureMismatch
+	}
+	var values []any
+	if len(log.Data) > 0 {
+		var err error
+		values, err = event.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	out := new(T)
+	eventData := any(out).(interface {
+		unpack([]any)
+		setRaw(*types.Log)
+	})
+	eventData.unpack(values)
+	var indexed abi.Arguments
+	for _, arg := range event.Inputs {
+		if arg.Indexed {
+			indexed = append(indexed, arg)
+		}
+	}
+	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
+		return nil, err
+	}
+	eventData.setRaw(log)
+	return out, nil
+}

@@ -1,0 +1,215 @@
+// Code generated via abigen V2 - DO NOT EDIT.
+// This file is a generated binding and any manual changes will be lost.
+
+package bindtests
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"math/big"
+
+	"github.com/donutnomad/eths/contractcall"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+)
+
+// Reference imports to suppress errors if they are not otherwise used.
+var (
+	_ = bytes.Equal
+	_ = context.Background
+	_ = errors.New
+	_ = big.NewInt
+	_ = contractcall.SendTxE
+	_ = common.Big1
+	_ = types.BloomLookup
+	_ = abi.ConvertType
+)
+
+var (
+	errNoEventSignature        = errors.New("missing event signature")
+	errEventSignatureMismatch  = errors.New("event signature mismatch")
+	errMethodSignatureMismatch = errors.New("method signature mismatch")
+	errErrorSignatureMismatch  = errors.New("error signature mismatch")
+)
+
+type ContractEvent interface {
+	Name() string
+	Topic0() common.Hash
+}
+
+type ContractError interface {
+	Name() string
+	ErrorID() common.Hash
+}
+
+// CallbackParamMetaData contains all meta data concerning the CallbackParam contract.
+var CallbackParamMetaData = bind.MetaData{
+	ABI: "[{\"constant\":false,\"inputs\":[{\"name\":\"callback\",\"type\":\"function\"}],\"name\":\"test\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ID:  "949f96f86d3c2e1bcc15563ad898beaaca",
+	Bin: "0x608060405234801561001057600080fd5b5061015e806100206000396000f3fe60806040526004361061003b576000357c010000000000000000000000000000000000000000000000000000000090048063d7a5aba214610040575b600080fd5b34801561004c57600080fd5b506100be6004803603602081101561006357600080fd5b810190808035806c0100000000000000000000000090049068010000000000000000900463ffffffff1677ffffffffffffffffffffffffffffffffffffffffffffffff169091602001919093929190939291905050506100c0565b005b818160016040518263ffffffff167c010000000000000000000000000000000000000000000000000000000002815260040180828152602001915050600060405180830381600087803b15801561011657600080fd5b505af115801561012a573d6000803e3d6000fd5b50505050505056fea165627a7a7230582062f87455ff84be90896dbb0c4e4ddb505c600d23089f8e80a512548440d7e2580029",
+}
+
+var _CallbackParamABI *abi.ABI
+
+func init() {
+	var err error
+	_CallbackParamABI, err = CallbackParamMetaData.ParseABI()
+	if err != nil {
+		panic(errors.New("invalid ABI: " + err.Error()))
+	}
+}
+
+// CallbackParam is an auto generated Go binding around an Ethereum contract.
+type CallbackParam struct {
+	Test CallbackParam_Test_Method
+}
+
+// NewCallbackParam creates a new instance of CallbackParam.
+func NewCallbackParam() *CallbackParam {
+	return &CallbackParam{}
+}
+
+// Instance creates a wrapper for a deployed contract instance at the given address.
+// Use this to create the instance object passed to abigen v2 library functions Call, Transact, etc.
+func (c *CallbackParam) Instance(backend bind.ContractBackend, addr common.Address) *bind.BoundContract {
+	return bind.NewBoundContract(addr, *_CallbackParamABI, backend, backend, backend)
+}
+
+// CallbackParam_Test_Method is the Go binding around the test contract method.
+// MethodID: 0xd7a5aba2
+// Solidity: function test(function callback) returns()
+type CallbackParam_Test_Method struct {
+}
+
+// CallbackParam_Test_Input is the Go binding for the test method input parameters.
+type CallbackParam_Test_Input struct {
+	Callback [24]byte
+}
+
+func (m CallbackParam_Test_Method) Name() string      { return "test" }
+func (m CallbackParam_Test_Method) MethodID() [4]byte { return [4]byte{0xd7, 0xa5, 0xab, 0xa2} }
+func (m CallbackParam_Test_Method) Pack(callback [24]byte) []byte {
+	return callbackParamMust(m.TryPack(callback))
+}
+func (m CallbackParam_Test_Method) TryPack(callback [24]byte) ([]byte, error) {
+	return _CallbackParamABI.Pack(m.Name(), callback)
+}
+func (m CallbackParam_Test_Method) UnpackInput(callData []byte) (callback [24]byte, err error) {
+	input, err := callbackParamUnpackInput[CallbackParam_Test_Input](m.Name(), callData)
+	if err != nil {
+		return *new([24]byte), err
+	}
+	return input.Callback, nil
+}
+func (m CallbackParam_Test_Method) Call(
+	ctx context.Context,
+	client contractcall.ISendTxClient,
+	addr common.Address,
+	tx contractcall.TxOpts,
+	callback [24]byte,
+) (*types.Transaction, error) {
+	return contractcall.SendTxE(ctx, client, tx.ChainID, tx.Value, m.Pack(callback), &addr, tx.Payer, tx.Manager, tx.BeforeSend, tx.NoSend, true, tx.Options...)
+}
+
+func (input *CallbackParam_Test_Input) unpack(arguments []any) {
+	input.Callback = callbackParamConvertType[[24]byte](arguments[0])
+}
+
+// UnpackInput attempts to decode the provided call data using contract method definitions.
+func (callbackParam *CallbackParam) UnpackInput(callData []byte) (any, error) {
+	if len(callData) < 4 {
+		return nil, errMethodSignatureMismatch
+	}
+	if bytes.Equal(callData[:4], _CallbackParamABI.Methods["test"].ID[:4]) {
+		return callbackParamUnpackInput[CallbackParam_Test_Input]("test", callData)
+	}
+	return nil, errMethodSignatureMismatch
+}
+
+type callbackParamEventUnpacker struct {
+	id     common.Hash
+	unpack func(*types.Log) (any, error)
+}
+
+type callbackParamErrorUnpacker struct {
+	id     [4]byte
+	unpack func([]byte) (any, error)
+}
+
+func callbackParamMust[T any](val T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+func callbackParamConvertType[T any](value any) T {
+	return *abi.ConvertType(value, new(T)).(*T)
+}
+
+func callbackParamCallRaw(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, input []byte) ([]byte, error) {
+	var callOpts bind.CallOpts
+	if opts != nil {
+		callOpts = *opts
+	}
+	callOpts.Context = ctx
+	return bind.NewBoundContract(addr, *_CallbackParamABI, client, nil, nil).CallRaw(&callOpts, input)
+}
+
+func callbackParamUnpackInput[T any](name string, callData []byte) (*T, error) {
+	method, ok := _CallbackParamABI.Methods[name]
+	if !ok {
+		return nil, errors.New("method '" + name + "' not found")
+	}
+	if len(callData) < 4 || !bytes.Equal(callData[:4], method.ID[:4]) {
+		return nil, errMethodSignatureMismatch
+	}
+	arguments, err := method.Inputs.Unpack(callData[4:])
+	if err != nil {
+		return nil, err
+	}
+	input := new(T)
+	any(input).(interface{ unpack([]any) }).unpack(arguments)
+	return input, nil
+}
+
+func callbackParamUnpackEvent[T any](name string, log *types.Log) (*T, error) {
+	event, ok := _CallbackParamABI.Events[name]
+	if !ok {
+		return nil, errors.New("event '" + name + "' not found")
+	}
+	if len(log.Topics) == 0 {
+		return nil, errNoEventSignature
+	}
+	if log.Topics[0] != event.ID {
+		return nil, errEventSignatureMismatch
+	}
+	var values []any
+	if len(log.Data) > 0 {
+		var err error
+		values, err = event.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	out := new(T)
+	eventData := any(out).(interface {
+		unpack([]any)
+		setRaw(*types.Log)
+	})
+	eventData.unpack(values)
+	var indexed abi.Arguments
+	for _, arg := range event.Inputs {
+		if arg.Indexed {
+			indexed = append(indexed, arg)
+		}
+	}
+	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
+		return nil, err
+	}
+	eventData.setRaw(log)
+	return out, nil
+}

@@ -1,0 +1,333 @@
+// Code generated via abigen V2 - DO NOT EDIT.
+// This file is a generated binding and any manual changes will be lost.
+
+package bindtests
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"math/big"
+
+	"github.com/donutnomad/eths/contractcall"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+)
+
+// Reference imports to suppress errors if they are not otherwise used.
+var (
+	_ = bytes.Equal
+	_ = context.Background
+	_ = errors.New
+	_ = big.NewInt
+	_ = contractcall.SendTxE
+	_ = common.Big1
+	_ = types.BloomLookup
+	_ = abi.ConvertType
+)
+
+var (
+	errNoEventSignature        = errors.New("missing event signature")
+	errEventSignatureMismatch  = errors.New("event signature mismatch")
+	errMethodSignatureMismatch = errors.New("method signature mismatch")
+	errErrorSignatureMismatch  = errors.New("error signature mismatch")
+)
+
+type ContractEvent interface {
+	Name() string
+	Topic0() common.Hash
+}
+
+type ContractError interface {
+	Name() string
+	ErrorID() common.Hash
+}
+
+// OverloadMetaData contains all meta data concerning the Overload contract.
+var OverloadMetaData = bind.MetaData{
+	ABI: "[{\"constant\":false,\"inputs\":[{\"name\":\"i\",\"type\":\"uint256\"},{\"name\":\"j\",\"type\":\"uint256\"}],\"name\":\"foo\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"i\",\"type\":\"uint256\"}],\"name\":\"foo\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"i\",\"type\":\"uint256\"}],\"name\":\"bar\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"i\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"j\",\"type\":\"uint256\"}],\"name\":\"bar\",\"type\":\"event\"}]",
+	ID:  "f49f0ff7ed407de5c37214f49309072aec",
+	Bin: "0x608060405234801561001057600080fd5b50610153806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c806304bc52f81461003b5780632fbebd3814610073575b600080fd5b6100716004803603604081101561005157600080fd5b8101908080359060200190929190803590602001909291905050506100a1565b005b61009f6004803603602081101561008957600080fd5b81019080803590602001909291905050506100e4565b005b7fae42e9514233792a47a1e4554624e83fe852228e1503f63cd383e8a431f4f46d8282604051808381526020018281526020019250505060405180910390a15050565b7f0423a1321222a0a8716c22b92fac42d85a45a612b696a461784d9fa537c81e5c816040518082815260200191505060405180910390a15056fea265627a7a72305820e22b049858b33291cbe67eeaece0c5f64333e439d27032ea8337d08b1de18fe864736f6c634300050a0032",
+}
+
+var _OverloadABI *abi.ABI
+
+func init() {
+	var err error
+	_OverloadABI, err = OverloadMetaData.ParseABI()
+	if err != nil {
+		panic(errors.New("invalid ABI: " + err.Error()))
+	}
+}
+
+// Overload is an auto generated Go binding around an Ethereum contract.
+type Overload struct {
+	Foo  Overload_Foo_Method
+	Foo0 Overload_Foo0_Method
+
+	BarEvent  Overload_Bar_Event
+	Bar0Event Overload_Bar0_Event
+}
+
+// NewOverload creates a new instance of Overload.
+func NewOverload() *Overload {
+	return &Overload{}
+}
+
+// Instance creates a wrapper for a deployed contract instance at the given address.
+// Use this to create the instance object passed to abigen v2 library functions Call, Transact, etc.
+func (c *Overload) Instance(backend bind.ContractBackend, addr common.Address) *bind.BoundContract {
+	return bind.NewBoundContract(addr, *_OverloadABI, backend, backend, backend)
+}
+
+// Overload_Foo_Method is the Go binding around the foo contract method.
+// MethodID: 0x04bc52f8
+// Solidity: function foo(uint256 i, uint256 j) returns()
+type Overload_Foo_Method struct {
+}
+
+// Overload_Foo_Input is the Go binding for the foo method input parameters.
+type Overload_Foo_Input struct {
+	I *big.Int
+	J *big.Int
+}
+
+func (m Overload_Foo_Method) Name() string      { return "foo" }
+func (m Overload_Foo_Method) MethodID() [4]byte { return [4]byte{0x04, 0xbc, 0x52, 0xf8} }
+func (m Overload_Foo_Method) Pack(i *big.Int, j *big.Int) []byte {
+	return overloadMust(m.TryPack(i, j))
+}
+func (m Overload_Foo_Method) TryPack(i *big.Int, j *big.Int) ([]byte, error) {
+	return _OverloadABI.Pack(m.Name(), i, j)
+}
+func (m Overload_Foo_Method) UnpackInput(callData []byte) (i *big.Int, j *big.Int, err error) {
+	input, err := overloadUnpackInput[Overload_Foo_Input](m.Name(), callData)
+	if err != nil {
+		return new(big.Int), new(big.Int), err
+	}
+	return input.I, input.J, nil
+}
+func (m Overload_Foo_Method) Call(
+	ctx context.Context,
+	client contractcall.ISendTxClient,
+	addr common.Address,
+	tx contractcall.TxOpts,
+	i *big.Int,
+	j *big.Int,
+) (*types.Transaction, error) {
+	return contractcall.SendTxE(ctx, client, tx.ChainID, tx.Value, m.Pack(i, j), &addr, tx.Payer, tx.Manager, tx.BeforeSend, tx.NoSend, true, tx.Options...)
+}
+
+func (input *Overload_Foo_Input) unpack(arguments []any) {
+	input.I = overloadConvertType[*big.Int](arguments[0])
+	input.J = overloadConvertType[*big.Int](arguments[1])
+}
+
+// Overload_Foo0_Method is the Go binding around the foo0 contract method.
+// MethodID: 0x2fbebd38
+// Solidity: function foo(uint256 i) returns()
+type Overload_Foo0_Method struct {
+}
+
+// Overload_Foo0_Input is the Go binding for the foo0 method input parameters.
+type Overload_Foo0_Input struct {
+	I *big.Int
+}
+
+func (m Overload_Foo0_Method) Name() string      { return "foo0" }
+func (m Overload_Foo0_Method) MethodID() [4]byte { return [4]byte{0x2f, 0xbe, 0xbd, 0x38} }
+func (m Overload_Foo0_Method) Pack(i *big.Int) []byte {
+	return overloadMust(m.TryPack(i))
+}
+func (m Overload_Foo0_Method) TryPack(i *big.Int) ([]byte, error) {
+	return _OverloadABI.Pack(m.Name(), i)
+}
+func (m Overload_Foo0_Method) UnpackInput(callData []byte) (i *big.Int, err error) {
+	input, err := overloadUnpackInput[Overload_Foo0_Input](m.Name(), callData)
+	if err != nil {
+		return new(big.Int), err
+	}
+	return input.I, nil
+}
+func (m Overload_Foo0_Method) Call(
+	ctx context.Context,
+	client contractcall.ISendTxClient,
+	addr common.Address,
+	tx contractcall.TxOpts,
+	i *big.Int,
+) (*types.Transaction, error) {
+	return contractcall.SendTxE(ctx, client, tx.ChainID, tx.Value, m.Pack(i), &addr, tx.Payer, tx.Manager, tx.BeforeSend, tx.NoSend, true, tx.Options...)
+}
+
+func (input *Overload_Foo0_Input) unpack(arguments []any) {
+	input.I = overloadConvertType[*big.Int](arguments[0])
+}
+
+// UnpackInput attempts to decode the provided call data using contract method definitions.
+func (overload *Overload) UnpackInput(callData []byte) (any, error) {
+	if len(callData) < 4 {
+		return nil, errMethodSignatureMismatch
+	}
+	if bytes.Equal(callData[:4], _OverloadABI.Methods["foo"].ID[:4]) {
+		return overloadUnpackInput[Overload_Foo_Input]("foo", callData)
+	}
+	if bytes.Equal(callData[:4], _OverloadABI.Methods["foo0"].ID[:4]) {
+		return overloadUnpackInput[Overload_Foo0_Input]("foo0", callData)
+	}
+	return nil, errMethodSignatureMismatch
+}
+
+// Overload_Bar_Event is the Go binding around the bar contract event.
+// Topic0: 0x0423a1321222a0a8716c22b92fac42d85a45a612b696a461784d9fa537c81e5c
+// Solidity: event bar(uint256 i)
+type Overload_Bar_Event struct {
+	I   *big.Int
+	Raw *types.Log // Blockchain specific contextual infos
+}
+
+const Overload_Bar_EventName = "bar"
+
+func (e Overload_Bar_Event) Name() string { return Overload_Bar_EventName }
+func (e Overload_Bar_Event) Topic0() common.Hash {
+	return common.HexToHash("0x0423a1321222a0a8716c22b92fac42d85a45a612b696a461784d9fa537c81e5c")
+}
+func (e Overload_Bar_Event) Unpack(log *types.Log) (*Overload_Bar_Event, error) {
+	return overloadUnpackEvent[Overload_Bar_Event](e.Name(), log)
+}
+func (out *Overload_Bar_Event) unpack(values []any) {
+	out.I = overloadConvertType[*big.Int](values[0])
+}
+func (out *Overload_Bar_Event) setRaw(log *types.Log) { out.Raw = log }
+
+// Overload_Bar0_Event is the Go binding around the bar0 contract event.
+// Topic0: 0xae42e9514233792a47a1e4554624e83fe852228e1503f63cd383e8a431f4f46d
+// Solidity: event bar(uint256 i, uint256 j)
+type Overload_Bar0_Event struct {
+	I   *big.Int
+	J   *big.Int
+	Raw *types.Log // Blockchain specific contextual infos
+}
+
+const Overload_Bar0_EventName = "bar0"
+
+func (e Overload_Bar0_Event) Name() string { return Overload_Bar0_EventName }
+func (e Overload_Bar0_Event) Topic0() common.Hash {
+	return common.HexToHash("0xae42e9514233792a47a1e4554624e83fe852228e1503f63cd383e8a431f4f46d")
+}
+func (e Overload_Bar0_Event) Unpack(log *types.Log) (*Overload_Bar0_Event, error) {
+	return overloadUnpackEvent[Overload_Bar0_Event](e.Name(), log)
+}
+func (out *Overload_Bar0_Event) unpack(values []any) {
+	out.I = overloadConvertType[*big.Int](values[0])
+	out.J = overloadConvertType[*big.Int](values[1])
+}
+func (out *Overload_Bar0_Event) setRaw(log *types.Log) { out.Raw = log }
+
+// UnpackEvent unpacks event log based on topic0.
+func (overload *Overload) UnpackEvent(log *types.Log) (any, error) {
+	if len(log.Topics) == 0 {
+		return nil, errNoEventSignature
+	}
+	for _, item := range overloadEventUnpackers {
+		if item.id == log.Topics[0] {
+			return item.unpack(log)
+		}
+	}
+	return nil, errEventSignatureMismatch
+}
+
+type overloadEventUnpacker struct {
+	id     common.Hash
+	unpack func(*types.Log) (any, error)
+}
+
+type overloadErrorUnpacker struct {
+	id     [4]byte
+	unpack func([]byte) (any, error)
+}
+
+var overloadEventUnpackers = []overloadEventUnpacker{
+	{id: common.HexToHash("0x0423a1321222a0a8716c22b92fac42d85a45a612b696a461784d9fa537c81e5c"), unpack: func(log *types.Log) (any, error) {
+		return (Overload_Bar_Event{}).Unpack(log)
+	}},
+	{id: common.HexToHash("0xae42e9514233792a47a1e4554624e83fe852228e1503f63cd383e8a431f4f46d"), unpack: func(log *types.Log) (any, error) {
+		return (Overload_Bar0_Event{}).Unpack(log)
+	}},
+}
+
+func overloadMust[T any](val T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+func overloadConvertType[T any](value any) T {
+	return *abi.ConvertType(value, new(T)).(*T)
+}
+
+func overloadCallRaw(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, input []byte) ([]byte, error) {
+	var callOpts bind.CallOpts
+	if opts != nil {
+		callOpts = *opts
+	}
+	callOpts.Context = ctx
+	return bind.NewBoundContract(addr, *_OverloadABI, client, nil, nil).CallRaw(&callOpts, input)
+}
+
+func overloadUnpackInput[T any](name string, callData []byte) (*T, error) {
+	method, ok := _OverloadABI.Methods[name]
+	if !ok {
+		return nil, errors.New("method '" + name + "' not found")
+	}
+	if len(callData) < 4 || !bytes.Equal(callData[:4], method.ID[:4]) {
+		return nil, errMethodSignatureMismatch
+	}
+	arguments, err := method.Inputs.Unpack(callData[4:])
+	if err != nil {
+		return nil, err
+	}
+	input := new(T)
+	any(input).(interface{ unpack([]any) }).unpack(arguments)
+	return input, nil
+}
+
+func overloadUnpackEvent[T any](name string, log *types.Log) (*T, error) {
+	event, ok := _OverloadABI.Events[name]
+	if !ok {
+		return nil, errors.New("event '" + name + "' not found")
+	}
+	if len(log.Topics) == 0 {
+		return nil, errNoEventSignature
+	}
+	if log.Topics[0] != event.ID {
+		return nil, errEventSignatureMismatch
+	}
+	var values []any
+	if len(log.Data) > 0 {
+		var err error
+		values, err = event.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	out := new(T)
+	eventData := any(out).(interface {
+		unpack([]any)
+		setRaw(*types.Log)
+	})
+	eventData.unpack(values)
+	var indexed abi.Arguments
+	for _, arg := range event.Inputs {
+		if arg.Indexed {
+			indexed = append(indexed, arg)
+		}
+	}
+	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
+		return nil, err
+	}
+	eventData.setRaw(log)
+	return out, nil
+}

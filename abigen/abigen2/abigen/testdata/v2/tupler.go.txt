@@ -1,0 +1,217 @@
+// Code generated via abigen V2 - DO NOT EDIT.
+// This file is a generated binding and any manual changes will be lost.
+
+package bindtests
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"math/big"
+
+	"github.com/donutnomad/eths/contractcall"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+)
+
+// Reference imports to suppress errors if they are not otherwise used.
+var (
+	_ = bytes.Equal
+	_ = context.Background
+	_ = errors.New
+	_ = big.NewInt
+	_ = contractcall.SendTxE
+	_ = common.Big1
+	_ = types.BloomLookup
+	_ = abi.ConvertType
+)
+
+var (
+	errNoEventSignature        = errors.New("missing event signature")
+	errEventSignatureMismatch  = errors.New("event signature mismatch")
+	errMethodSignatureMismatch = errors.New("method signature mismatch")
+	errErrorSignatureMismatch  = errors.New("error signature mismatch")
+)
+
+type ContractEvent interface {
+	Name() string
+	Topic0() common.Hash
+}
+
+type ContractError interface {
+	Name() string
+	ErrorID() common.Hash
+}
+
+// TuplerMetaData contains all meta data concerning the Tupler contract.
+var TuplerMetaData = bind.MetaData{
+	ABI: "[{\"constant\":true,\"inputs\":[],\"name\":\"tuple\",\"outputs\":[{\"name\":\"a\",\"type\":\"string\"},{\"name\":\"b\",\"type\":\"int256\"},{\"name\":\"c\",\"type\":\"bytes32\"}],\"type\":\"function\"}]",
+	ID:  "a8f4d2061f55c712cfae266c426a1cd568",
+	Bin: "0x606060405260dc8060106000396000f3606060405260e060020a60003504633175aae28114601a575b005b600060605260c0604052600260809081527f486900000000000000000000000000000000000000000000000000000000000060a05260017fc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a47060e0829052610100819052606060c0908152600261012081905281906101409060a09080838184600060046012f1505081517fffff000000000000000000000000000000000000000000000000000000000000169091525050604051610160819003945092505050f3",
+}
+
+var _TuplerABI *abi.ABI
+
+func init() {
+	var err error
+	_TuplerABI, err = TuplerMetaData.ParseABI()
+	if err != nil {
+		panic(errors.New("invalid ABI: " + err.Error()))
+	}
+}
+
+// Tupler is an auto generated Go binding around an Ethereum contract.
+type Tupler struct {
+	Tuple Tupler_Tuple_Method
+}
+
+// NewTupler creates a new instance of Tupler.
+func NewTupler() *Tupler {
+	return &Tupler{}
+}
+
+// Instance creates a wrapper for a deployed contract instance at the given address.
+// Use this to create the instance object passed to abigen v2 library functions Call, Transact, etc.
+func (c *Tupler) Instance(backend bind.ContractBackend, addr common.Address) *bind.BoundContract {
+	return bind.NewBoundContract(addr, *_TuplerABI, backend, backend, backend)
+}
+
+// Tupler_Tuple_Method is the Go binding around the tuple contract method.
+// MethodID: 0x3175aae2
+// Solidity: function tuple() returns(string a, int256 b, bytes32 c)
+type Tupler_Tuple_Method struct {
+}
+
+func (m Tupler_Tuple_Method) Name() string      { return "tuple" }
+func (m Tupler_Tuple_Method) MethodID() [4]byte { return [4]byte{0x31, 0x75, 0xaa, 0xe2} }
+func (m Tupler_Tuple_Method) Pack() []byte {
+	return tuplerMust(m.TryPack())
+}
+func (m Tupler_Tuple_Method) TryPack() ([]byte, error) {
+	return _TuplerABI.Pack(m.Name())
+}
+func (m Tupler_Tuple_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts) (Tupler_Tuple_Output, error) {
+	output, err := tuplerCallRaw(ctx, client, addr, opts, m.Pack())
+	if err != nil {
+		return *new(Tupler_Tuple_Output), err
+	}
+	return m.Unpack(output)
+}
+
+// Tupler_Tuple_Output serves as a container for the return parameters of contract
+// method Tuple.
+type Tupler_Tuple_Output struct {
+	A string
+	B *big.Int
+	C [32]byte
+}
+
+func (m Tupler_Tuple_Method) Unpack(data []byte) (Tupler_Tuple_Output, error) {
+	out, err := _TuplerABI.Unpack(m.Name(), data)
+	outstruct := new(Tupler_Tuple_Output)
+	if err != nil {
+		return *outstruct, err
+	}
+	outstruct.A = tuplerConvertType[string](out[0])
+	outstruct.B = tuplerConvertType[*big.Int](out[1])
+	outstruct.C = tuplerConvertType[[32]byte](out[2])
+	return *outstruct, nil
+}
+
+// UnpackInput attempts to decode the provided call data using contract method definitions.
+func (tupler *Tupler) UnpackInput(callData []byte) (any, error) {
+	if len(callData) < 4 {
+		return nil, errMethodSignatureMismatch
+	}
+	if bytes.Equal(callData[:4], _TuplerABI.Methods["tuple"].ID[:4]) {
+		return tupler.Tuple, nil
+	}
+	return nil, errMethodSignatureMismatch
+}
+
+type tuplerEventUnpacker struct {
+	id     common.Hash
+	unpack func(*types.Log) (any, error)
+}
+
+type tuplerErrorUnpacker struct {
+	id     [4]byte
+	unpack func([]byte) (any, error)
+}
+
+func tuplerMust[T any](val T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+func tuplerConvertType[T any](value any) T {
+	return *abi.ConvertType(value, new(T)).(*T)
+}
+
+func tuplerCallRaw(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, input []byte) ([]byte, error) {
+	var callOpts bind.CallOpts
+	if opts != nil {
+		callOpts = *opts
+	}
+	callOpts.Context = ctx
+	return bind.NewBoundContract(addr, *_TuplerABI, client, nil, nil).CallRaw(&callOpts, input)
+}
+
+func tuplerUnpackInput[T any](name string, callData []byte) (*T, error) {
+	method, ok := _TuplerABI.Methods[name]
+	if !ok {
+		return nil, errors.New("method '" + name + "' not found")
+	}
+	if len(callData) < 4 || !bytes.Equal(callData[:4], method.ID[:4]) {
+		return nil, errMethodSignatureMismatch
+	}
+	arguments, err := method.Inputs.Unpack(callData[4:])
+	if err != nil {
+		return nil, err
+	}
+	input := new(T)
+	any(input).(interface{ unpack([]any) }).unpack(arguments)
+	return input, nil
+}
+
+func tuplerUnpackEvent[T any](name string, log *types.Log) (*T, error) {
+	event, ok := _TuplerABI.Events[name]
+	if !ok {
+		return nil, errors.New("event '" + name + "' not found")
+	}
+	if len(log.Topics) == 0 {
+		return nil, errNoEventSignature
+	}
+	if log.Topics[0] != event.ID {
+		return nil, errEventSignatureMismatch
+	}
+	var values []any
+	if len(log.Data) > 0 {
+		var err error
+		values, err = event.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	out := new(T)
+	eventData := any(out).(interface {
+		unpack([]any)
+		setRaw(*types.Log)
+	})
+	eventData.unpack(values)
+	var indexed abi.Arguments
+	for _, arg := range event.Inputs {
+		if arg.Indexed {
+			indexed = append(indexed, arg)
+		}
+	}
+	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
+		return nil, err
+	}
+	eventData.setRaw(log)
+	return out, nil
+}

@@ -1,0 +1,214 @@
+// Code generated via abigen V2 - DO NOT EDIT.
+// This file is a generated binding and any manual changes will be lost.
+
+package bindtests
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"math/big"
+
+	"github.com/donutnomad/eths/contractcall"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+)
+
+// Reference imports to suppress errors if they are not otherwise used.
+var (
+	_ = bytes.Equal
+	_ = context.Background
+	_ = errors.New
+	_ = big.NewInt
+	_ = contractcall.SendTxE
+	_ = common.Big1
+	_ = types.BloomLookup
+	_ = abi.ConvertType
+)
+
+var (
+	errNoEventSignature        = errors.New("missing event signature")
+	errEventSignatureMismatch  = errors.New("event signature mismatch")
+	errMethodSignatureMismatch = errors.New("method signature mismatch")
+	errErrorSignatureMismatch  = errors.New("error signature mismatch")
+)
+
+type ContractEvent interface {
+	Name() string
+	Topic0() common.Hash
+}
+
+type ContractError interface {
+	Name() string
+	ErrorID() common.Hash
+}
+
+// RangeKeywordMetaData contains all meta data concerning the RangeKeyword contract.
+var RangeKeywordMetaData = bind.MetaData{
+	ABI: "[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"range\",\"type\":\"uint256\"}],\"name\":\"functionWithKeywordParameter\",\"outputs\":[],\"stateMutability\":\"pure\",\"type\":\"function\"}]",
+	ID:  "cec8c872ba06feb1b8f0a00e7b237eb226",
+	Bin: "0x608060405234801561001057600080fd5b5060dc8061001f6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063527a119f14602d575b600080fd5b60436004803603810190603f9190605b565b6045565b005b50565b6000813590506055816092565b92915050565b600060208284031215606e57606d608d565b5b6000607a848285016048565b91505092915050565b6000819050919050565b600080fd5b6099816083565b811460a357600080fd5b5056fea2646970667358221220d4f4525e2615516394055d369fb17df41c359e5e962734f27fd683ea81fd9db164736f6c63430008070033",
+}
+
+var _RangeKeywordABI *abi.ABI
+
+func init() {
+	var err error
+	_RangeKeywordABI, err = RangeKeywordMetaData.ParseABI()
+	if err != nil {
+		panic(errors.New("invalid ABI: " + err.Error()))
+	}
+}
+
+// RangeKeyword is an auto generated Go binding around an Ethereum contract.
+type RangeKeyword struct {
+	FunctionWithKeywordParameter RangeKeyword_FunctionWithKeywordParameter_Method
+}
+
+// NewRangeKeyword creates a new instance of RangeKeyword.
+func NewRangeKeyword() *RangeKeyword {
+	return &RangeKeyword{}
+}
+
+// Instance creates a wrapper for a deployed contract instance at the given address.
+// Use this to create the instance object passed to abigen v2 library functions Call, Transact, etc.
+func (c *RangeKeyword) Instance(backend bind.ContractBackend, addr common.Address) *bind.BoundContract {
+	return bind.NewBoundContract(addr, *_RangeKeywordABI, backend, backend, backend)
+}
+
+// RangeKeyword_FunctionWithKeywordParameter_Method is the Go binding around the functionWithKeywordParameter contract method.
+// MethodID: 0x527a119f
+// Solidity: function functionWithKeywordParameter(uint256 range) pure returns()
+type RangeKeyword_FunctionWithKeywordParameter_Method struct {
+}
+
+// RangeKeyword_FunctionWithKeywordParameter_Input is the Go binding for the functionWithKeywordParameter method input parameters.
+type RangeKeyword_FunctionWithKeywordParameter_Input struct {
+	Arg0 *big.Int
+}
+
+func (m RangeKeyword_FunctionWithKeywordParameter_Method) Name() string {
+	return "functionWithKeywordParameter"
+}
+func (m RangeKeyword_FunctionWithKeywordParameter_Method) MethodID() [4]byte {
+	return [4]byte{0x52, 0x7a, 0x11, 0x9f}
+}
+func (m RangeKeyword_FunctionWithKeywordParameter_Method) Pack(arg0 *big.Int) []byte {
+	return rangeKeywordMust(m.TryPack(arg0))
+}
+func (m RangeKeyword_FunctionWithKeywordParameter_Method) TryPack(arg0 *big.Int) ([]byte, error) {
+	return _RangeKeywordABI.Pack(m.Name(), arg0)
+}
+func (m RangeKeyword_FunctionWithKeywordParameter_Method) UnpackInput(callData []byte) (arg0 *big.Int, err error) {
+	input, err := rangeKeywordUnpackInput[RangeKeyword_FunctionWithKeywordParameter_Input](m.Name(), callData)
+	if err != nil {
+		return new(big.Int), err
+	}
+	return input.Arg0, nil
+}
+func (m RangeKeyword_FunctionWithKeywordParameter_Method) Call(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, arg0 *big.Int) error {
+	_, err := rangeKeywordCallRaw(ctx, client, addr, opts, m.Pack(arg0))
+	return err
+}
+
+func (input *RangeKeyword_FunctionWithKeywordParameter_Input) unpack(arguments []any) {
+	input.Arg0 = rangeKeywordConvertType[*big.Int](arguments[0])
+}
+
+// UnpackInput attempts to decode the provided call data using contract method definitions.
+func (rangeKeyword *RangeKeyword) UnpackInput(callData []byte) (any, error) {
+	if len(callData) < 4 {
+		return nil, errMethodSignatureMismatch
+	}
+	if bytes.Equal(callData[:4], _RangeKeywordABI.Methods["functionWithKeywordParameter"].ID[:4]) {
+		return rangeKeywordUnpackInput[RangeKeyword_FunctionWithKeywordParameter_Input]("functionWithKeywordParameter", callData)
+	}
+	return nil, errMethodSignatureMismatch
+}
+
+type rangeKeywordEventUnpacker struct {
+	id     common.Hash
+	unpack func(*types.Log) (any, error)
+}
+
+type rangeKeywordErrorUnpacker struct {
+	id     [4]byte
+	unpack func([]byte) (any, error)
+}
+
+func rangeKeywordMust[T any](val T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+func rangeKeywordConvertType[T any](value any) T {
+	return *abi.ConvertType(value, new(T)).(*T)
+}
+
+func rangeKeywordCallRaw(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, input []byte) ([]byte, error) {
+	var callOpts bind.CallOpts
+	if opts != nil {
+		callOpts = *opts
+	}
+	callOpts.Context = ctx
+	return bind.NewBoundContract(addr, *_RangeKeywordABI, client, nil, nil).CallRaw(&callOpts, input)
+}
+
+func rangeKeywordUnpackInput[T any](name string, callData []byte) (*T, error) {
+	method, ok := _RangeKeywordABI.Methods[name]
+	if !ok {
+		return nil, errors.New("method '" + name + "' not found")
+	}
+	if len(callData) < 4 || !bytes.Equal(callData[:4], method.ID[:4]) {
+		return nil, errMethodSignatureMismatch
+	}
+	arguments, err := method.Inputs.Unpack(callData[4:])
+	if err != nil {
+		return nil, err
+	}
+	input := new(T)
+	any(input).(interface{ unpack([]any) }).unpack(arguments)
+	return input, nil
+}
+
+func rangeKeywordUnpackEvent[T any](name string, log *types.Log) (*T, error) {
+	event, ok := _RangeKeywordABI.Events[name]
+	if !ok {
+		return nil, errors.New("event '" + name + "' not found")
+	}
+	if len(log.Topics) == 0 {
+		return nil, errNoEventSignature
+	}
+	if log.Topics[0] != event.ID {
+		return nil, errEventSignatureMismatch
+	}
+	var values []any
+	if len(log.Data) > 0 {
+		var err error
+		values, err = event.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	out := new(T)
+	eventData := any(out).(interface {
+		unpack([]any)
+		setRaw(*types.Log)
+	})
+	eventData.unpack(values)
+	var indexed abi.Arguments
+	for _, arg := range event.Inputs {
+		if arg.Indexed {
+			indexed = append(indexed, arg)
+		}
+	}
+	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
+		return nil, err
+	}
+	eventData.setRaw(log)
+	return out, nil
+}

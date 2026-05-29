@@ -33,6 +33,16 @@ type SendTxOption struct {
 	Strict bool // true: 不允许向合约发送空data（因为，如果合约没有设置payable方法，则不能接受ETH，返回的只是execution reverted, 让人无法理解
 }
 
+type TxOpts struct {
+	ChainID    *big.Int
+	Value      *big.Int
+	Payer      ISigner
+	Manager    *CallManager
+	BeforeSend func(tx *ethTypes.Transaction) error
+	NoSend     bool
+	Options    []SendTxOption
+}
+
 func SendTx(
 	ctx context.Context,
 	client ISendTxClient,

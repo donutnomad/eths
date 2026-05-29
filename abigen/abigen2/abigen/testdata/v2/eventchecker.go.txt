@@ -1,0 +1,311 @@
+// Code generated via abigen V2 - DO NOT EDIT.
+// This file is a generated binding and any manual changes will be lost.
+
+package bindtests
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"math/big"
+
+	"github.com/donutnomad/eths/contractcall"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+)
+
+// Reference imports to suppress errors if they are not otherwise used.
+var (
+	_ = bytes.Equal
+	_ = context.Background
+	_ = errors.New
+	_ = big.NewInt
+	_ = contractcall.SendTxE
+	_ = common.Big1
+	_ = types.BloomLookup
+	_ = abi.ConvertType
+)
+
+var (
+	errNoEventSignature        = errors.New("missing event signature")
+	errEventSignatureMismatch  = errors.New("event signature mismatch")
+	errMethodSignatureMismatch = errors.New("method signature mismatch")
+	errErrorSignatureMismatch  = errors.New("error signature mismatch")
+)
+
+type ContractEvent interface {
+	Name() string
+	Topic0() common.Hash
+}
+
+type ContractError interface {
+	Name() string
+	ErrorID() common.Hash
+}
+
+// EventCheckerMetaData contains all meta data concerning the EventChecker contract.
+var EventCheckerMetaData = bind.MetaData{
+	ABI: "[{\"type\":\"event\",\"name\":\"empty\",\"inputs\":[]},{\"type\":\"event\",\"name\":\"indexed\",\"inputs\":[{\"name\":\"addr\",\"type\":\"address\",\"indexed\":true},{\"name\":\"num\",\"type\":\"int256\",\"indexed\":true}]},{\"type\":\"event\",\"name\":\"mixed\",\"inputs\":[{\"name\":\"addr\",\"type\":\"address\",\"indexed\":true},{\"name\":\"num\",\"type\":\"int256\"}]},{\"type\":\"event\",\"name\":\"anonymous\",\"anonymous\":true,\"inputs\":[]},{\"type\":\"event\",\"name\":\"dynamic\",\"inputs\":[{\"name\":\"idxStr\",\"type\":\"string\",\"indexed\":true},{\"name\":\"idxDat\",\"type\":\"bytes\",\"indexed\":true},{\"name\":\"str\",\"type\":\"string\"},{\"name\":\"dat\",\"type\":\"bytes\"}]},{\"type\":\"event\",\"name\":\"unnamed\",\"inputs\":[{\"name\":\"\",\"type\":\"uint256\",\"indexed\":true},{\"name\":\"\",\"type\":\"uint256\",\"indexed\":true}]}]",
+	ID:  "253d421f98e29b25315bde79c1251ab27c",
+}
+
+var _EventCheckerABI *abi.ABI
+
+func init() {
+	var err error
+	_EventCheckerABI, err = EventCheckerMetaData.ParseABI()
+	if err != nil {
+		panic(errors.New("invalid ABI: " + err.Error()))
+	}
+}
+
+// EventChecker is an auto generated Go binding around an Ethereum contract.
+type EventChecker struct {
+	DynamicEvent EventChecker_Dynamic_Event
+	EmptyEvent   EventChecker_Empty_Event
+	IndexedEvent EventChecker_Indexed_Event
+	MixedEvent   EventChecker_Mixed_Event
+	UnnamedEvent EventChecker_Unnamed_Event
+}
+
+// NewEventChecker creates a new instance of EventChecker.
+func NewEventChecker() *EventChecker {
+	return &EventChecker{}
+}
+
+// Instance creates a wrapper for a deployed contract instance at the given address.
+// Use this to create the instance object passed to abigen v2 library functions Call, Transact, etc.
+func (c *EventChecker) Instance(backend bind.ContractBackend, addr common.Address) *bind.BoundContract {
+	return bind.NewBoundContract(addr, *_EventCheckerABI, backend, backend, backend)
+}
+
+// EventChecker_Dynamic_Event is the Go binding around the dynamic contract event.
+// Topic0: 0x884557713ed39a810cef8832b329c1666edb477e908c90033208f086a00a1d8c
+// Solidity: event dynamic(string indexed idxStr, bytes indexed idxDat, string str, bytes dat)
+type EventChecker_Dynamic_Event struct {
+	IdxStr common.Hash
+	IdxDat common.Hash
+	Str    string
+	Dat    []byte
+	Raw    *types.Log // Blockchain specific contextual infos
+}
+
+const EventChecker_Dynamic_EventName = "dynamic"
+
+func (e EventChecker_Dynamic_Event) Name() string { return EventChecker_Dynamic_EventName }
+func (e EventChecker_Dynamic_Event) Topic0() common.Hash {
+	return common.HexToHash("0x884557713ed39a810cef8832b329c1666edb477e908c90033208f086a00a1d8c")
+}
+func (e EventChecker_Dynamic_Event) Unpack(log *types.Log) (*EventChecker_Dynamic_Event, error) {
+	return eventCheckerUnpackEvent[EventChecker_Dynamic_Event](e.Name(), log)
+}
+func (out *EventChecker_Dynamic_Event) unpack(values []any) {
+	out.Str = eventCheckerConvertType[string](values[0])
+	out.Dat = eventCheckerConvertType[[]byte](values[1])
+}
+func (out *EventChecker_Dynamic_Event) setRaw(log *types.Log) { out.Raw = log }
+
+// EventChecker_Empty_Event is the Go binding around the empty contract event.
+// Topic0: 0xf2a75fe4d7cd25bbe769d566fbf5a20c67283479ab765ae5857c5ba963305b55
+// Solidity: event empty()
+type EventChecker_Empty_Event struct {
+	Raw *types.Log // Blockchain specific contextual infos
+}
+
+const EventChecker_Empty_EventName = "empty"
+
+func (e EventChecker_Empty_Event) Name() string { return EventChecker_Empty_EventName }
+func (e EventChecker_Empty_Event) Topic0() common.Hash {
+	return common.HexToHash("0xf2a75fe4d7cd25bbe769d566fbf5a20c67283479ab765ae5857c5ba963305b55")
+}
+func (e EventChecker_Empty_Event) Unpack(log *types.Log) (*EventChecker_Empty_Event, error) {
+	return eventCheckerUnpackEvent[EventChecker_Empty_Event](e.Name(), log)
+}
+func (out *EventChecker_Empty_Event) unpack(values []any) {
+}
+func (out *EventChecker_Empty_Event) setRaw(log *types.Log) { out.Raw = log }
+
+// EventChecker_Indexed_Event is the Go binding around the indexed contract event.
+// Topic0: 0x68f08c93f2bc784352cdd6cec6d8155cd183e8d593cec16c4e6e28c376d0a757
+// Solidity: event indexed(address indexed addr, int256 indexed num)
+type EventChecker_Indexed_Event struct {
+	Addr common.Address
+	Num  *big.Int
+	Raw  *types.Log // Blockchain specific contextual infos
+}
+
+const EventChecker_Indexed_EventName = "indexed"
+
+func (e EventChecker_Indexed_Event) Name() string { return EventChecker_Indexed_EventName }
+func (e EventChecker_Indexed_Event) Topic0() common.Hash {
+	return common.HexToHash("0x68f08c93f2bc784352cdd6cec6d8155cd183e8d593cec16c4e6e28c376d0a757")
+}
+func (e EventChecker_Indexed_Event) Unpack(log *types.Log) (*EventChecker_Indexed_Event, error) {
+	return eventCheckerUnpackEvent[EventChecker_Indexed_Event](e.Name(), log)
+}
+func (out *EventChecker_Indexed_Event) unpack(values []any) {
+}
+func (out *EventChecker_Indexed_Event) setRaw(log *types.Log) { out.Raw = log }
+
+// EventChecker_Mixed_Event is the Go binding around the mixed contract event.
+// Topic0: 0xfd60ab978c670ea276c6de7291142f38390018998199f6cd242c4337b8003406
+// Solidity: event mixed(address indexed addr, int256 num)
+type EventChecker_Mixed_Event struct {
+	Addr common.Address
+	Num  *big.Int
+	Raw  *types.Log // Blockchain specific contextual infos
+}
+
+const EventChecker_Mixed_EventName = "mixed"
+
+func (e EventChecker_Mixed_Event) Name() string { return EventChecker_Mixed_EventName }
+func (e EventChecker_Mixed_Event) Topic0() common.Hash {
+	return common.HexToHash("0xfd60ab978c670ea276c6de7291142f38390018998199f6cd242c4337b8003406")
+}
+func (e EventChecker_Mixed_Event) Unpack(log *types.Log) (*EventChecker_Mixed_Event, error) {
+	return eventCheckerUnpackEvent[EventChecker_Mixed_Event](e.Name(), log)
+}
+func (out *EventChecker_Mixed_Event) unpack(values []any) {
+	out.Num = eventCheckerConvertType[*big.Int](values[0])
+}
+func (out *EventChecker_Mixed_Event) setRaw(log *types.Log) { out.Raw = log }
+
+// EventChecker_Unnamed_Event is the Go binding around the unnamed contract event.
+// Topic0: 0x91f37301972b2ec7db5b931c909e4fbe7ecfd001b4255dd3c2df14821afc7d39
+// Solidity: event unnamed(uint256 indexed arg0, uint256 indexed arg1)
+type EventChecker_Unnamed_Event struct {
+	Arg0 *big.Int
+	Arg1 *big.Int
+	Raw  *types.Log // Blockchain specific contextual infos
+}
+
+const EventChecker_Unnamed_EventName = "unnamed"
+
+func (e EventChecker_Unnamed_Event) Name() string { return EventChecker_Unnamed_EventName }
+func (e EventChecker_Unnamed_Event) Topic0() common.Hash {
+	return common.HexToHash("0x91f37301972b2ec7db5b931c909e4fbe7ecfd001b4255dd3c2df14821afc7d39")
+}
+func (e EventChecker_Unnamed_Event) Unpack(log *types.Log) (*EventChecker_Unnamed_Event, error) {
+	return eventCheckerUnpackEvent[EventChecker_Unnamed_Event](e.Name(), log)
+}
+func (out *EventChecker_Unnamed_Event) unpack(values []any) {
+}
+func (out *EventChecker_Unnamed_Event) setRaw(log *types.Log) { out.Raw = log }
+
+// UnpackEvent unpacks event log based on topic0.
+func (eventChecker *EventChecker) UnpackEvent(log *types.Log) (any, error) {
+	if len(log.Topics) == 0 {
+		return nil, errNoEventSignature
+	}
+	for _, item := range eventCheckerEventUnpackers {
+		if item.id == log.Topics[0] {
+			return item.unpack(log)
+		}
+	}
+	return nil, errEventSignatureMismatch
+}
+
+type eventCheckerEventUnpacker struct {
+	id     common.Hash
+	unpack func(*types.Log) (any, error)
+}
+
+type eventCheckerErrorUnpacker struct {
+	id     [4]byte
+	unpack func([]byte) (any, error)
+}
+
+var eventCheckerEventUnpackers = []eventCheckerEventUnpacker{
+	{id: common.HexToHash("0x884557713ed39a810cef8832b329c1666edb477e908c90033208f086a00a1d8c"), unpack: func(log *types.Log) (any, error) {
+		return (EventChecker_Dynamic_Event{}).Unpack(log)
+	}},
+	{id: common.HexToHash("0xf2a75fe4d7cd25bbe769d566fbf5a20c67283479ab765ae5857c5ba963305b55"), unpack: func(log *types.Log) (any, error) {
+		return (EventChecker_Empty_Event{}).Unpack(log)
+	}},
+	{id: common.HexToHash("0x68f08c93f2bc784352cdd6cec6d8155cd183e8d593cec16c4e6e28c376d0a757"), unpack: func(log *types.Log) (any, error) {
+		return (EventChecker_Indexed_Event{}).Unpack(log)
+	}},
+	{id: common.HexToHash("0xfd60ab978c670ea276c6de7291142f38390018998199f6cd242c4337b8003406"), unpack: func(log *types.Log) (any, error) {
+		return (EventChecker_Mixed_Event{}).Unpack(log)
+	}},
+	{id: common.HexToHash("0x91f37301972b2ec7db5b931c909e4fbe7ecfd001b4255dd3c2df14821afc7d39"), unpack: func(log *types.Log) (any, error) {
+		return (EventChecker_Unnamed_Event{}).Unpack(log)
+	}},
+}
+
+func eventCheckerMust[T any](val T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+func eventCheckerConvertType[T any](value any) T {
+	return *abi.ConvertType(value, new(T)).(*T)
+}
+
+func eventCheckerCallRaw(ctx context.Context, client bind.ContractCaller, addr common.Address, opts *bind.CallOpts, input []byte) ([]byte, error) {
+	var callOpts bind.CallOpts
+	if opts != nil {
+		callOpts = *opts
+	}
+	callOpts.Context = ctx
+	return bind.NewBoundContract(addr, *_EventCheckerABI, client, nil, nil).CallRaw(&callOpts, input)
+}
+
+func eventCheckerUnpackInput[T any](name string, callData []byte) (*T, error) {
+	method, ok := _EventCheckerABI.Methods[name]
+	if !ok {
+		return nil, errors.New("method '" + name + "' not found")
+	}
+	if len(callData) < 4 || !bytes.Equal(callData[:4], method.ID[:4]) {
+		return nil, errMethodSignatureMismatch
+	}
+	arguments, err := method.Inputs.Unpack(callData[4:])
+	if err != nil {
+		return nil, err
+	}
+	input := new(T)
+	any(input).(interface{ unpack([]any) }).unpack(arguments)
+	return input, nil
+}
+
+func eventCheckerUnpackEvent[T any](name string, log *types.Log) (*T, error) {
+	event, ok := _EventCheckerABI.Events[name]
+	if !ok {
+		return nil, errors.New("event '" + name + "' not found")
+	}
+	if len(log.Topics) == 0 {
+		return nil, errNoEventSignature
+	}
+	if log.Topics[0] != event.ID {
+		return nil, errEventSignatureMismatch
+	}
+	var values []any
+	if len(log.Data) > 0 {
+		var err error
+		values, err = event.Inputs.Unpack(log.Data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	out := new(T)
+	eventData := any(out).(interface {
+		unpack([]any)
+		setRaw(*types.Log)
+	})
+	eventData.unpack(values)
+	var indexed abi.Arguments
+	for _, arg := range event.Inputs {
+		if arg.Indexed {
+			indexed = append(indexed, arg)
+		}
+	}
+	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
+		return nil, err
+	}
+	eventData.setRaw(log)
+	return out, nil
+}
