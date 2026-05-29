@@ -29,7 +29,7 @@ import (
 	"unicode"
 
 	"github.com/donutnomad/eths/abi"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 )
 
 // underlyingBindType returns a string representation of the Go type

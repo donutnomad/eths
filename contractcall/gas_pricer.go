@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/big"
 
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/pkg/errors"
 )
 
@@ -20,18 +20,17 @@ func NewGasPriceLegacy(price *big.Int) *GasPrice {
 func NewGasPrice(baseFee, maxPriorityFeePerGas, maxFeePerGas *big.Int) *GasPrice {
 	return &GasPrice{DynamicGas: &DynamicGas{BaseFee: baseFee, MaxPriorityFeePerGas: maxPriorityFeePerGas, MaxFeePerGas: maxFeePerGas}}
 }
-func GasPriceFromTx(input *ethTypes.Transaction) *GasPrice {
-	if input.Type() == ethTypes.LegacyTxType {
+func GasPriceFromTx(input *ethtype.ETransaction) *GasPrice {
+	if input.Type() == uint8(ethtype.LegacyTxType) {
 		return NewGasPriceLegacy(input.GasPrice())
-	} else {
-		_cap := input.GasFeeCap()
-		_tip := input.GasTipCap()
-		_base := big.NewInt(0)
-		if _cap.Cmp(_tip) > 0 {
-			_base = new(big.Int).Sub(_cap, _tip)
-		}
-		return NewGasPrice(_base, _tip, _cap)
 	}
+	_cap := input.GasFeeCap()
+	_tip := input.GasTipCap()
+	_base := big.NewInt(0)
+	if _cap.Cmp(_tip) > 0 {
+		_base = new(big.Int).Sub(_cap, _tip)
+	}
+	return NewGasPrice(_base, _tip, _cap)
 }
 
 // LegacyGas represents traditional gas price

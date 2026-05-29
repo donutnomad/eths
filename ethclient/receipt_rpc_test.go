@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/ecommon"
+	rpc "github.com/donutnomad/eths/ethrpc"
 	"github.com/donutnomad/eths/ethtype"
 	"github.com/donutnomad/eths/hexutil"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rpc"
 )
 
 const sepoliaRPC = "https://ethereum-sepolia-rpc.publicnode.com"

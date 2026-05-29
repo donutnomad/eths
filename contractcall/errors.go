@@ -9,7 +9,7 @@ import (
 
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/contracts_pack"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/samber/lo"
 )
 
@@ -20,7 +20,7 @@ var ErrContractCallEmptyData = errors.New("call contract with empty data is not 
 
 // SendTransactionError Ethereum SendTransaction Error
 type SendTransactionError struct {
-	Tx  *ethTypes.Transaction
+	Tx  *ethtype.ETransaction
 	Err error
 }
 

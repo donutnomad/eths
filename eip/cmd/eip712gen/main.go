@@ -253,10 +253,10 @@ func buildImports(needsHexutil bool, isFullCode bool) string {
 		)
 	}
 
-	imports = append(imports, `"github.com/ethereum/go-ethereum/common"`)
+	imports = append(imports, `"github.com/donutnomad/eths/common"`)
 
 	if needsHexutil {
-		imports = append(imports, `"github.com/ethereum/go-ethereum/common/hexutil"`)
+		imports = append(imports, `"github.com/donutnomad/eths/hexutil"`)
 	}
 
 	if isFullCode {

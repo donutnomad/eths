@@ -27,11 +27,9 @@ import (
 	"time"
 
 	"github.com/donutnomad/eths/ecommon"
+	rpc "github.com/donutnomad/eths/ethrpc"
 	"github.com/donutnomad/eths/ethtype"
 	"github.com/donutnomad/eths/hexutil"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/samber/lo"
 )
 
@@ -281,7 +279,7 @@ func (ec *Client) HeaderByHash(ctx context.Context, hash ecommon.Hash) (*ethtype
 	var head *ethtype.Header
 	err := ec.callContext(ctx, &head, "eth_getBlockByHash", hash, false)
 	if err == nil && head == nil {
-		err = ethereum.NotFound
+		err = NotFound
 	}
 	return head, err
 }
@@ -307,13 +305,13 @@ func (ec *Client) HeaderByNumber(ctx context.Context, number *big.Int) (*ethtype
 	var head *ethtype.Header
 	err := ec.callContext(ctx, &head, "eth_getBlockByNumber", toBlockNumArg(number), false)
 	if err == nil && head == nil {
-		err = ethereum.NotFound
+		err = NotFound
 	}
 	return head, err
 }
 
 type rpcTransaction struct {
-	tx *types.Transaction
+	tx *ethtype.ETransaction
 	txExtraInfo
 }
 
@@ -333,13 +331,13 @@ func (tx *rpcTransaction) UnmarshalJSON(msg []byte) error {
 // TransactionByHash returns the transaction with the given hash.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyhash
-func (ec *Client) TransactionByHash(ctx context.Context, hash ecommon.Hash) (tx *types.Transaction, isPending bool, err error) {
+func (ec *Client) TransactionByHash(ctx context.Context, hash ecommon.Hash) (tx *ethtype.ETransaction, isPending bool, err error) {
 	var json *rpcTransaction
 	err = ec.callContext(ctx, &json, "eth_getTransactionByHash", hash)
 	if err != nil {
 		return nil, false, err
 	} else if json == nil {
-		return nil, false, ethereum.NotFound
+		return nil, false, NotFound
 	}
 	return json.tx, json.BlockNumber == nil, nil
 }
@@ -355,14 +353,14 @@ func (ec *Client) TransactionCount(ctx context.Context, blockHash ecommon.Hash) 
 // TransactionInBlock returns a single transaction at index in the given block.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyblockhashandindex
-func (ec *Client) TransactionInBlock(ctx context.Context, blockHash ecommon.Hash, index uint) (*types.Transaction, error) {
+func (ec *Client) TransactionInBlock(ctx context.Context, blockHash ecommon.Hash, index uint) (*ethtype.ETransaction, error) {
 	var json *rpcTransaction
 	err := ec.callContext(ctx, &json, "eth_getTransactionByBlockHashAndIndex", blockHash, hexutil.Uint64(index))
 	if err != nil {
 		return nil, err
 	}
 	if json == nil {
-		return nil, ethereum.NotFound
+		return nil, NotFound
 	}
 	return json.tx, err
 }
@@ -383,7 +381,7 @@ func TransactionReceiptAs[T any](ctx context.Context, ec *Client, txHash ecommon
 }
 
 // SubscribeTransactionReceipts subscribes to notifications about transaction receipts.
-func (ec *Client) SubscribeTransactionReceipts(ctx context.Context, q *ethereum.TransactionReceiptsQuery, ch chan<- []*ethtype.Receipt) (ethereum.Subscription, error) {
+func (ec *Client) SubscribeTransactionReceipts(ctx context.Context, q *TransactionReceiptsQuery, ch chan<- []*ethtype.Receipt) (Subscription, error) {
 	return ec.c.EthSubscribe(ctx, ch, "transactionReceipts", q)
 }
 
@@ -391,7 +389,7 @@ func (ec *Client) SubscribeTransactionReceipts(ctx context.Context, q *ethereum.
 // no sync currently running, it returns nil.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_syncing
-func (ec *Client) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
+func (ec *Client) SyncProgress(ctx context.Context) (*SyncProgress, error) {
 	var raw json.RawMessage
 	if err := ec.callContext(ctx, &raw, "eth_syncing"); err != nil {
 		return nil, err
@@ -410,7 +408,7 @@ func (ec *Client) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, err
 
 // SubscribeNewHead subscribes to notifications about the current blockchain head
 // on the given channel.
-func (ec *Client) SubscribeNewHead(ctx context.Context, ch chan<- *ethtype.Header) (ethereum.Subscription, error) {
+func (ec *Client) SubscribeNewHead(ctx context.Context, ch chan<- *ethtype.Header) (Subscription, error) {
 	sub, err := ec.c.EthSubscribe(ctx, ch, "newHeads")
 	if err != nil {
 		// Defensively prefer returning nil interface explicitly on error-path, instead
@@ -539,7 +537,7 @@ func (ec *Client) FilterLogs(ctx context.Context, q FilterQuery) ([]ethtype.Log,
 // FilterLogsAs is the generic version of FilterLogs.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getlogs
-func FilterLogsAs[T any](ctx context.Context, ec *Client, q ethereum.FilterQuery) ([]T, error) {
+func FilterLogsAs[T any](ctx context.Context, ec *Client, q FilterQuery) ([]T, error) {
 	arg, err := toFilterArg(q)
 	if err != nil {
 		return nil, err
@@ -548,7 +546,7 @@ func FilterLogsAs[T any](ctx context.Context, ec *Client, q ethereum.FilterQuery
 }
 
 // SubscribeFilterLogs subscribes to the results of a streaming filter query.
-func (ec *Client) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- ethtype.Log) (ethereum.Subscription, error) {
+func (ec *Client) SubscribeFilterLogs(ctx context.Context, q FilterQuery, ch chan<- ethtype.Log) (Subscription, error) {
 	arg, err := toFilterArg(q)
 	if err != nil {
 		return nil, err
@@ -563,7 +561,7 @@ func (ec *Client) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuer
 	return sub, nil
 }
 
-func toFilterArg(q ethereum.FilterQuery) (any, error) {
+func toFilterArg(q FilterQuery) (any, error) {
 	arg := map[string]any{
 		"address": q.Addresses,
 		"topics":  q.Topics,
@@ -635,7 +633,7 @@ func (ec *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
 // blocks might not be available.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_call
-func (ec *Client) CallContract(ctx context.Context, msg ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
+func (ec *Client) CallContract(ctx context.Context, msg CallMsg, blockNumber *big.Int) ([]byte, error) {
 	return Call[hexutil.Bytes](ec, ctx, "eth_call", toCallArg(msg), toBlockNumArg(blockNumber))
 }
 
@@ -643,7 +641,7 @@ func (ec *Client) CallContract(ctx context.Context, msg ethereum.CallMsg, blockN
 // the block by block hash instead of block height.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_call
-func (ec *Client) CallContractAtHash(ctx context.Context, msg ethereum.CallMsg, blockHash ecommon.Hash) ([]byte, error) {
+func (ec *Client) CallContractAtHash(ctx context.Context, msg CallMsg, blockHash ecommon.Hash) ([]byte, error) {
 	return Call[hexutil.Bytes](ec, ctx, "eth_call", toCallArg(msg), ethtype.BlockNumberOrHashWithHash(blockHash, false))
 }
 
@@ -651,7 +649,7 @@ func (ec *Client) CallContractAtHash(ctx context.Context, msg ethereum.CallMsg, 
 // The state seen by the contract call is the pending state.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_call
-func (ec *Client) PendingCallContract(ctx context.Context, msg ethereum.CallMsg) ([]byte, error) {
+func (ec *Client) PendingCallContract(ctx context.Context, msg CallMsg) ([]byte, error) {
 	return Call[hexutil.Bytes](ec, ctx, "eth_call", toCallArg(msg), "pending")
 }
 
@@ -691,7 +689,7 @@ type feeHistoryResultMarshaling struct {
 // FeeHistory retrieves the fee market history.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_feehistory
-func (ec *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *big.Int, rewardPercentiles []float64) (*ethereum.FeeHistory, error) {
+func (ec *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *big.Int, rewardPercentiles []float64) (*FeeHistory, error) {
 	var res feeHistoryResultMarshaling
 	if err := ec.callContext(ctx, &res, "eth_feeHistory", hexutil.Uint(blockCount), toBlockNumArg(lastBlock), rewardPercentiles); err != nil {
 		return nil, err
@@ -707,7 +705,7 @@ func (ec *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *
 	for i, b := range res.BaseFee {
 		baseFee[i] = (*big.Int)(b)
 	}
-	return &ethereum.FeeHistory{
+	return &FeeHistory{
 		OldestBlock:  (*big.Int)(res.OldestBlock),
 		Reward:       reward,
 		BaseFee:      baseFee,
@@ -725,7 +723,7 @@ func (ec *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *
 // state.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_estimategas
-func (ec *Client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (uint64, error) {
+func (ec *Client) EstimateGas(ctx context.Context, msg CallMsg) (uint64, error) {
 	hex, err := Call[hexutil.Uint64](ec, ctx, "eth_estimateGas", toCallArg(msg))
 	return uint64(hex), err
 }
@@ -734,7 +732,7 @@ func (ec *Client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (uint64
 // instead of using the remote RPC's default state for gas estimation.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_estimategas
-func (ec *Client) EstimateGasAtBlock(ctx context.Context, msg ethereum.CallMsg, blockNumber *big.Int) (uint64, error) {
+func (ec *Client) EstimateGasAtBlock(ctx context.Context, msg CallMsg, blockNumber *big.Int) (uint64, error) {
 	hex, err := Call[hexutil.Uint64](ec, ctx, "eth_estimateGas", toCallArg(msg), toBlockNumArg(blockNumber))
 	return uint64(hex), err
 }
@@ -743,7 +741,7 @@ func (ec *Client) EstimateGasAtBlock(ctx context.Context, msg ethereum.CallMsg, 
 // hash instead of using the remote RPC's default state for gas estimation.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_estimategas
-func (ec *Client) EstimateGasAtBlockHash(ctx context.Context, msg ethereum.CallMsg, blockHash ecommon.Hash) (uint64, error) {
+func (ec *Client) EstimateGasAtBlockHash(ctx context.Context, msg CallMsg, blockHash ecommon.Hash) (uint64, error) {
 	hex, err := Call[hexutil.Uint64](ec, ctx, "eth_estimateGas", toCallArg(msg), ethtype.BlockNumberOrHashWithHash(blockHash, false))
 	return uint64(hex), err
 }
@@ -754,7 +752,7 @@ func (ec *Client) EstimateGasAtBlockHash(ctx context.Context, msg ethereum.CallM
 // contract address after the transaction has been mined.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sendrawtransaction
-func (ec *Client) SendTransaction(ctx context.Context, tx *types.Transaction) error {
+func (ec *Client) SendTransaction(ctx context.Context, tx *ethtype.ETransaction) error {
 	data, err := tx.MarshalBinary()
 	if err != nil {
 		return err
@@ -767,7 +765,7 @@ func (ec *Client) SendTransaction(ctx context.Context, tx *types.Transaction) er
 // uses its default.
 func (ec *Client) SendTransactionSync(
 	ctx context.Context,
-	tx *types.Transaction,
+	tx *ethtype.ETransaction,
 	timeout *time.Duration,
 ) (*ethtype.Receipt, error) {
 	raw, err := tx.MarshalBinary()
@@ -827,7 +825,7 @@ func toBlockNumArg(number *big.Int) string {
 	return fmt.Sprintf("<invalid %d>", number)
 }
 
-func toCallArg(msg ethereum.CallMsg) any {
+func toCallArg(msg CallMsg) any {
 	arg := map[string]any{
 		"from": msg.From,
 		"to":   msg.To,
@@ -891,11 +889,11 @@ type rpcProgress struct {
 	StateIndexRemaining    hexutil.Uint64
 }
 
-func (p *rpcProgress) toSyncProgress() *ethereum.SyncProgress {
+func (p *rpcProgress) toSyncProgress() *SyncProgress {
 	if p == nil {
 		return nil
 	}
-	return &ethereum.SyncProgress{
+	return &SyncProgress{
 		StartingBlock:          uint64(p.StartingBlock),
 		CurrentBlock:           uint64(p.CurrentBlock),
 		HighestBlock:           uint64(p.HighestBlock),
@@ -929,17 +927,17 @@ type SimulateOptions struct {
 
 // SimulateBlock represents a batch of calls to be simulated.
 type SimulateBlock struct {
-	BlockOverrides *ethereum.BlockOverrides                     `json:"blockOverrides,omitempty"`
-	StateOverrides map[ecommon.Address]ethereum.OverrideAccount `json:"stateOverrides,omitempty"`
-	Calls          []ethereum.CallMsg                           `json:"calls"`
+	BlockOverrides *BlockOverrides                     `json:"blockOverrides,omitempty"`
+	StateOverrides map[ecommon.Address]OverrideAccount `json:"stateOverrides,omitempty"`
+	Calls          []CallMsg                           `json:"calls"`
 }
 
 // MarshalJSON implements json.Marshaler for SimulateBlock.
 func (s SimulateBlock) MarshalJSON() ([]byte, error) {
 	type Alias struct {
-		BlockOverrides *ethereum.BlockOverrides                     `json:"blockOverrides,omitempty"`
-		StateOverrides map[ecommon.Address]ethereum.OverrideAccount `json:"stateOverrides,omitempty"`
-		Calls          []any                                        `json:"calls"`
+		BlockOverrides *BlockOverrides                     `json:"blockOverrides,omitempty"`
+		StateOverrides map[ecommon.Address]OverrideAccount `json:"stateOverrides,omitempty"`
+		Calls          []any                               `json:"calls"`
 	}
 	calls := make([]any, len(s.Calls))
 	for i, call := range s.Calls {
@@ -1017,12 +1015,12 @@ func Call[T any](ec *Client, ctx context.Context, method string, args ...any) (T
 	return result, err
 }
 
-// CallNotFound is like Call but returns ethereum.NotFound when the result is nil.
+// CallNotFound is like Call but returns NotFound when the result is nil.
 func CallNotFound[T any](ec *Client, ctx context.Context, method string, args ...any) (T, error) {
 	r, err := Call[T](ec, ctx, method, args...)
 	if err == nil && lo.IsNil(r) {
 		var zero T
-		return zero, ethereum.NotFound
+		return zero, NotFound
 	}
 	return r, err
 }

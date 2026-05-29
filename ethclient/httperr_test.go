@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/donutnomad/eths/ethrpc"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/ethereum/go-ethereum/rpc"
 )
 
 func TestAsHTTPError_RPCHTTPError(t *testing.T) {

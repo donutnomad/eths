@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 	"github.com/joho/godotenv"
 	"github.com/samber/mo"
 	"github.com/stretchr/testify/require"

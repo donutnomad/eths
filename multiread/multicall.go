@@ -9,9 +9,9 @@ import (
 
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/abi/bind/v2"
+	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/contracts_pack"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 )

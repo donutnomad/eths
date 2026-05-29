@@ -1,8 +1,8 @@
 package deployers
 
 import (
+	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/contracts_pack"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 func ERC1967ProxyInitCode(implementation common.Address, data []byte) []byte {

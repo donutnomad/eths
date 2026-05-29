@@ -6,9 +6,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/ethclient"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/pkg/errors"
 )
 
@@ -47,18 +47,18 @@ func (e *EthClientEnhance) CodeAt(_ context.Context, contract common.Address, bl
 	return e.client.CodeAt(ctx, contract, blockNumber)
 }
 
-func (e *EthClientEnhance) CallContract(_ context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
+func (e *EthClientEnhance) CallContract(_ context.Context, call ethclient.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(e.ctx, e.timeout)
 	defer cancel()
 	return e.client.CallContract(ctx, call, blockNumber)
 }
 
 func SendTxAndWait[C interface {
-	ethereum.TransactionReader
-	ethereum.BlockNumberReader
-	ethereum.TransactionSender
+	ethclient.TransactionReader
+	ethclient.BlockNumberReader
+	ethclient.TransactionSender
 	ICodeAt
-}](ctx context.Context, client C, chainId *big.Int, contract common.Address, payer ISigner, data []byte, blockConfirmations uint64, callManager *CallManager, beforeSend func(tx *types.Transaction) error) error {
+}](ctx context.Context, client C, chainId *big.Int, contract common.Address, payer ISigner, data []byte, blockConfirmations uint64, callManager *CallManager, beforeSend func(tx *ethtype.ETransaction) error) error {
 	tx, err := SendTx(ctx, client, chainId, data, contract, payer, callManager, beforeSend)
 	if err != nil {
 		return err
@@ -67,30 +67,30 @@ func SendTxAndWait[C interface {
 }
 
 func Wait[C interface {
-	ethereum.TransactionReader
-	ethereum.BlockNumberReader
-}](ctx context.Context, client C, txHash common.Hash, blockConfirmations uint64, outReceipt *types.Receipt) error {
+	ethclient.TransactionReader
+	ethclient.BlockNumberReader
+}](ctx context.Context, client C, txHash common.Hash, blockConfirmations uint64, outReceipt *ethtype.EReceipt) error {
 	return WaitRetry(ctx, client, txHash, 10, blockConfirmations, outReceipt)
 }
 
 func WaitRetry[C interface {
-	ethereum.TransactionReader
-	ethereum.BlockNumberReader
-}](ctx context.Context, client C, txHash common.Hash, retryTimes int, blockConfirmations uint64, outReceipt *types.Receipt) error {
-	var receipt *types.Receipt
+	ethclient.TransactionReader
+	ethclient.BlockNumberReader
+}](ctx context.Context, client C, txHash common.Hash, retryTimes int, blockConfirmations uint64, outReceipt *ethtype.EReceipt) error {
+	var receipt *ethtype.EReceipt
 	// wait receipt
 	for i := 0; i < retryTimes; i++ {
 		var err error
 		receipt, err = client.TransactionReceipt(ctx, txHash)
 		if err != nil {
-			if errors.Is(err, ethereum.NotFound) {
+			if errors.Is(err, ethclient.NotFound) {
 				time.Sleep(3 * time.Second)
 				continue
 			} else {
 				return errors.Wrap(EthereumRPCErr, err.Error())
 			}
 		}
-		if receipt.Status != types.ReceiptStatusSuccessful {
+		if receipt.Status != ethtype.ReceiptStatusSuccessful {
 			return fmt.Errorf("transaction %s receipt status is not successful", txHash.Hex())
 		}
 		if outReceipt != nil {

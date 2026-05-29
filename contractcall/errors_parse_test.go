@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/donutnomad/eths/abi"
+	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/contracts_pack"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )

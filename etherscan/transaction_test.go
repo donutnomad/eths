@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 	"github.com/stretchr/testify/require"
 )
 

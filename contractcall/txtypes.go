@@ -1,15 +1,13 @@
 package contractcall
 
-type TxType int
+import "github.com/donutnomad/eths/ethtype"
+
+type TxType = ethtype.TxType
 
 const (
-	LegacyTxType     TxType = 0x00
-	AccessListTxType TxType = 0x01
-	DynamicFeeTxType TxType = 0x02
-	BlobTxType       TxType = 0x03
-	SetCodeTxType    TxType = 0x04
+	LegacyTxType     = ethtype.LegacyTxType
+	AccessListTxType = ethtype.AccessListTxType
+	DynamicFeeTxType = ethtype.DynamicFeeTxType
+	BlobTxType       = ethtype.BlobTxType
+	SetCodeTxType    = ethtype.SetCodeTxType
 )
-
-func (t TxType) IsEIP1559Gas() bool {
-	return t != LegacyTxType && t != AccessListTxType
-}

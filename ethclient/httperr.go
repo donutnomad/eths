@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/rpc"
+	rpc "github.com/donutnomad/eths/ethrpc"
 )
 
 // HTTPError wraps rpc.HTTPError with additional HTTP response headers.

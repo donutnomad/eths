@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 )
 
 func (e *EtherscanClient) VerifyAndCheck(ctx context.Context, chainID uint64,

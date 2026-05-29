@@ -4,7 +4,7 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/samber/lo"
 	"github.com/samber/mo"

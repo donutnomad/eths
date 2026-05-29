@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"unsafe"
 
 	"slices"
 
+	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/donutnomad/eths/hexutil"
-	"github.com/ethereum/go-ethereum/common"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/holiman/uint256"
 	"github.com/samber/lo"
@@ -20,6 +21,7 @@ import (
 )
 
 var UNREACHABLE = "unreachable"
+var ErrInvalidSig = errors.New("invalid transaction v, r, s values")
 
 // Deprecated: Use Tx
 type TxWrapper = Tx
@@ -28,19 +30,19 @@ type Tx = txImpl
 
 // NewTxWrapperDynamic
 // Deprecated: Use NewTx
-func NewTxWrapperDynamic(tx *ethTypes.DynamicFeeTx, chainID *big.Int) *Tx {
+func NewTxWrapperDynamic(tx *ethtype.DynamicFeeTx, chainID *big.Int) *Tx {
 	return NewTx(tx, chainID).(*Tx)
 }
 
 // NewTxWrapperLegacy
 // Deprecated: Use NewTxImpl
-func NewTxWrapperLegacy(tx *ethTypes.LegacyTx, chainID *big.Int) *Tx {
+func NewTxWrapperLegacy(tx *ethtype.LegacyTx, chainID *big.Int) *Tx {
 	return NewTx(tx, chainID).(*Tx)
 }
 
 type AccessListSetter interface {
-	AccessList() ethTypes.AccessList
-	SetAccessList(accessList ethTypes.AccessList) bool
+	AccessList() ethtype.AccessList
+	SetAccessList(accessList ethtype.AccessList) bool
 }
 
 type BaseTx interface {
@@ -93,15 +95,15 @@ type IEIP4844 interface {
 	BlobHashes() []common.Hash
 	SetMaxFeePerBlobGas(maxFeePerBlobGas *big.Int) bool
 	SetBlobHashes(blobHashes []common.Hash) bool
-	Sidecar() *ethTypes.BlobTxSidecar
-	SetSidecar(sidecar *ethTypes.BlobTxSidecar)
+	Sidecar() *ethtype.BlobTxSidecar
+	SetSidecar(sidecar *ethtype.BlobTxSidecar)
 }
 
 // IEIP7702 Set code
 type IEIP7702 interface {
 	IEIP1559
-	AuthList() []ethTypes.SetCodeAuthorization
-	SetAuthList(authList []ethTypes.SetCodeAuthorization) bool
+	AuthList() []ethtype.SetCodeAuthorization
+	SetAuthList(authList []ethtype.SetCodeAuthorization) bool
 }
 
 type ITx interface {
@@ -113,7 +115,7 @@ type ITx interface {
 	IEIP7702
 	Sign(privateKey ISigner) error
 	ToJSON() []byte
-	ToTransaction() *ethTypes.Transaction
+	ToTransaction() *ethtype.ETransaction
 	Hash() common.Hash
 	SigHash() common.Hash
 	json.Marshaler
@@ -124,7 +126,7 @@ type ITx interface {
 
 var _ ITx = &txImpl{}
 
-// txImpl [ethTypes.DynamicFeeTx] [ethTypes.BlobTx] [ethTypes.AccessListTx] [ethTypes.LegacyTx] [ethTypes.SetCodeTx]
+// txImpl [ethtype.DynamicFeeTx] [ethtype.BlobTx] [ethtype.AccessListTx] [ethtype.LegacyTx] [ethtype.SetCodeTx]
 type txImpl struct {
 	chainID *uint256.Int // safe, not nil
 	nonce   uint64
@@ -133,16 +135,16 @@ type txImpl struct {
 	value   *uint256.Int // safe, not nil
 	data    []byte
 
-	maxPriorityFeePerGas *uint256.Int        // notInclude(eip-155(legacy),eip-2930(access))
-	maxFeePerGas         *uint256.Int        // notInclude(eip-155(legacy),eip-2930(access))
-	gasPrice             *uint256.Int        // eip-155(legacy), eip-2930(access)
-	accessList           ethTypes.AccessList // notInclude(eip-155(legacy))
-	maxFeePerBlobGas     *uint256.Int        // eip-4844(blob)
-	blobHashes           []common.Hash       // eip-4844(blob)
+	maxPriorityFeePerGas *uint256.Int       // notInclude(eip-155(legacy),eip-2930(access))
+	maxFeePerGas         *uint256.Int       // notInclude(eip-155(legacy),eip-2930(access))
+	gasPrice             *uint256.Int       // eip-155(legacy), eip-2930(access)
+	accessList           ethtype.AccessList // notInclude(eip-155(legacy))
+	maxFeePerBlobGas     *uint256.Int       // eip-4844(blob)
+	blobHashes           []common.Hash      // eip-4844(blob)
 	// A blob transaction can optionally contain blobs. This field must be set when BlobTx
 	// is used to create a transaction for signing.
-	sidecar  *ethTypes.BlobTxSidecar         `rlp:"-"` // eip-4844(blob)
-	authList []ethTypes.SetCodeAuthorization // eip-7702(auth)
+	sidecar  *ethtype.BlobTxSidecar         `rlp:"-"` // eip-4844(blob)
+	authList []ethtype.SetCodeAuthorization // eip-7702(auth)
 
 	v      [32]byte // safe, default 0， yParity: 0/1, EIP155: (0/1 + 35) + chainID * 2
 	r      [32]byte // safe, default 0
@@ -161,7 +163,7 @@ func NewTxWith[
 }
 
 func NewTx[
-	T *ethTypes.LegacyTx | *ethTypes.AccessListTx | *ethTypes.DynamicFeeTx | *ethTypes.BlobTx | *ethTypes.SetCodeTx | *ethTypes.Transaction,
+	T *ethtype.LegacyTx | *ethtype.AccessListTx | *ethtype.DynamicFeeTx | *ethtype.BlobTx | *ethtype.SetCodeTx | *ethtype.ETransaction,
 	ChainID *big.Int | *uint256.Int | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64,
 ](tx T, chainID ChainID) ITx {
 	ret, err := newTxImpl(any(tx), bigIntOrIntToBigInt(chainID))
@@ -174,7 +176,7 @@ func NewTx[
 // NewTxImpl
 // Deprecated: Use NewTx
 func NewTxImpl[
-	T *ethTypes.LegacyTx | *ethTypes.AccessListTx | *ethTypes.DynamicFeeTx | *ethTypes.BlobTx | *ethTypes.SetCodeTx | *ethTypes.Transaction,
+	T *ethtype.LegacyTx | *ethtype.AccessListTx | *ethtype.DynamicFeeTx | *ethtype.BlobTx | *ethtype.SetCodeTx | *ethtype.ETransaction,
 	ChainID *big.Int | *uint256.Int | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64,
 ](tx T, chainID ChainID) ITx {
 	return NewTx(tx, chainID)
@@ -262,7 +264,7 @@ func (t *txImpl) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary decodes the canonical encoding of transactions.
 // It supports legacy RLP transactions and EIP-2718 typed transactions.
 func (t *txImpl) UnmarshalBinary(b []byte) error {
-	tx := new(ethTypes.Transaction)
+	tx := new(ethtype.ETransaction)
 	err := tx.UnmarshalBinary(b)
 	if err != nil {
 		return err
@@ -279,8 +281,8 @@ func (t *txImpl) ToJSON() []byte {
 	return lo.Must1(t.MarshalJSON())
 }
 
-func (t *txImpl) ToTransaction() *ethTypes.Transaction {
-	return ethTypes.NewTx(t.Export())
+func (t *txImpl) ToTransaction() *ethtype.ETransaction {
+	return ethtype.NewTx(t.Export())
 }
 
 func (t *txImpl) Signature() (v, r, s *big.Int) {
@@ -370,7 +372,7 @@ func (t *txImpl) SetGasPrice(gasPrice *big.Int) bool {
 }
 
 // AccessList notInclude(eip-155(legacy))
-func (t *txImpl) AccessList() ethTypes.AccessList {
+func (t *txImpl) AccessList() ethtype.AccessList {
 	if t.isModern() {
 		return t.accessList
 	}
@@ -378,7 +380,7 @@ func (t *txImpl) AccessList() ethTypes.AccessList {
 }
 
 // SetAccessList notInclude(eip-155(legacy))
-func (t *txImpl) SetAccessList(accessList ethTypes.AccessList) bool {
+func (t *txImpl) SetAccessList(accessList ethtype.AccessList) bool {
 	if t.isModern() {
 		t.accessList = accessList
 		return true
@@ -443,7 +445,7 @@ func (t *txImpl) BlobHashes() []common.Hash {
 }
 
 // Sidecar eip-4844(blob)
-func (t *txImpl) Sidecar() *ethTypes.BlobTxSidecar {
+func (t *txImpl) Sidecar() *ethtype.BlobTxSidecar {
 	return t.sidecar
 }
 
@@ -468,12 +470,12 @@ func (t *txImpl) SetBlobHashes(blobHashes []common.Hash) bool {
 // SetSidecar eip-4844(blob)
 // A blob transaction can optionally contain blobs. This field must be set when BlobTx
 // is used to create a transaction for signing.
-func (t *txImpl) SetSidecar(sidecar *ethTypes.BlobTxSidecar) {
+func (t *txImpl) SetSidecar(sidecar *ethtype.BlobTxSidecar) {
 	t.sidecar = sidecar
 }
 
 // AuthList eip-7702(auth)
-func (t *txImpl) AuthList() []ethTypes.SetCodeAuthorization {
+func (t *txImpl) AuthList() []ethtype.SetCodeAuthorization {
 	if t.txType == SetCodeTxType {
 		return t.authList
 	}
@@ -481,7 +483,7 @@ func (t *txImpl) AuthList() []ethTypes.SetCodeAuthorization {
 }
 
 // SetAuthList eip-7702(auth)
-func (t *txImpl) SetAuthList(authList []ethTypes.SetCodeAuthorization) bool {
+func (t *txImpl) SetAuthList(authList []ethtype.SetCodeAuthorization) bool {
 	if t.txType == SetCodeTxType {
 		t.authList = slices.Clone(authList)
 		return true
@@ -522,7 +524,7 @@ func (t *txImpl) Sender() (common.Address, error) {
 }
 
 func (t *txImpl) UnmarshalJSON(input []byte) error {
-	var tx = new(ethTypes.Transaction)
+	var tx = new(ethtype.ETransaction)
 	err := tx.UnmarshalJSON(input)
 	if err != nil {
 		return err
@@ -545,7 +547,7 @@ func (t *txImpl) UnmarshalJSON(input []byte) error {
 	return nil
 }
 
-func (t *txImpl) Export() ethTypes.TxData {
+func (t *txImpl) Export() ethtype.TxData {
 	return txImplToTx(t)
 }
 
@@ -557,13 +559,13 @@ func newTxImpl(tx any, chainID *big.Int) (*txImpl, error) {
 	return impl, nil
 }
 
-func txImplToTx(t *txImpl) ethTypes.TxData {
+func txImplToTx(t *txImpl) ethtype.TxData {
 	switch t.txType {
 	case LegacyTxType:
 		if t.gasPrice == nil {
 			t.gasPrice = newIntBy(0)
 		}
-		return &ethTypes.LegacyTx{
+		return &ethtype.LegacyTx{
 			Nonce:    t.nonce,
 			GasPrice: t.gasPrice.ToBig(),
 			Gas:      t.gas,
@@ -578,7 +580,7 @@ func txImplToTx(t *txImpl) ethTypes.TxData {
 		if t.gasPrice == nil {
 			t.gasPrice = newIntBy(0)
 		}
-		return &ethTypes.AccessListTx{
+		return &ethtype.AccessListTx{
 			ChainID:    t.ChainID(),
 			Nonce:      t.nonce,
 			GasPrice:   t.gasPrice.ToBig(),
@@ -598,7 +600,7 @@ func txImplToTx(t *txImpl) ethTypes.TxData {
 		if t.maxFeePerGas == nil {
 			t.maxFeePerGas = newIntBy(0)
 		}
-		return &ethTypes.DynamicFeeTx{
+		return &ethtype.DynamicFeeTx{
 			ChainID:    t.ChainID(),
 			Nonce:      t.nonce,
 			GasTipCap:  t.maxPriorityFeePerGas.ToBig(),
@@ -613,7 +615,7 @@ func txImplToTx(t *txImpl) ethTypes.TxData {
 			S:          t.getS().ToBig(),
 		}
 	case BlobTxType:
-		return &ethTypes.BlobTx{
+		return &ethtype.BlobTx{
 			ChainID:    t.chainID,
 			Nonce:      t.nonce,
 			GasTipCap:  t.maxPriorityFeePerGas,
@@ -631,7 +633,7 @@ func txImplToTx(t *txImpl) ethTypes.TxData {
 			S:          t.getS(),
 		}
 	case SetCodeTxType:
-		return &ethTypes.SetCodeTx{
+		return &ethtype.SetCodeTx{
 			ChainID:    t.chainID,
 			Nonce:      t.nonce,
 			GasFeeCap:  t.maxFeePerGas,
@@ -653,7 +655,7 @@ func txImplToTx(t *txImpl) ethTypes.TxData {
 
 func newTxImplRaw(tx any, chainID *big.Int) (*txImpl, error) {
 	switch v := tx.(type) {
-	case *ethTypes.LegacyTx:
+	case *ethtype.LegacyTx:
 		return &txImpl{
 			chainID:              newInt(chainID),
 			nonce:                v.Nonce,
@@ -665,7 +667,7 @@ func newTxImplRaw(tx any, chainID *big.Int) (*txImpl, error) {
 			maxPriorityFeePerGas: nil,
 			maxFeePerGas:         nil,
 			gasPrice:             newInt(v.GasPrice),
-			accessList:           ethTypes.AccessList{},
+			accessList:           ethtype.AccessList{},
 			maxFeePerBlobGas:     nil,
 			blobHashes:           nil,
 			authList:             nil,
@@ -673,7 +675,7 @@ func newTxImplRaw(tx any, chainID *big.Int) (*txImpl, error) {
 			r:                    bigToBytes32(v.R),
 			s:                    bigToBytes32(v.S),
 		}, nil
-	case *ethTypes.AccessListTx:
+	case *ethtype.AccessListTx:
 		chainIDVal := chainID
 		if chainIDVal == nil {
 			chainIDVal = v.ChainID
@@ -697,7 +699,7 @@ func newTxImplRaw(tx any, chainID *big.Int) (*txImpl, error) {
 			r:                    bigToBytes32(v.R),
 			s:                    bigToBytes32(v.S),
 		}, nil
-	case *ethTypes.DynamicFeeTx:
+	case *ethtype.DynamicFeeTx:
 		chainIDVal := chainID
 		if chainIDVal == nil {
 			chainIDVal = v.ChainID
@@ -721,7 +723,7 @@ func newTxImplRaw(tx any, chainID *big.Int) (*txImpl, error) {
 			r:                    bigToBytes32(v.R),
 			s:                    bigToBytes32(v.S),
 		}, nil
-	case *ethTypes.BlobTx:
+	case *ethtype.BlobTx:
 		chainIDVal := chainID
 		if chainIDVal == nil {
 			chainIDVal = v.ChainID.ToBig()
@@ -746,7 +748,7 @@ func newTxImplRaw(tx any, chainID *big.Int) (*txImpl, error) {
 			r:                    bigToBytes32(v.R),
 			s:                    bigToBytes32(v.S),
 		}, nil
-	case *ethTypes.SetCodeTx:
+	case *ethtype.SetCodeTx:
 		chainIDVal := chainID
 		if chainIDVal == nil {
 			chainIDVal = v.ChainID.ToBig()
@@ -771,7 +773,7 @@ func newTxImplRaw(tx any, chainID *big.Int) (*txImpl, error) {
 			r:                    bigToBytes32(v.R),
 			s:                    bigToBytes32(v.S),
 		}, nil
-	case *ethTypes.Transaction:
+	case *ethtype.ETransaction:
 		v1 := (*ethTransactionReflect)(unsafe.Pointer(v))
 		return newTxImplRaw(v1.Inner, chainID)
 	default:

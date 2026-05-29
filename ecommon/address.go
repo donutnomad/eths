@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 	"golang.org/x/crypto/sha3"
 )
 

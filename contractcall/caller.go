@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum"
-
-	"github.com/ethereum/go-ethereum/common"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/ethclient"
+	"github.com/donutnomad/eths/ethtype"
 )
 
 type CallManager struct {
@@ -38,7 +37,7 @@ type TxOpts struct {
 	Value      *big.Int
 	Payer      ISigner
 	Manager    *CallManager
-	BeforeSend func(tx *ethTypes.Transaction) error
+	BeforeSend func(tx *ethtype.ETransaction) error
 	NoSend     bool
 	Options    []SendTxOption
 }
@@ -51,9 +50,9 @@ func SendTx(
 	to common.Address,
 	payer ISigner,
 	callManager *CallManager,
-	beforeSend func(tx *ethTypes.Transaction) error,
+	beforeSend func(tx *ethtype.ETransaction) error,
 	opt ...SendTxOption,
-) (*ethTypes.Transaction, error) {
+) (*ethtype.ETransaction, error) {
 	return send(ctx, client, chainId, nil, data, &to, payer, callManager, beforeSend, false, true, opt...)
 }
 
@@ -66,11 +65,11 @@ func SendTxE(
 	to *common.Address,
 	payer ISigner,
 	callManager *CallManager,
-	beforeSend func(tx *ethTypes.Transaction) error,
+	beforeSend func(tx *ethtype.ETransaction) error,
 	noSend bool,
 	toIsContract bool,
 	opt ...SendTxOption,
-) (*ethTypes.Transaction, error) {
+) (*ethtype.ETransaction, error) {
 	return send(ctx, client, chainId, value, data, to, payer, callManager, beforeSend, noSend, toIsContract, opt...)
 }
 
@@ -98,11 +97,11 @@ func EstimateTxE(
 func SendTxBuilder(
 	ctx context.Context,
 	txBuilder *TxBuilder,
-	client ethereum.TransactionSender,
+	client ethclient.TransactionSender,
 	payer ISigner,
 	noSend bool,
-	beforeSend func(tx *ethTypes.Transaction) error,
-) (*ethTypes.Transaction, error) {
+	beforeSend func(tx *ethtype.ETransaction) error,
+) (*ethtype.ETransaction, error) {
 	txWrapper, err := txBuilder.SetFrom(payer.Address()).Build()
 	if err != nil {
 		return nil, err
@@ -139,12 +138,12 @@ func send(
 	to *common.Address,
 	payer ISigner,
 	callManager *CallManager,
-	beforeSend func(tx *ethTypes.Transaction) error,
+	beforeSend func(tx *ethtype.ETransaction) error,
 	noSend bool,
 	checkContract bool,
 	opt ...SendTxOption,
-) (*ethTypes.Transaction, error) {
-	return sendFn[*ethTypes.Transaction](ctx, client, chainId, value, data, to, payer, callManager, checkContract, func(txBuilder *TxBuilder) (*ethTypes.Transaction, error) {
+) (*ethtype.ETransaction, error) {
+	return sendFn[*ethtype.ETransaction](ctx, client, chainId, value, data, to, payer, callManager, checkContract, func(txBuilder *TxBuilder) (*ethtype.ETransaction, error) {
 		return SendTxBuilder(ctx, txBuilder, client, payer, noSend, beforeSend)
 	}, opt...)
 }
@@ -185,6 +184,6 @@ type noOpTransactionSender struct {
 	ICodeAt
 }
 
-func (e *noOpTransactionSender) SendTransaction(ctx context.Context, tx *ethTypes.Transaction) error {
+func (e *noOpTransactionSender) SendTransaction(ctx context.Context, tx *ethtype.ETransaction) error {
 	return nil
 }

@@ -10,7 +10,7 @@ import (
 
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/abi/bind/v2"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 

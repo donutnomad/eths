@@ -3,7 +3,7 @@ package contractcall
 import (
 	"github.com/donutnomad/blockchain-alg/xecdsa"
 	"github.com/donutnomad/blockchain-alg/xsecp256k1"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 )
 
 type ISigner interface {

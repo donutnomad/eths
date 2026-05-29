@@ -30,7 +30,7 @@ import (
 	"unicode"
 
 	"github.com/donutnomad/eths/abi"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/donutnomad/eths/internal/log"
 )
 
 var (

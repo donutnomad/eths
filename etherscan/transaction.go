@@ -3,7 +3,7 @@ package etherscan
 import (
 	"context"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 )
 
 // GetContractExecutionStatus 获取合约执行状态

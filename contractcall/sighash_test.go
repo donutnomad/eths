@@ -4,10 +4,29 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/ethereum/go-ethereum/common"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
 )
+
+// Fixtures generated once from go-ethereum v1.17.3 PragueSigner.Hash.
+var expectedSigHashes = map[string]common.Hash{
+	"Legacy (EIP-155)":             common.HexToHash("0x2beba12561f37f3a200202cc73876d088714f1d500b55be090db6cbe8e24fc81"),
+	"AccessList (EIP-2930)":        common.HexToHash("0x2becc9bfdc52069fda74d7a3244f71c96daddbb4a603118dfad92d68d7e179d8"),
+	"DynamicFee (EIP-1559)":        common.HexToHash("0x0960dd38498e3217c5cf2d1200fe47ebcae847c18e8bc8f402c0da34b358f5f2"),
+	"Blob (EIP-4844)":              common.HexToHash("0x5e61636361106f0d150ed1c47ff644deeb8f1957ed4a164f6e99cef11ded186d"),
+	"SetCode (EIP-7702)":           common.HexToHash("0x163524a1021c78bc229e76073d4cb7cf868be9c5d7ed11023d54a1ff6fbbf65f"),
+	"Legacy Contract Creation":     common.HexToHash("0x42b39edde75a12ee7de4bbfd9407fe863ed09aeaedbdca8b704268e681e2d8e1"),
+	"DynamicFee Contract Creation": common.HexToHash("0xd4e4f2ffd8a225f52eca1712a1457b3d3d023442d0e36be815002474ac20e13e"),
+}
+
+var expectedSigHashesByChainID = map[string]common.Hash{
+	"1":        common.HexToHash("0x916aad7ad38d0296216a3f5678776d652defe97d536ac68da843062cc46159ef"),
+	"5":        common.HexToHash("0xc27d8e9c1a8e8c51b9c7d4d37a6b24908031999d753c5151064970b233065155"),
+	"11155111": common.HexToHash("0x49cb107caea1dcfb1578c51617ed70a9acc3391d2387e45648b8fb9bc88ad848"),
+	"137":      common.HexToHash("0x62e08233cc7f9bda4d6be21fd8a944ff866aa81aaec57e97061dcd46497a5a77"),
+	"42161":    common.HexToHash("0x55ebc27846c7d2d1d4eb198167a45efb50d9c15f296f7f2366673e421a0187ea"),
+}
 
 // TestSigHash_MatchesGethImplementation 验证自定义 SigHash 实现与 go-ethereum 标准库一致
 func TestSigHash_MatchesGethImplementation(t *testing.T) {
@@ -24,12 +43,12 @@ func TestSigHash_MatchesGethImplementation(t *testing.T) {
 	tests := []struct {
 		name   string
 		txType TxType
-		setup  func() (*txImpl, *ethTypes.Transaction)
+		setup  func() *txImpl
 	}{
 		{
 			name:   "Legacy (EIP-155)",
 			txType: LegacyTxType,
-			setup: func() (*txImpl, *ethTypes.Transaction) {
+			setup: func() *txImpl {
 				// 自定义实现
 				impl := NewTxWith(LegacyTxType, chainID).(*txImpl)
 				impl.SetNonce(nonce)
@@ -39,24 +58,14 @@ func TestSigHash_MatchesGethImplementation(t *testing.T) {
 				impl.SetValue(value)
 				impl.SetData(data)
 
-				// 标准库实现
-				gethTx := ethTypes.NewTx(&ethTypes.LegacyTx{
-					Nonce:    nonce,
-					GasPrice: gasPrice,
-					Gas:      gas,
-					To:       &to,
-					Value:    value,
-					Data:     data,
-				})
-
-				return impl, gethTx
+				return impl
 			},
 		},
 		{
 			name:   "AccessList (EIP-2930)",
 			txType: AccessListTxType,
-			setup: func() (*txImpl, *ethTypes.Transaction) {
-				accessList := ethTypes.AccessList{
+			setup: func() *txImpl {
+				accessList := ethtype.AccessList{
 					{
 						Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
 						StorageKeys: []common.Hash{
@@ -75,26 +84,14 @@ func TestSigHash_MatchesGethImplementation(t *testing.T) {
 				impl.SetData(data)
 				impl.SetAccessList(accessList)
 
-				// 标准库实现
-				gethTx := ethTypes.NewTx(&ethTypes.AccessListTx{
-					ChainID:    chainID,
-					Nonce:      nonce,
-					GasPrice:   gasPrice,
-					Gas:        gas,
-					To:         &to,
-					Value:      value,
-					Data:       data,
-					AccessList: accessList,
-				})
-
-				return impl, gethTx
+				return impl
 			},
 		},
 		{
 			name:   "DynamicFee (EIP-1559)",
 			txType: DynamicFeeTxType,
-			setup: func() (*txImpl, *ethTypes.Transaction) {
-				accessList := ethTypes.AccessList{
+			setup: func() *txImpl {
+				accessList := ethtype.AccessList{
 					{
 						Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
 						StorageKeys: []common.Hash{
@@ -114,27 +111,14 @@ func TestSigHash_MatchesGethImplementation(t *testing.T) {
 				impl.SetMaxPriorityFeePerGas(maxPriorityFeePerGas)
 				impl.SetAccessList(accessList)
 
-				// 标准库实现
-				gethTx := ethTypes.NewTx(&ethTypes.DynamicFeeTx{
-					ChainID:    chainID,
-					Nonce:      nonce,
-					Gas:        gas,
-					To:         &to,
-					Value:      value,
-					Data:       data,
-					GasTipCap:  maxPriorityFeePerGas,
-					GasFeeCap:  maxFeePerGas,
-					AccessList: accessList,
-				})
-
-				return impl, gethTx
+				return impl
 			},
 		},
 		{
 			name:   "Blob (EIP-4844)",
 			txType: BlobTxType,
-			setup: func() (*txImpl, *ethTypes.Transaction) {
-				accessList := ethTypes.AccessList{
+			setup: func() *txImpl {
+				accessList := ethtype.AccessList{
 					{
 						Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
 						StorageKeys: []common.Hash{
@@ -160,29 +144,14 @@ func TestSigHash_MatchesGethImplementation(t *testing.T) {
 				impl.SetBlobHashes(blobHashes)
 				impl.SetMaxFeePerBlobGas(maxFeePerBlobGas)
 
-				// 标准库实现
-				gethTx := ethTypes.NewTx(&ethTypes.BlobTx{
-					ChainID:    uint256.MustFromBig(chainID),
-					Nonce:      nonce,
-					Gas:        gas,
-					To:         to,
-					Value:      uint256.MustFromBig(value),
-					Data:       data,
-					GasTipCap:  uint256.MustFromBig(maxPriorityFeePerGas),
-					GasFeeCap:  uint256.MustFromBig(maxFeePerGas),
-					AccessList: accessList,
-					BlobHashes: blobHashes,
-					BlobFeeCap: uint256.MustFromBig(maxFeePerBlobGas),
-				})
-
-				return impl, gethTx
+				return impl
 			},
 		},
 		{
 			name:   "SetCode (EIP-7702)",
 			txType: SetCodeTxType,
-			setup: func() (*txImpl, *ethTypes.Transaction) {
-				accessList := ethTypes.AccessList{
+			setup: func() *txImpl {
+				accessList := ethtype.AccessList{
 					{
 						Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
 						StorageKeys: []common.Hash{
@@ -190,7 +159,7 @@ func TestSigHash_MatchesGethImplementation(t *testing.T) {
 						},
 					},
 				}
-				authList := []ethTypes.SetCodeAuthorization{
+				authList := []ethtype.SetCodeAuthorization{
 					{
 						ChainID: *uint256.NewInt(1),
 						Address: common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
@@ -213,40 +182,27 @@ func TestSigHash_MatchesGethImplementation(t *testing.T) {
 				impl.SetAccessList(accessList)
 				impl.SetAuthList(authList)
 
-				// 标准库实现
-				gethTx := ethTypes.NewTx(&ethTypes.SetCodeTx{
-					ChainID:    uint256.MustFromBig(chainID),
-					Nonce:      nonce,
-					Gas:        gas,
-					To:         to,
-					Value:      uint256.MustFromBig(value),
-					Data:       data,
-					GasTipCap:  uint256.MustFromBig(maxPriorityFeePerGas),
-					GasFeeCap:  uint256.MustFromBig(maxFeePerGas),
-					AccessList: accessList,
-					AuthList:   authList,
-				})
-
-				return impl, gethTx
+				return impl
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			impl, gethTx := tt.setup()
+			impl := tt.setup()
 
 			// 计算自定义实现的签名哈希
 			customHash := impl.SigHash()
 
-			// 计算标准库的签名哈希
-			signer := ethTypes.NewPragueSigner(chainID)
-			gethHash := signer.Hash(gethTx)
+			expectedHash, ok := expectedSigHashes[tt.name]
+			if !ok {
+				t.Fatalf("%s: missing expected SigHash", tt.name)
+			}
 
 			// 对比两者
-			if customHash != gethHash {
-				t.Errorf("%s: SigHash mismatch\nCustom: %s\nGeth:   %s",
-					tt.name, common.Hash(customHash).Hex(), gethHash.Hex())
+			if customHash != expectedHash {
+				t.Errorf("%s: SigHash mismatch\nCustom:   %s\nExpected: %s",
+					tt.name, common.Hash(customHash).Hex(), expectedHash.Hex())
 			} else {
 				t.Logf("%s: SigHash matched ✓ %s", tt.name, common.Hash(customHash).Hex())
 			}
@@ -266,12 +222,12 @@ func TestSigHash_ContractCreation(t *testing.T) {
 	tests := []struct {
 		name   string
 		txType TxType
-		setup  func() (*txImpl, *ethTypes.Transaction)
+		setup  func() *txImpl
 	}{
 		{
 			name:   "Legacy Contract Creation",
 			txType: LegacyTxType,
-			setup: func() (*txImpl, *ethTypes.Transaction) {
+			setup: func() *txImpl {
 				impl := NewTxWith(LegacyTxType, chainID).(*txImpl)
 				impl.SetNonce(nonce)
 				impl.SetGasPrice(gasPrice)
@@ -280,22 +236,13 @@ func TestSigHash_ContractCreation(t *testing.T) {
 				impl.SetValue(value)
 				impl.SetData(data)
 
-				gethTx := ethTypes.NewTx(&ethTypes.LegacyTx{
-					Nonce:    nonce,
-					GasPrice: gasPrice,
-					Gas:      gas,
-					To:       nil, // 合约创建
-					Value:    value,
-					Data:     data,
-				})
-
-				return impl, gethTx
+				return impl
 			},
 		},
 		{
 			name:   "DynamicFee Contract Creation",
 			txType: DynamicFeeTxType,
-			setup: func() (*txImpl, *ethTypes.Transaction) {
+			setup: func() *txImpl {
 				maxFeePerGas := big.NewInt(2000000000)
 				maxPriorityFeePerGas := big.NewInt(1000000000)
 
@@ -308,33 +255,24 @@ func TestSigHash_ContractCreation(t *testing.T) {
 				impl.SetMaxFeePerGas(maxFeePerGas)
 				impl.SetMaxPriorityFeePerGas(maxPriorityFeePerGas)
 
-				gethTx := ethTypes.NewTx(&ethTypes.DynamicFeeTx{
-					ChainID:   chainID,
-					Nonce:     nonce,
-					Gas:       gas,
-					To:        nil, // 合约创建
-					Value:     value,
-					Data:      data,
-					GasTipCap: maxPriorityFeePerGas,
-					GasFeeCap: maxFeePerGas,
-				})
-
-				return impl, gethTx
+				return impl
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			impl, gethTx := tt.setup()
+			impl := tt.setup()
 
 			customHash := impl.SigHash()
-			signer := ethTypes.NewPragueSigner(chainID)
-			gethHash := signer.Hash(gethTx)
+			expectedHash, ok := expectedSigHashes[tt.name]
+			if !ok {
+				t.Fatalf("%s: missing expected SigHash", tt.name)
+			}
 
-			if customHash != gethHash {
-				t.Errorf("%s: SigHash mismatch\nCustom: %s\nGeth:   %s",
-					tt.name, common.Hash(customHash).Hex(), gethHash.Hex())
+			if customHash != expectedHash {
+				t.Errorf("%s: SigHash mismatch\nCustom:   %s\nExpected: %s",
+					tt.name, common.Hash(customHash).Hex(), expectedHash.Hex())
 			} else {
 				t.Logf("%s: SigHash matched ✓ %s", tt.name, common.Hash(customHash).Hex())
 			}
@@ -370,23 +308,15 @@ func TestSigHash_DifferentChainIDs(t *testing.T) {
 			impl.SetValue(value)
 			impl.SetData(data)
 
-			// 标准库实现
-			gethTx := ethTypes.NewTx(&ethTypes.LegacyTx{
-				Nonce:    nonce,
-				GasPrice: gasPrice,
-				Gas:      gas,
-				To:       &to,
-				Value:    value,
-				Data:     data,
-			})
-
 			customHash := impl.SigHash()
-			signer := ethTypes.NewPragueSigner(chainID)
-			gethHash := signer.Hash(gethTx)
+			expectedHash, ok := expectedSigHashesByChainID[chainID.String()]
+			if !ok {
+				t.Fatalf("ChainID %s: missing expected SigHash", chainID.String())
+			}
 
-			if customHash != gethHash {
-				t.Errorf("ChainID %s: SigHash mismatch\nCustom: %s\nGeth:   %s",
-					chainID.String(), common.Hash(customHash).Hex(), gethHash.Hex())
+			if customHash != expectedHash {
+				t.Errorf("ChainID %s: SigHash mismatch\nCustom:   %s\nExpected: %s",
+					chainID.String(), common.Hash(customHash).Hex(), expectedHash.Hex())
 			} else {
 				t.Logf("ChainID %s: SigHash matched ✓", chainID.String())
 			}

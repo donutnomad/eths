@@ -22,7 +22,7 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 

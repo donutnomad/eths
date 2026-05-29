@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"slices"
 
+	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/contracts_pack"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/donutnomad/eths/crypto"
 	"github.com/samber/lo"
 )
 

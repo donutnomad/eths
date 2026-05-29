@@ -1,10 +1,9 @@
 package ethtype
 
 import (
+	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/ecommon"
 	"github.com/donutnomad/eths/hexutil"
-	"github.com/ethereum/go-ethereum/common"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/samber/lo"
 )
 
@@ -39,8 +38,8 @@ type Log struct {
 	Removed bool `json:"removed" rlp:"-"`
 }
 
-func (l Log) ToEthLog() *ethTypes.Log {
-	return &ethTypes.Log{
+func (l Log) ToEthLog() *ELog {
+	return &ELog{
 		Address: common.Address(l.Address),
 		Topics: lo.Map(l.Topics, func(item ecommon.Hash, index int) common.Hash {
 			return common.Hash(item)

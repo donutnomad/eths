@@ -3,9 +3,9 @@ package contractcall
 import (
 	"encoding/json"
 
+	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/donutnomad/eths/hexutil"
-	"github.com/ethereum/go-ethereum/common"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/samber/lo"
 )
@@ -14,23 +14,23 @@ import (
 type txJSON struct {
 	Type hexutil.Uint64 `json:"type"`
 
-	ChainID              *hexutil.Big                    `json:"chainId,omitempty"`
-	Nonce                *hexutil.Uint64                 `json:"nonce"`
-	To                   *common.Address                 `json:"to"`
-	Gas                  *hexutil.Uint64                 `json:"gas"`
-	GasPrice             *hexutil.Big                    `json:"gasPrice"`
-	MaxPriorityFeePerGas *hexutil.Big                    `json:"maxPriorityFeePerGas"`
-	MaxFeePerGas         *hexutil.Big                    `json:"maxFeePerGas"`
-	MaxFeePerBlobGas     *hexutil.Big                    `json:"maxFeePerBlobGas,omitempty"`
-	Value                *hexutil.Big                    `json:"value"`
-	Input                *hexutil.Bytes                  `json:"input"`
-	AccessList           *ethTypes.AccessList            `json:"accessList,omitempty"`
-	BlobVersionedHashes  []common.Hash                   `json:"blobVersionedHashes,omitempty"`
-	AuthorizationList    []ethTypes.SetCodeAuthorization `json:"authorizationList,omitempty"`
-	V                    *hexutil.Big                    `json:"v"`
-	R                    *hexutil.Big                    `json:"r"`
-	S                    *hexutil.Big                    `json:"s"`
-	YParity              *hexutil.Uint64                 `json:"yParity,omitempty"`
+	ChainID              *hexutil.Big                   `json:"chainId,omitempty"`
+	Nonce                *hexutil.Uint64                `json:"nonce"`
+	To                   *common.Address                `json:"to"`
+	Gas                  *hexutil.Uint64                `json:"gas"`
+	GasPrice             *hexutil.Big                   `json:"gasPrice"`
+	MaxPriorityFeePerGas *hexutil.Big                   `json:"maxPriorityFeePerGas"`
+	MaxFeePerGas         *hexutil.Big                   `json:"maxFeePerGas"`
+	MaxFeePerBlobGas     *hexutil.Big                   `json:"maxFeePerBlobGas,omitempty"`
+	Value                *hexutil.Big                   `json:"value"`
+	Input                *hexutil.Bytes                 `json:"input"`
+	AccessList           *ethtype.AccessList            `json:"accessList,omitempty"`
+	BlobVersionedHashes  []common.Hash                  `json:"blobVersionedHashes,omitempty"`
+	AuthorizationList    []ethtype.SetCodeAuthorization `json:"authorizationList,omitempty"`
+	V                    *hexutil.Big                   `json:"v"`
+	R                    *hexutil.Big                   `json:"r"`
+	S                    *hexutil.Big                   `json:"s"`
+	YParity              *hexutil.Uint64                `json:"yParity,omitempty"`
 
 	// Blob transaction sidecar encoding:
 	Blobs       []kzg4844.Blob       `json:"blobs,omitempty"`

@@ -1,6 +1,21 @@
 package contractcall
 
 import (
+	"bytes"
+	"context"
+	"crypto/rand"
+	"encoding/json"
+	"fmt"
+	"io"
+	"math/big"
+	"net/http"
+	"testing"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/donutnomad/blockchain-alg/xecdsa"
+	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/hexutil"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"testing"
 )

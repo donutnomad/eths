@@ -7,8 +7,8 @@ import (
 
 	"github.com/donutnomad/blockchain-alg/xsecp256k1"
 	"github.com/donutnomad/eths/abi/bind/v2"
+	"github.com/donutnomad/eths/common"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
 

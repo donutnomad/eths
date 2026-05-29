@@ -1,9 +1,9 @@
 package multicall
 
 import (
+	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/contracts_pack"
 	"github.com/donutnomad/eths/multiread"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // Address is the default Multicall3 address: https://www.multicall3.com/abi#ethers-js

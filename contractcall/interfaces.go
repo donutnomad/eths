@@ -4,46 +4,46 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/ethclient"
+	"github.com/donutnomad/eths/ethtype"
 )
 
 type IEthereumRPC interface {
-	ethereum.ChainIDReader
-	ethereum.BlockNumberReader
-	ethereum.ContractCaller
-	ethereum.PendingContractCaller
-	ethereum.GasEstimator
-	ethereum.PendingStateReader
-	ethereum.GasPricer
-	ethereum.GasPricer1559
+	ethclient.ChainIDReader
+	ethclient.BlockNumberReader
+	ethclient.ContractCaller
+	ethclient.PendingContractCaller
+	ethclient.GasEstimator
+	ethclient.PendingStateReader
+	ethclient.GasPricer
+	ethclient.GasPricer1559
 
-	ethereum.TransactionSender
-	ethereum.LogFilterer
+	ethclient.TransactionSender
+	ethclient.LogFilterer
 
-	ethereum.TransactionReader
-	ethereum.ChainStateReader
-	ethereum.ChainReader
+	ethclient.TransactionReader
+	ethclient.ChainStateReader
+	ethclient.ChainReader
 }
 
 type gasCaller interface {
 	IHeaderByNumber
-	ethereum.GasPricer
-	ethereum.GasPricer1559
+	ethclient.GasPricer
+	ethclient.GasPricer1559
 }
 
 type IMyClient interface {
 	IHeaderByNumber
-	ethereum.GasPricer
-	ethereum.GasPricer1559
-	ethereum.GasEstimator
+	ethclient.GasPricer
+	ethclient.GasPricer1559
+	ethclient.GasEstimator
 	INonceAt
 	IBalance
 }
 
 type ISendTxClient interface {
-	ethereum.TransactionSender
+	ethclient.TransactionSender
 	ICodeAt
 }
 
@@ -61,7 +61,7 @@ type IGasPriceValidator interface {
 // estimateL1Gas它是(L1 Gas) 和estimateGas(L2 Gas)的总和。
 // Arb:
 type IEstimateGas interface {
-	EstimateGas(ctx context.Context, chainId *big.Int, msg ethereum.CallMsg) (*big.Int, error)
+	EstimateGas(ctx context.Context, chainId *big.Int, msg ethclient.CallMsg) (*big.Int, error)
 }
 
 type IGetNonce interface {
@@ -69,7 +69,7 @@ type IGetNonce interface {
 }
 
 type IHeaderByNumber interface {
-	HeaderByNumber(ctx context.Context, number *big.Int) (*ethTypes.Header, error)
+	HeaderByNumber(ctx context.Context, number *big.Int) (*ethtype.EHeader, error)
 }
 
 type IBalance interface {

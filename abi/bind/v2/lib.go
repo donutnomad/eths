@@ -31,10 +31,10 @@ import (
 	"math/big"
 
 	"github.com/donutnomad/eths/abi"
+	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/crypto"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
 )
 

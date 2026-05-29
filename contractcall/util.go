@@ -8,10 +8,10 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/crypto"
+	"github.com/donutnomad/eths/ethclient"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	"github.com/samber/lo"
@@ -31,7 +31,7 @@ type ILogger interface {
 	Printf(string, ...interface{})
 }
 
-func logCallMsg(logger ILogger, msg *ethereum.CallMsg) {
+func logCallMsg(logger ILogger, msg *ethclient.CallMsg) {
 	if logger == nil || msg == nil {
 		return
 	}
@@ -59,7 +59,7 @@ type KnownError struct {
 var ErrGasUintOverflow = errors.New("gas uint64 overflow")
 
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
-func IntrinsicGas(data []byte, accessList ethTypes.AccessList, authList []ethTypes.SetCodeAuthorization, isContractCreation, isHomestead, isEIP2028, isEIP3860 bool) (uint64, error) {
+func IntrinsicGas(data []byte, accessList ethtype.AccessList, authList []ethtype.SetCodeAuthorization, isContractCreation, isHomestead, isEIP2028, isEIP3860 bool) (uint64, error) {
 	// Set the starting gas for the raw transaction
 	var gas uint64
 	if isContractCreation && isHomestead {
@@ -176,7 +176,7 @@ func computeVForEIP155(sigV byte, chainID *big.Int, isLegacyTx bool) *big.Int {
 }
 
 type ethTransactionReflect struct {
-	Inner ethTypes.TxData
+	Inner ethtype.TxData
 }
 
 // deriveChainId derives the chain id from the given v parameter
@@ -264,11 +264,11 @@ func buildArgs(args ...any) []any {
 
 func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (common.Address, error) {
 	if Vb.BitLen() > 8 {
-		return common.Address{}, ethTypes.ErrInvalidSig
+		return common.Address{}, ErrInvalidSig
 	}
 	V := byte(Vb.Uint64() - 27)
 	if !crypto.ValidateSignatureValues(V, R, S, homestead) {
-		return common.Address{}, ethTypes.ErrInvalidSig
+		return common.Address{}, ErrInvalidSig
 	}
 	// encode the signature in uncompressed format
 	r, s := R.Bytes(), S.Bytes()

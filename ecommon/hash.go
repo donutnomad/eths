@@ -9,7 +9,7 @@ import (
 	"math/rand"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 )
 
 // Lengths of hashes and addresses in bytes.
