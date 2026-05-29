@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/donutnomad/eths/common"
-	"github.com/donutnomad/eths/hexutil"
+	hexutil2 "github.com/donutnomad/eths/common/hexutil"
 )
 
 // API describes the set of methods offered over the RPC interface
@@ -100,7 +100,7 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	blckNum, err := hexutil.DecodeUint64(input)
+	blckNum, err := hexutil2.DecodeUint64(input)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (bn BlockNumber) String() string {
 		if bn < 0 {
 			return fmt.Sprintf("<invalid %d>", bn)
 		}
-		return hexutil.Uint64(bn).String()
+		return hexutil2.Uint64(bn).String()
 	}
 }
 
@@ -198,7 +198,7 @@ func (bnh *BlockNumberOrHash) UnmarshalJSON(data []byte) error {
 			bnh.BlockHash = &hash
 			return nil
 		} else {
-			blckNum, err := hexutil.DecodeUint64(input)
+			blckNum, err := hexutil2.DecodeUint64(input)
 			if err != nil {
 				return err
 			}

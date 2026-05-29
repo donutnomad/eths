@@ -26,8 +26,8 @@ import (
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/ethclient"
+	"github.com/donutnomad/eths/ethclient/event"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/donutnomad/eths/event"
 )
 
 const basefeeWiggleMultiplier = 2

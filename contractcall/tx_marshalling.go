@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 
 	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/donutnomad/eths/hexutil"
 	"github.com/donutnomad/eths/internal/kzg4844"
 	"github.com/samber/lo"
 )

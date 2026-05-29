@@ -3,9 +3,9 @@ package eip712
 import (
 	"github.com/donutnomad/eths/abi/bind/v2"
 	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/common/math"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/donutnomad/eths/hexutil"
 	"github.com/donutnomad/eths/multiread"
 )
 

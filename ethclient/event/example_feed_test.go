@@ -19,7 +19,7 @@ package event_test
 import (
 	"fmt"
 
-	"github.com/donutnomad/eths/event"
+	"github.com/donutnomad/eths/ethclient/event"
 )
 
 func ExampleFeed_acknowledgedEvents() {

@@ -8,8 +8,8 @@ import (
 	"math"
 	"strings"
 
+	hexutil2 "github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/donutnomad/eths/hexutil"
 )
 
 // A BlockNonce is a 64-bit hash which proves (combined with the
@@ -31,12 +31,12 @@ func (n BlockNonce) Uint64() uint64 {
 
 // MarshalText encodes n as a hex string with 0x prefix.
 func (n BlockNonce) MarshalText() ([]byte, error) {
-	return hexutil.Bytes(n[:]).MarshalText()
+	return hexutil2.Bytes(n[:]).MarshalText()
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (n *BlockNonce) UnmarshalText(input []byte) error {
-	return hexutil.UnmarshalFixedText("BlockNonce", input, n[:])
+	return hexutil2.UnmarshalFixedText("BlockNonce", input, n[:])
 }
 
 type BlockNumber int64
@@ -79,7 +79,7 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	blckNum, err := hexutil.DecodeUint64(input)
+	blckNum, err := hexutil2.DecodeUint64(input)
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func (bn BlockNumber) String() string {
 		if bn < 0 {
 			return fmt.Sprintf("<invalid %d>", bn)
 		}
-		return hexutil.Uint64(bn).String()
+		return hexutil2.Uint64(bn).String()
 	}
 }
 
@@ -177,7 +177,7 @@ func (bnh *BlockNumberOrHash) UnmarshalJSON(data []byte) error {
 			bnh.BlockHash = &hash
 			return nil
 		} else {
-			blckNum, err := hexutil.DecodeUint64(input)
+			blckNum, err := hexutil2.DecodeUint64(input)
 			if err != nil {
 				return err
 			}

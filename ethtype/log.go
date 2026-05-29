@@ -2,8 +2,8 @@ package ethtype
 
 import (
 	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/donutnomad/eths/hexutil"
 	"github.com/samber/lo"
 )
 

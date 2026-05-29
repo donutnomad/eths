@@ -20,7 +20,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/donutnomad/eths/hexutil"
+	"github.com/donutnomad/eths/common/hexutil"
 )
 
 // TestIterator tests some basic things about the ListIterator. A more

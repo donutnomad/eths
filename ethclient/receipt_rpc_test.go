@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ecommon"
-	rpc "github.com/donutnomad/eths/ethrpc"
+	"github.com/donutnomad/eths/ethclient/ethrpc"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/donutnomad/eths/hexutil"
 )
 
 const sepoliaRPC = "https://ethereum-sepolia-rpc.publicnode.com"

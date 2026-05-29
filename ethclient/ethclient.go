@@ -27,16 +27,16 @@ import (
 	"time"
 
 	"github.com/donutnomad/eths/common"
+	hexutil2 "github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ecommon"
-	rpc "github.com/donutnomad/eths/ethrpc"
+	rpc2 "github.com/donutnomad/eths/ethclient/ethrpc"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/donutnomad/eths/hexutil"
 	"github.com/samber/lo"
 )
 
 // Client defines typed wrappers for the Ethereum RPC API.
 type Client struct {
-	c  *rpc.Client
+	c  *rpc2.Client
 	rt *headerCapture
 	od *overloadDetector
 }
@@ -46,7 +46,7 @@ type Option func(*dialConfig)
 
 type dialConfig struct {
 	httpClient *http.Client
-	rpcOpts    []rpc.ClientOption
+	rpcOpts    []rpc2.ClientOption
 }
 
 // WithHTTPClient configures the base http.Client used by the RPC client.
@@ -60,7 +60,7 @@ func WithHTTPClient(c *http.Client) Option {
 }
 
 // WithRPCOptions passes additional rpc.ClientOption to the underlying rpc.DialOptions.
-func WithRPCOptions(opts ...rpc.ClientOption) Option {
+func WithRPCOptions(opts ...rpc2.ClientOption) Option {
 	return func(cfg *dialConfig) {
 		cfg.rpcOpts = append(cfg.rpcOpts, opts...)
 	}
@@ -88,10 +88,10 @@ func DialContext(ctx context.Context, rawurl string, opts ...Option) (*Client, e
 		httpClient = &http.Client{Transport: hc}
 	}
 
-	allOpts := make([]rpc.ClientOption, 0, len(cfg.rpcOpts)+1)
-	allOpts = append(allOpts, rpc.WithHTTPClient(httpClient))
+	allOpts := make([]rpc2.ClientOption, 0, len(cfg.rpcOpts)+1)
+	allOpts = append(allOpts, rpc2.WithHTTPClient(httpClient))
 	allOpts = append(allOpts, cfg.rpcOpts...)
-	c, err := rpc.DialOptions(ctx, rawurl, allOpts...)
+	c, err := rpc2.DialOptions(ctx, rawurl, allOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func DialContext(ctx context.Context, rawurl string, opts ...Option) (*Client, e
 }
 
 // NewClient creates a client that uses the given RPC client.
-func NewClient(c *rpc.Client) *Client {
+func NewClient(c *rpc2.Client) *Client {
 	return &Client{c: c, od: newOverloadDetector(50, 0.5)}
 }
 
@@ -109,7 +109,7 @@ func (ec *Client) Close() {
 }
 
 // Client gets the underlying RPC client.
-func (ec *Client) Client() *rpc.Client {
+func (ec *Client) Client() *rpc2.Client {
 	return ec.c
 }
 
@@ -122,7 +122,7 @@ func (ec *Client) callContext(ctx context.Context, result any, method string, ar
 }
 
 // batchCallContext wraps rpc.Client.BatchCallContext and enriches HTTP errors.
-func (ec *Client) batchCallContext(ctx context.Context, b []rpc.BatchElem) error {
+func (ec *Client) batchCallContext(ctx context.Context, b []rpc2.BatchElem) error {
 	err := wrapErr(ec.rt, ec.c.BatchCallContext(ctx, b))
 	ec.od.record(IsRateLimited(err))
 	return err
@@ -145,7 +145,7 @@ func (ec *Client) OverloadRate() float64 {
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_chainid
 func (ec *Client) ChainID(ctx context.Context) (*big.Int, error) {
-	result, err := Call[hexutil.Big](ec, ctx, "eth_chainId")
+	result, err := Call[hexutil2.Big](ec, ctx, "eth_chainId")
 	return (*big.Int)(&result), err
 }
 
@@ -240,7 +240,7 @@ func LiteBlockByHashAs[T any](ctx context.Context, ec *Client, hash ecommon.Hash
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blocknumber
 func (ec *Client) BlockNumber(ctx context.Context) (uint64, error) {
-	result, err := Call[hexutil.Uint64](ec, ctx, "eth_blockNumber")
+	result, err := Call[hexutil2.Uint64](ec, ctx, "eth_blockNumber")
 	return uint64(result), err
 }
 
@@ -248,7 +248,7 @@ func (ec *Client) BlockNumber(ctx context.Context) (uint64, error) {
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#net_peercount
 func (ec *Client) PeerCount(ctx context.Context) (uint64, error) {
-	result, err := Call[hexutil.Uint64](ec, ctx, "net_peerCount")
+	result, err := Call[hexutil2.Uint64](ec, ctx, "net_peerCount")
 	return uint64(result), err
 }
 
@@ -347,7 +347,7 @@ func (ec *Client) TransactionByHash(ctx context.Context, hash ecommon.Hash) (tx 
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblocktransactioncountbyhash
 func (ec *Client) TransactionCount(ctx context.Context, blockHash ecommon.Hash) (uint, error) {
-	num, err := Call[hexutil.Uint](ec, ctx, "eth_getBlockTransactionCountByHash", blockHash)
+	num, err := Call[hexutil2.Uint](ec, ctx, "eth_getBlockTransactionCountByHash", blockHash)
 	return uint(num), err
 }
 
@@ -356,7 +356,7 @@ func (ec *Client) TransactionCount(ctx context.Context, blockHash ecommon.Hash) 
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyblockhashandindex
 func (ec *Client) TransactionInBlock(ctx context.Context, blockHash ecommon.Hash, index uint) (*ethtype.ETransaction, error) {
 	var json *rpcTransaction
-	err := ec.callContext(ctx, &json, "eth_getTransactionByBlockHashAndIndex", blockHash, hexutil.Uint64(index))
+	err := ec.callContext(ctx, &json, "eth_getTransactionByBlockHashAndIndex", blockHash, hexutil2.Uint64(index))
 	if err != nil {
 		return nil, err
 	}
@@ -442,7 +442,7 @@ func (ec *Client) NetworkID(ctx context.Context) (*big.Int, error) {
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 func (ec *Client) BalanceAt(ctx context.Context, account ecommon.Address, blockNumber *big.Int) (*big.Int, error) {
-	result, err := Call[hexutil.Big](ec, ctx, "eth_getBalance", account, toBlockNumArg(blockNumber))
+	result, err := Call[hexutil2.Big](ec, ctx, "eth_getBalance", account, toBlockNumArg(blockNumber))
 	return (*big.Int)(&result), err
 }
 
@@ -450,7 +450,7 @@ func (ec *Client) BalanceAt(ctx context.Context, account ecommon.Address, blockN
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 func (ec *Client) BalanceAtHash(ctx context.Context, account ecommon.Address, blockHash ecommon.Hash) (*big.Int, error) {
-	result, err := Call[hexutil.Big](ec, ctx, "eth_getBalance", account, ethtype.BlockNumberOrHashWithHash(blockHash, false))
+	result, err := Call[hexutil2.Big](ec, ctx, "eth_getBalance", account, ethtype.BlockNumberOrHashWithHash(blockHash, false))
 	return (*big.Int)(&result), err
 }
 
@@ -459,14 +459,14 @@ func (ec *Client) BalanceAtHash(ctx context.Context, account ecommon.Address, bl
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getstorageat
 func (ec *Client) StorageAt(ctx context.Context, account ecommon.Address, key ecommon.Hash, blockNumber *big.Int) ([]byte, error) {
-	return Call[hexutil.Bytes](ec, ctx, "eth_getStorageAt", account, key, toBlockNumArg(blockNumber))
+	return Call[hexutil2.Bytes](ec, ctx, "eth_getStorageAt", account, key, toBlockNumArg(blockNumber))
 }
 
 // StorageAtHash returns the value of key in the contract storage of the given account.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getstorageat
 func (ec *Client) StorageAtHash(ctx context.Context, account ecommon.Address, key ecommon.Hash, blockHash ecommon.Hash) ([]byte, error) {
-	return Call[hexutil.Bytes](ec, ctx, "eth_getStorageAt", account, key, ethtype.BlockNumberOrHashWithHash(blockHash, false))
+	return Call[hexutil2.Bytes](ec, ctx, "eth_getStorageAt", account, key, ethtype.BlockNumberOrHashWithHash(blockHash, false))
 }
 
 // CodeAt returns the contract code of the given account.
@@ -474,14 +474,14 @@ func (ec *Client) StorageAtHash(ctx context.Context, account ecommon.Address, ke
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getcode
 func (ec *Client) CodeAt(ctx context.Context, account ecommon.Address, blockNumber *big.Int) ([]byte, error) {
-	return Call[hexutil.Bytes](ec, ctx, "eth_getCode", account, toBlockNumArg(blockNumber))
+	return Call[hexutil2.Bytes](ec, ctx, "eth_getCode", account, toBlockNumArg(blockNumber))
 }
 
 // CodeAtHash returns the contract code of the given account.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getcode
 func (ec *Client) CodeAtHash(ctx context.Context, account ecommon.Address, blockHash ecommon.Hash) ([]byte, error) {
-	return Call[hexutil.Bytes](ec, ctx, "eth_getCode", account, ethtype.BlockNumberOrHashWithHash(blockHash, false))
+	return Call[hexutil2.Bytes](ec, ctx, "eth_getCode", account, ethtype.BlockNumberOrHashWithHash(blockHash, false))
 }
 
 // NonceAt returns the account nonce of the given account.
@@ -489,7 +489,7 @@ func (ec *Client) CodeAtHash(ctx context.Context, account ecommon.Address, block
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount
 func (ec *Client) NonceAt(ctx context.Context, account ecommon.Address, blockNumber *big.Int) (uint64, error) {
-	result, err := Call[hexutil.Uint64](ec, ctx, "eth_getTransactionCount", account, toBlockNumArg(blockNumber))
+	result, err := Call[hexutil2.Uint64](ec, ctx, "eth_getTransactionCount", account, toBlockNumArg(blockNumber))
 	return uint64(result), err
 }
 
@@ -497,7 +497,7 @@ func (ec *Client) NonceAt(ctx context.Context, account ecommon.Address, blockNum
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount
 func (ec *Client) NonceAtHash(ctx context.Context, account ecommon.Address, blockHash ecommon.Hash) (uint64, error) {
-	result, err := Call[hexutil.Uint64](ec, ctx, "eth_getTransactionCount", account, ethtype.BlockNumberOrHashWithHash(blockHash, false))
+	result, err := Call[hexutil2.Uint64](ec, ctx, "eth_getTransactionCount", account, ethtype.BlockNumberOrHashWithHash(blockHash, false))
 	return uint64(result), err
 }
 
@@ -589,7 +589,7 @@ func toFilterArg(q FilterQuery) (any, error) {
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getbalance
 func (ec *Client) PendingBalanceAt(ctx context.Context, account ecommon.Address) (*big.Int, error) {
-	result, err := Call[hexutil.Big](ec, ctx, "eth_getBalance", account, "pending")
+	result, err := Call[hexutil2.Big](ec, ctx, "eth_getBalance", account, "pending")
 	return (*big.Int)(&result), err
 }
 
@@ -597,14 +597,14 @@ func (ec *Client) PendingBalanceAt(ctx context.Context, account ecommon.Address)
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getstorageat
 func (ec *Client) PendingStorageAt(ctx context.Context, account ecommon.Address, key ecommon.Hash) ([]byte, error) {
-	return Call[hexutil.Bytes](ec, ctx, "eth_getStorageAt", account, key, "pending")
+	return Call[hexutil2.Bytes](ec, ctx, "eth_getStorageAt", account, key, "pending")
 }
 
 // PendingCodeAt returns the contract code of the given account in the pending state.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getcode
 func (ec *Client) PendingCodeAt(ctx context.Context, account ecommon.Address) ([]byte, error) {
-	return Call[hexutil.Bytes](ec, ctx, "eth_getCode", account, "pending")
+	return Call[hexutil2.Bytes](ec, ctx, "eth_getCode", account, "pending")
 }
 
 // PendingNonceAt returns the account nonce of the given account in the pending state.
@@ -612,7 +612,7 @@ func (ec *Client) PendingCodeAt(ctx context.Context, account ecommon.Address) ([
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactioncount
 func (ec *Client) PendingNonceAt(ctx context.Context, account ecommon.Address) (uint64, error) {
-	result, err := Call[hexutil.Uint64](ec, ctx, "eth_getTransactionCount", account, "pending")
+	result, err := Call[hexutil2.Uint64](ec, ctx, "eth_getTransactionCount", account, "pending")
 	return uint64(result), err
 }
 
@@ -620,7 +620,7 @@ func (ec *Client) PendingNonceAt(ctx context.Context, account ecommon.Address) (
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getblocktransactioncountbynumber
 func (ec *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
-	num, err := Call[hexutil.Uint](ec, ctx, "eth_getBlockTransactionCountByNumber", "pending")
+	num, err := Call[hexutil2.Uint](ec, ctx, "eth_getBlockTransactionCountByNumber", "pending")
 	return uint(num), err
 }
 
@@ -635,7 +635,7 @@ func (ec *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_call
 func (ec *Client) CallContract(ctx context.Context, msg CallMsg, blockNumber *big.Int) ([]byte, error) {
-	return Call[hexutil.Bytes](ec, ctx, "eth_call", toCallArg(msg), toBlockNumArg(blockNumber))
+	return Call[hexutil2.Bytes](ec, ctx, "eth_call", toCallArg(msg), toBlockNumArg(blockNumber))
 }
 
 // CallContractAtHash is almost the same as CallContract except that it selects
@@ -643,7 +643,7 @@ func (ec *Client) CallContract(ctx context.Context, msg CallMsg, blockNumber *bi
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_call
 func (ec *Client) CallContractAtHash(ctx context.Context, msg CallMsg, blockHash ecommon.Hash) ([]byte, error) {
-	return Call[hexutil.Bytes](ec, ctx, "eth_call", toCallArg(msg), ethtype.BlockNumberOrHashWithHash(blockHash, false))
+	return Call[hexutil2.Bytes](ec, ctx, "eth_call", toCallArg(msg), ethtype.BlockNumberOrHashWithHash(blockHash, false))
 }
 
 // PendingCallContract executes a message call transaction using the EVM.
@@ -651,7 +651,7 @@ func (ec *Client) CallContractAtHash(ctx context.Context, msg CallMsg, blockHash
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_call
 func (ec *Client) PendingCallContract(ctx context.Context, msg CallMsg) ([]byte, error) {
-	return Call[hexutil.Bytes](ec, ctx, "eth_call", toCallArg(msg), "pending")
+	return Call[hexutil2.Bytes](ec, ctx, "eth_call", toCallArg(msg), "pending")
 }
 
 // SuggestGasPrice retrieves the currently suggested gas price to allow a timely
@@ -659,7 +659,7 @@ func (ec *Client) PendingCallContract(ctx context.Context, msg CallMsg) ([]byte,
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gasprice
 func (ec *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
-	hex, err := Call[hexutil.Big](ec, ctx, "eth_gasPrice")
+	hex, err := Call[hexutil2.Big](ec, ctx, "eth_gasPrice")
 	return (*big.Int)(&hex), err
 }
 
@@ -668,7 +668,7 @@ func (ec *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_maxpriorityfeepergas
 func (ec *Client) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
-	hex, err := Call[hexutil.Big](ec, ctx, "eth_maxPriorityFeePerGas")
+	hex, err := Call[hexutil2.Big](ec, ctx, "eth_maxPriorityFeePerGas")
 	return (*big.Int)(&hex), err
 }
 
@@ -676,15 +676,15 @@ func (ec *Client) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_blobbasefee
 func (ec *Client) BlobBaseFee(ctx context.Context) (*big.Int, error) {
-	hex, err := Call[hexutil.Big](ec, ctx, "eth_blobBaseFee")
+	hex, err := Call[hexutil2.Big](ec, ctx, "eth_blobBaseFee")
 	return (*big.Int)(&hex), err
 }
 
 type feeHistoryResultMarshaling struct {
-	OldestBlock  *hexutil.Big     `json:"oldestBlock"`
-	Reward       [][]*hexutil.Big `json:"reward,omitempty"`
-	BaseFee      []*hexutil.Big   `json:"baseFeePerGas,omitempty"`
-	GasUsedRatio []float64        `json:"gasUsedRatio"`
+	OldestBlock  *hexutil2.Big     `json:"oldestBlock"`
+	Reward       [][]*hexutil2.Big `json:"reward,omitempty"`
+	BaseFee      []*hexutil2.Big   `json:"baseFeePerGas,omitempty"`
+	GasUsedRatio []float64         `json:"gasUsedRatio"`
 }
 
 // FeeHistory retrieves the fee market history.
@@ -692,7 +692,7 @@ type feeHistoryResultMarshaling struct {
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_feehistory
 func (ec *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *big.Int, rewardPercentiles []float64) (*FeeHistory, error) {
 	var res feeHistoryResultMarshaling
-	if err := ec.callContext(ctx, &res, "eth_feeHistory", hexutil.Uint(blockCount), toBlockNumArg(lastBlock), rewardPercentiles); err != nil {
+	if err := ec.callContext(ctx, &res, "eth_feeHistory", hexutil2.Uint(blockCount), toBlockNumArg(lastBlock), rewardPercentiles); err != nil {
 		return nil, err
 	}
 	reward := make([][]*big.Int, len(res.Reward))
@@ -725,7 +725,7 @@ func (ec *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_estimategas
 func (ec *Client) EstimateGas(ctx context.Context, msg CallMsg) (uint64, error) {
-	hex, err := Call[hexutil.Uint64](ec, ctx, "eth_estimateGas", toCallArg(msg))
+	hex, err := Call[hexutil2.Uint64](ec, ctx, "eth_estimateGas", toCallArg(msg))
 	return uint64(hex), err
 }
 
@@ -734,7 +734,7 @@ func (ec *Client) EstimateGas(ctx context.Context, msg CallMsg) (uint64, error) 
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_estimategas
 func (ec *Client) EstimateGasAtBlock(ctx context.Context, msg CallMsg, blockNumber *big.Int) (uint64, error) {
-	hex, err := Call[hexutil.Uint64](ec, ctx, "eth_estimateGas", toCallArg(msg), toBlockNumArg(blockNumber))
+	hex, err := Call[hexutil2.Uint64](ec, ctx, "eth_estimateGas", toCallArg(msg), toBlockNumArg(blockNumber))
 	return uint64(hex), err
 }
 
@@ -743,7 +743,7 @@ func (ec *Client) EstimateGasAtBlock(ctx context.Context, msg CallMsg, blockNumb
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_estimategas
 func (ec *Client) EstimateGasAtBlockHash(ctx context.Context, msg CallMsg, blockHash ecommon.Hash) (uint64, error) {
-	hex, err := Call[hexutil.Uint64](ec, ctx, "eth_estimateGas", toCallArg(msg), ethtype.BlockNumberOrHashWithHash(blockHash, false))
+	hex, err := Call[hexutil2.Uint64](ec, ctx, "eth_estimateGas", toCallArg(msg), ethtype.BlockNumberOrHashWithHash(blockHash, false))
 	return uint64(hex), err
 }
 
@@ -758,7 +758,7 @@ func (ec *Client) SendTransaction(ctx context.Context, tx *ethtype.ETransaction)
 	if err != nil {
 		return err
 	}
-	return ec.callContext(ctx, nil, "eth_sendRawTransaction", hexutil.Encode(data))
+	return ec.callContext(ctx, nil, "eth_sendRawTransaction", hexutil2.Encode(data))
 }
 
 // SendTransactionSync submits a signed tx and waits for a receipt (or until
@@ -781,14 +781,14 @@ func (ec *Client) SendRawTransactionSync(
 	rawTx []byte,
 	timeout *time.Duration,
 ) (*ethtype.Receipt, error) {
-	var ms *hexutil.Uint64
+	var ms *hexutil2.Uint64
 	if timeout != nil {
-		if d := hexutil.Uint64(timeout.Milliseconds()); d > 0 {
+		if d := hexutil2.Uint64(timeout.Milliseconds()); d > 0 {
 			ms = &d
 		}
 	}
 	var receipt ethtype.Receipt
-	if err := ec.callContext(ctx, &receipt, "eth_sendRawTransactionSync", hexutil.Bytes(rawTx), ms); err != nil {
+	if err := ec.callContext(ctx, &receipt, "eth_sendRawTransactionSync", hexutil2.Bytes(rawTx), ms); err != nil {
 		return nil, err
 	}
 	return &receipt, nil
@@ -798,11 +798,11 @@ func (ec *Client) SendRawTransactionSync(
 //
 // This can be used with CallContract and EstimateGas, and only when the server is Geth.
 func RevertErrorData(err error) ([]byte, bool) {
-	var ec rpc.Error
-	var ed rpc.DataError
+	var ec rpc2.Error
+	var ed rpc2.DataError
 	if errors.As(err, &ec) && errors.As(err, &ed) && ec.ErrorCode() == 3 {
 		if eds, ok := ed.ErrorData().(string); ok {
-			revertData, err := hexutil.Decode(eds)
+			revertData, err := hexutil2.Decode(eds)
 			if err == nil {
 				return revertData, true
 			}
@@ -816,11 +816,11 @@ func toBlockNumArg(number *big.Int) string {
 		return "latest"
 	}
 	if number.Sign() >= 0 {
-		return hexutil.EncodeBig(number)
+		return hexutil2.EncodeBig(number)
 	}
 	// It's negative.
 	if number.IsInt64() {
-		return rpc.BlockNumber(number.Int64()).String()
+		return rpc2.BlockNumber(number.Int64()).String()
 	}
 	// It's negative and large, which is invalid.
 	return fmt.Sprintf("<invalid %d>", number)
@@ -832,28 +832,28 @@ func toCallArg(msg CallMsg) any {
 		"to":   msg.To,
 	}
 	if len(msg.Data) > 0 {
-		arg["input"] = hexutil.Bytes(msg.Data)
+		arg["input"] = hexutil2.Bytes(msg.Data)
 	}
 	if msg.Value != nil {
-		arg["value"] = (*hexutil.Big)(msg.Value)
+		arg["value"] = (*hexutil2.Big)(msg.Value)
 	}
 	if msg.Gas != 0 {
-		arg["gas"] = hexutil.Uint64(msg.Gas)
+		arg["gas"] = hexutil2.Uint64(msg.Gas)
 	}
 	if msg.GasPrice != nil {
-		arg["gasPrice"] = (*hexutil.Big)(msg.GasPrice)
+		arg["gasPrice"] = (*hexutil2.Big)(msg.GasPrice)
 	}
 	if msg.GasFeeCap != nil {
-		arg["maxFeePerGas"] = (*hexutil.Big)(msg.GasFeeCap)
+		arg["maxFeePerGas"] = (*hexutil2.Big)(msg.GasFeeCap)
 	}
 	if msg.GasTipCap != nil {
-		arg["maxPriorityFeePerGas"] = (*hexutil.Big)(msg.GasTipCap)
+		arg["maxPriorityFeePerGas"] = (*hexutil2.Big)(msg.GasTipCap)
 	}
 	if msg.AccessList != nil {
 		arg["accessList"] = msg.AccessList
 	}
 	if msg.BlobGasFeeCap != nil {
-		arg["maxFeePerBlobGas"] = (*hexutil.Big)(msg.BlobGasFeeCap)
+		arg["maxFeePerBlobGas"] = (*hexutil2.Big)(msg.BlobGasFeeCap)
 	}
 	if msg.BlobHashes != nil {
 		arg["blobVersionedHashes"] = msg.BlobHashes
@@ -866,28 +866,28 @@ func toCallArg(msg CallMsg) any {
 
 // rpcProgress is a copy of SyncProgress with hex-encoded fields.
 type rpcProgress struct {
-	StartingBlock hexutil.Uint64
-	CurrentBlock  hexutil.Uint64
-	HighestBlock  hexutil.Uint64
+	StartingBlock hexutil2.Uint64
+	CurrentBlock  hexutil2.Uint64
+	HighestBlock  hexutil2.Uint64
 
-	PulledStates hexutil.Uint64
-	KnownStates  hexutil.Uint64
+	PulledStates hexutil2.Uint64
+	KnownStates  hexutil2.Uint64
 
-	SyncedAccounts         hexutil.Uint64
-	SyncedAccountBytes     hexutil.Uint64
-	SyncedBytecodes        hexutil.Uint64
-	SyncedBytecodeBytes    hexutil.Uint64
-	SyncedStorage          hexutil.Uint64
-	SyncedStorageBytes     hexutil.Uint64
-	HealedTrienodes        hexutil.Uint64
-	HealedTrienodeBytes    hexutil.Uint64
-	HealedBytecodes        hexutil.Uint64
-	HealedBytecodeBytes    hexutil.Uint64
-	HealingTrienodes       hexutil.Uint64
-	HealingBytecode        hexutil.Uint64
-	TxIndexFinishedBlocks  hexutil.Uint64
-	TxIndexRemainingBlocks hexutil.Uint64
-	StateIndexRemaining    hexutil.Uint64
+	SyncedAccounts         hexutil2.Uint64
+	SyncedAccountBytes     hexutil2.Uint64
+	SyncedBytecodes        hexutil2.Uint64
+	SyncedBytecodeBytes    hexutil2.Uint64
+	SyncedStorage          hexutil2.Uint64
+	SyncedStorageBytes     hexutil2.Uint64
+	HealedTrienodes        hexutil2.Uint64
+	HealedTrienodeBytes    hexutil2.Uint64
+	HealedBytecodes        hexutil2.Uint64
+	HealedBytecodeBytes    hexutil2.Uint64
+	HealingTrienodes       hexutil2.Uint64
+	HealingBytecode        hexutil2.Uint64
+	TxIndexFinishedBlocks  hexutil2.Uint64
+	TxIndexRemainingBlocks hexutil2.Uint64
+	StateIndexRemaining    hexutil2.Uint64
 }
 
 func (p *rpcProgress) toSyncProgress() *SyncProgress {
@@ -963,9 +963,9 @@ type SimulateCallResult struct {
 }
 
 type simulateCallResultMarshaling struct {
-	ReturnValue hexutil.Bytes
-	GasUsed     hexutil.Uint64
-	Status      hexutil.Uint64
+	ReturnValue hexutil2.Bytes
+	GasUsed     hexutil2.Uint64
+	Status      hexutil2.Uint64
 }
 
 // CallError represents an error from a simulated call.
@@ -990,17 +990,17 @@ type SimulateBlockResult struct {
 }
 
 type simulateBlockResultMarshaling struct {
-	Number        *hexutil.Big
-	Timestamp     hexutil.Uint64
-	GasLimit      hexutil.Uint64
-	GasUsed       hexutil.Uint64
-	BaseFeePerGas *hexutil.Big
+	Number        *hexutil2.Big
+	Timestamp     hexutil2.Uint64
+	GasLimit      hexutil2.Uint64
+	GasUsed       hexutil2.Uint64
+	BaseFeePerGas *hexutil2.Big
 }
 
 // SimulateV1 executes transactions on top of a base state.
 //
 // RPC: https://ethereum.github.io/execution-apis/api-documentation/ (eth_simulateV1)
-func (ec *Client) SimulateV1(ctx context.Context, opts SimulateOptions, blockNrOrHash *rpc.BlockNumberOrHash) ([]SimulateBlockResult, error) {
+func (ec *Client) SimulateV1(ctx context.Context, opts SimulateOptions, blockNrOrHash *rpc2.BlockNumberOrHash) ([]SimulateBlockResult, error) {
 	return Call[[]SimulateBlockResult](ec, ctx, "eth_simulateV1", opts, blockNrOrHash)
 }
 

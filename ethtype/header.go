@@ -3,8 +3,8 @@ package ethtype
 import (
 	"math/big"
 
+	"github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/donutnomad/eths/hexutil"
 )
 
 // Header represents a block header in the Ethereum blockchain.

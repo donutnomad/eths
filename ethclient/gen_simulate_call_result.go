@@ -5,8 +5,8 @@ package ethclient
 import (
 	"encoding/json"
 
+	"github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/donutnomad/eths/hexutil"
 )
 
 var _ = (*simulateCallResultMarshaling)(nil)

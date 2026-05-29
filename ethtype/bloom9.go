@@ -22,8 +22,8 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/donutnomad/eths/bitutil"
-	"github.com/donutnomad/eths/hexutil"
+	"github.com/donutnomad/eths/common/bitutil"
+	"github.com/donutnomad/eths/common/hexutil"
 )
 
 // hasherPool holds LegacyKeccak256 buffer for rlpHash.

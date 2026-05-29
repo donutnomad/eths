@@ -28,8 +28,8 @@ package bind
 
 import (
 	"github.com/donutnomad/eths/ethclient"
+	"github.com/donutnomad/eths/ethclient/event"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/donutnomad/eths/event"
 )
 
 // ContractEvent is a type constraint for ABI event types.

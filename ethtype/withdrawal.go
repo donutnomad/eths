@@ -1,8 +1,8 @@
 package ethtype
 
 import (
+	"github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/donutnomad/eths/hexutil"
 )
 
 // Withdrawal represents a validator withdrawal from the consensus layer.

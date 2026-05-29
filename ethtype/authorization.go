@@ -1,7 +1,7 @@
 package ethtype
 
 import (
-	"github.com/donutnomad/eths/hexutil"
+	"github.com/donutnomad/eths/common/hexutil"
 )
 
 //type SetCodeAuthorization struct {

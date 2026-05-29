@@ -22,7 +22,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/donutnomad/eths/hexutil"
+	"github.com/donutnomad/eths/common/hexutil"
 )
 
 // Tests that data bitset encoding and decoding works and is bijective.

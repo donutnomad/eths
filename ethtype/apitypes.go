@@ -29,9 +29,9 @@ import (
 	"strings"
 
 	"github.com/donutnomad/eths/common"
+	hexutil2 "github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/common/math"
 	"github.com/donutnomad/eths/crypto"
-	"github.com/donutnomad/eths/hexutil"
 )
 
 var typedDataReferenceTypeRegexp = regexp.MustCompile(`^[A-Za-z](\w*)(\[\d*\])*$`)
@@ -101,7 +101,7 @@ func TypedDataAndHash(typedData TypedData) ([]byte, string, error) {
 }
 
 // HashStruct generates a keccak256 hash of the encoding of the provided data
-func (typedData *TypedData) HashStruct(primaryType string, data TypedDataMessage) (hexutil.Bytes, error) {
+func (typedData *TypedData) HashStruct(primaryType string, data TypedDataMessage) (hexutil2.Bytes, error) {
 	encodedData, err := typedData.EncodeData(primaryType, data, 1)
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func (typedData *TypedData) Dependencies(primaryType string, found []string) []s
 // `name ‖ "(" ‖ member₁ ‖ "," ‖ member₂ ‖ "," ‖ … ‖ memberₙ ")"`
 //
 // each member is written as `type ‖ " " ‖ name` encodings cascade down and are sorted by name
-func (typedData *TypedData) EncodeType(primaryType string) hexutil.Bytes {
+func (typedData *TypedData) EncodeType(primaryType string) hexutil2.Bytes {
 	// Get dependencies primary first, then alphabetical
 	deps := typedData.Dependencies(primaryType, []string{})
 	if len(deps) > 0 {
@@ -163,7 +163,7 @@ func (typedData *TypedData) EncodeType(primaryType string) hexutil.Bytes {
 }
 
 // TypeHash creates the keccak256 hash  of the data
-func (typedData *TypedData) TypeHash(primaryType string) hexutil.Bytes {
+func (typedData *TypedData) TypeHash(primaryType string) hexutil2.Bytes {
 	return crypto.Keccak256(typedData.EncodeType(primaryType))
 }
 
@@ -171,7 +171,7 @@ func (typedData *TypedData) TypeHash(primaryType string) hexutil.Bytes {
 // `enc(value₁) ‖ enc(value₂) ‖ … ‖ enc(valueₙ)`
 //
 // each encoded member is 32-byte long
-func (typedData *TypedData) EncodeData(primaryType string, data map[string]interface{}, depth int) (hexutil.Bytes, error) {
+func (typedData *TypedData) EncodeData(primaryType string, data map[string]interface{}, depth int) (hexutil2.Bytes, error) {
 	if err := typedData.validate(); err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func (typedData *TypedData) EncodeData(primaryType string, data map[string]inter
 	return buffer.Bytes(), nil
 }
 
-func (typedData *TypedData) encodeArrayValue(encValue interface{}, encType string, depth int) (hexutil.Bytes, error) {
+func (typedData *TypedData) encodeArrayValue(encValue interface{}, encType string, depth int) (hexutil2.Bytes, error) {
 	arrayValue, err := convertDataToSlice(encValue)
 	if err != nil {
 		return nil, dataMismatchError(encType, encValue)
@@ -229,7 +229,7 @@ func (typedData *TypedData) encodeArrayValue(encValue interface{}, encType strin
 		if reflect.TypeOf(item).Kind() == reflect.Slice ||
 			reflect.TypeOf(item).Kind() == reflect.Array {
 			var (
-				encodedData hexutil.Bytes
+				encodedData hexutil2.Bytes
 				err         error
 			)
 			if reflect.TypeOf(item).Elem().Kind() == reflect.Uint8 {
@@ -279,10 +279,10 @@ func parseBytes(encType interface{}) ([]byte, bool) {
 	switch v := encType.(type) {
 	case []byte:
 		return v, true
-	case hexutil.Bytes:
+	case hexutil2.Bytes:
 		return v, true
 	case string:
-		bytes, err := hexutil.Decode(v)
+		bytes, err := hexutil2.Decode(v)
 		if err != nil {
 			return nil, false
 		}

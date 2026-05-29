@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	rpc "github.com/donutnomad/eths/ethrpc"
+	"github.com/donutnomad/eths/ethclient/ethrpc"
 )
 
 // HTTPError wraps rpc.HTTPError with additional HTTP response headers.

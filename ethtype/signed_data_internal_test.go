@@ -25,9 +25,9 @@ import (
 	"testing"
 
 	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/common/math"
 	"github.com/donutnomad/eths/crypto"
-	"github.com/donutnomad/eths/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/donutnomad/eths/ethrpc"
+	"github.com/donutnomad/eths/ethclient/ethrpc"
 	"github.com/donutnomad/eths/ethtype"
 )
 
 func TestAsHTTPError_RPCHTTPError(t *testing.T) {
-	raw := rpc.HTTPError{
+	raw := rpc.rpc{
 		StatusCode: 429,
 		Status:     "429 Too Many Requests",
 		Body:       []byte("rate limited"),

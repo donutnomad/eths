@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"math/big"
 
+	"github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/donutnomad/eths/hexutil"
 )
 
 var _ = (*receiptMarshaling)(nil)
