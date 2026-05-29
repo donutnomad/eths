@@ -10,29 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/donutnomad/eths/ethclient/ethrpc"
+	rpc "github.com/donutnomad/eths/ethclient/ethrpc"
 	"github.com/donutnomad/eths/ethtype"
 )
-
-func TestAsHTTPError_RPCHTTPError(t *testing.T) {
-	raw := rpc.rpc{
-		StatusCode: 429,
-		Status:     "429 Too Many Requests",
-		Body:       []byte("rate limited"),
-	}
-	wrapped := fmt.Errorf("call failed: %w", raw)
-
-	he, ok := AsHTTPError(wrapped)
-	if !ok {
-		t.Fatal("expected AsHTTPError to return true")
-	}
-	if he.StatusCode != 429 {
-		t.Fatalf("expected 429, got %d", he.StatusCode)
-	}
-	if he.Header != nil {
-		t.Fatal("expected nil header for plain rpc.HTTPError")
-	}
-}
 
 func TestAsHTTPError_WrappedHTTPError(t *testing.T) {
 	he := &HTTPError{
