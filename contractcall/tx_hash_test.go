@@ -6,7 +6,7 @@ import (
 
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/crypto"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/holiman/uint256"
 )
 
@@ -85,7 +85,7 @@ func TestHash_ConsistencyWithHash2(t *testing.T) {
 			name:   "AccessList (EIP-2930)",
 			txType: AccessListTxType,
 			setup: func() *txImpl {
-				accessList := ethTypes.AccessList{
+				accessList := ethtype.AccessList{
 					{
 						Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
 						StorageKeys: []common.Hash{
@@ -123,7 +123,7 @@ func TestHash_ConsistencyWithHash2(t *testing.T) {
 			name:   "DynamicFee (EIP-1559)",
 			txType: DynamicFeeTxType,
 			setup: func() *txImpl {
-				accessList := ethTypes.AccessList{
+				accessList := ethtype.AccessList{
 					{
 						Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
 						StorageKeys: []common.Hash{
@@ -163,7 +163,7 @@ func TestHash_ConsistencyWithHash2(t *testing.T) {
 			name:   "Blob (EIP-4844)",
 			txType: BlobTxType,
 			setup: func() *txImpl {
-				accessList := ethTypes.AccessList{
+				accessList := ethtype.AccessList{
 					{
 						Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
 						StorageKeys: []common.Hash{
@@ -194,7 +194,7 @@ func TestHash_ConsistencyWithHash2(t *testing.T) {
 			name:   "SetCode (EIP-7702)",
 			txType: SetCodeTxType,
 			setup: func() *txImpl {
-				accessList := ethTypes.AccessList{
+				accessList := ethtype.AccessList{
 					{
 						Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
 						StorageKeys: []common.Hash{
@@ -202,7 +202,7 @@ func TestHash_ConsistencyWithHash2(t *testing.T) {
 						},
 					},
 				}
-				authList := []ethTypes.SetCodeAuthorization{
+				authList := []ethtype.SetCodeAuthorization{
 					{
 						ChainID: *uint256.NewInt(1),
 						Address: common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),

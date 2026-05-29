@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/donutnomad/eths/common"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/samber/lo"
 	"github.com/samber/mo"
 )
@@ -103,8 +103,8 @@ type LogEntry struct {
 	TransactionIndex Uint64         `json:"transactionIndex"`
 }
 
-func (e *LogEntry) ToLog() *ethTypes.Log {
-	return &ethTypes.Log{
+func (e *LogEntry) ToLog() *ethtype.ELog {
+	return &ethtype.ELog{
 		Address:     e.Address,
 		Topics:      e.Topics,
 		Data:        e.Data,

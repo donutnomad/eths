@@ -11,7 +11,7 @@ import (
 	"github.com/donutnomad/eths/abi/bind/v2"
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/contracts_pack"
-	"github.com/ethereum/go-ethereum"
+	"github.com/donutnomad/eths/ethclient"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 )
@@ -47,10 +47,10 @@ func GetAddress(chainID uint64) common.Address {
 }
 
 // getAddress resolves the Multicall3 address for the given client.
-// If the client implements ethereum.ChainIDReader and the chain ID has a registered address, use it.
+// If the client implements ethclient.ChainIDReader and the chain ID has a registered address, use it.
 // Otherwise, fall back to the default Address.
 func getAddress(client bind.ContractCaller) common.Address {
-	if cr, ok := client.(ethereum.ChainIDReader); ok {
+	if cr, ok := client.(ethclient.ChainIDReader); ok {
 		if chainID, err := cr.ChainID(context.Background()); err == nil {
 			return GetAddress(chainID.Uint64())
 		}

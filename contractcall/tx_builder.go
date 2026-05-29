@@ -8,7 +8,7 @@ import (
 	"github.com/donutnomad/blockchain-alg/xsecp256k1"
 	"github.com/donutnomad/eths/abi/bind/v2"
 	"github.com/donutnomad/eths/common"
-	"github.com/ethereum/go-ethereum"
+	"github.com/donutnomad/eths/ethclient"
 	"github.com/pkg/errors"
 )
 
@@ -181,7 +181,7 @@ func (b *TxBuilder) SetGasLimitBy(estimator IEstimateGas) *TxBuilder {
 		return b
 	}
 
-	msg := ethereum.CallMsg{
+	msg := ethclient.CallMsg{
 		From:  b.from,
 		To:    b.to,
 		Data:  b.data,

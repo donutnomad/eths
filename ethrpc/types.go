@@ -24,8 +24,8 @@ import (
 	"math"
 	"strings"
 
+	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/hexutil"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // API describes the set of methods offered over the RPC interface

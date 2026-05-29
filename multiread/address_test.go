@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/donutnomad/eths/common"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethclient"
+	"github.com/donutnomad/eths/ethtype"
 )
 
 // mockContractCaller implements bind.ContractCaller for testing.
@@ -16,14 +16,14 @@ type mockContractCaller struct{}
 func (m *mockContractCaller) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {
 	return nil, nil
 }
-func (m *mockContractCaller) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
+func (m *mockContractCaller) CallContract(ctx context.Context, call ethclient.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	return nil, nil
 }
-func (m *mockContractCaller) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
+func (m *mockContractCaller) HeaderByNumber(ctx context.Context, number *big.Int) (*ethtype.EHeader, error) {
 	return nil, nil
 }
 
-// mockChainIDCaller implements both bind.ContractCaller and ethereum.ChainIDReader.
+// mockChainIDCaller implements both bind.ContractCaller and ethclient.ChainIDReader.
 type mockChainIDCaller struct {
 	mockContractCaller
 	chainID *big.Int

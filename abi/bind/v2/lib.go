@@ -33,8 +33,8 @@ import (
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/crypto"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethclient"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/ethereum/go-ethereum/event"
 )
 
@@ -50,7 +50,7 @@ type ContractEvent interface {
 // FilterEvents is intended to be used with contract event unpack methods in
 // bindings generated with the abigen --v2 flag. It should be
 // preferred over BoundContract.FilterLogs.
-func FilterEvents[Ev ContractEvent](c *BoundContract, opts *FilterOpts, unpack func(*types.Log) (*Ev, error), topics ...[]any) (*EventIterator[Ev], error) {
+func FilterEvents[Ev ContractEvent](c *BoundContract, opts *FilterOpts, unpack func(*ethtype.ELog) (*Ev, error), topics ...[]any) (*EventIterator[Ev], error) {
 	var e Ev
 	logs, sub, err := c.FilterLogs(opts, e.ContractEventName(), topics...)
 	if err != nil {
@@ -70,7 +70,7 @@ func FilterEvents[Ev ContractEvent](c *BoundContract, opts *FilterOpts, unpack f
 // WatchEvents is intended to be used with contract event unpack methods in
 // bindings generated with the abigen --v2 flag. It should be
 // preferred over BoundContract.WatchLogs.
-func WatchEvents[Ev ContractEvent](c *BoundContract, opts *WatchOpts, unpack func(*types.Log) (*Ev, error), sink chan<- *Ev, topics ...[]any) (event.Subscription, error) {
+func WatchEvents[Ev ContractEvent](c *BoundContract, opts *WatchOpts, unpack func(*ethtype.ELog) (*Ev, error), sink chan<- *Ev, topics ...[]any) (event.Subscription, error) {
 	var e Ev
 	logs, sub, err := c.WatchLogs(opts, e.ContractEventName(), topics...)
 	if err != nil {
@@ -107,9 +107,9 @@ func WatchEvents[Ev ContractEvent](c *BoundContract, opts *WatchOpts, unpack fun
 // filter call.
 type EventIterator[T any] struct {
 	current *T
-	unpack  func(*types.Log) (*T, error)
-	logs    <-chan types.Log
-	sub     ethereum.Subscription
+	unpack  func(*ethtype.ELog) (*T, error)
+	logs    <-chan ethtype.ELog
+	sub     ethclient.Subscription
 	fail    error // error to hold reason for iteration failure
 	closed  bool  // true if Close has been called
 }
@@ -207,7 +207,7 @@ func Call[T any](c *BoundContract, opts *CallOpts, calldata []byte, unpack func(
 // package-level method so that interactions with contracts whose bindings were
 // generated with the abigen --v2 flag are consistent (they do not require
 // calling methods on the BoundContract instance).
-func Transact(c *BoundContract, opt *TransactOpts, data []byte) (*types.Transaction, error) {
+func Transact(c *BoundContract, opt *TransactOpts, data []byte) (*ethtype.ETransaction, error) {
 	return c.RawTransact(opt, data)
 }
 
@@ -218,7 +218,7 @@ func Transact(c *BoundContract, opt *TransactOpts, data []byte) (*types.Transact
 //
 // To initiate the deployment of multiple contracts with one method call, see the
 // [LinkAndDeploy] method.
-func DeployContract(opts *TransactOpts, bytecode []byte, backend ContractBackend, constructorInput []byte) (common.Address, *types.Transaction, error) {
+func DeployContract(opts *TransactOpts, bytecode []byte, backend ContractBackend, constructorInput []byte) (common.Address, *ethtype.ETransaction, error) {
 	c := NewBoundContract(common.Address{}, abi.ABI{}, backend, backend, backend)
 
 	tx, err := c.RawCreationTransact(opts, append(bytecode, constructorInput...))
@@ -234,7 +234,7 @@ func DeployContract(opts *TransactOpts, bytecode []byte, backend ContractBackend
 // The DeployFn returned by DefaultDeployer should be used by LinkAndDeploy in
 // almost all cases, unless a custom DeployFn implementation is needed.
 func DefaultDeployer(opts *TransactOpts, backend ContractBackend) DeployFn {
-	return func(input []byte, deployer []byte) (common.Address, *types.Transaction, error) {
+	return func(input []byte, deployer []byte) (common.Address, *ethtype.ETransaction, error) {
 		addr, tx, err := DeployContract(opts, deployer, backend, input)
 		if err != nil {
 			return common.Address{}, nil, err
@@ -254,7 +254,7 @@ func DeployerWithNonceAssignment(opts *TransactOpts, backend ContractBackend) De
 	if opts.Nonce != nil {
 		pendingNonce = opts.Nonce.Int64()
 	}
-	return func(input []byte, deployer []byte) (common.Address, *types.Transaction, error) {
+	return func(input []byte, deployer []byte) (common.Address, *ethtype.ETransaction, error) {
 		if pendingNonce != 0 {
 			opts.Nonce = big.NewInt(pendingNonce)
 		}

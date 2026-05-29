@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/donutnomad/eths/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethtype"
 )
 
 // DeploymentParams contains parameters needed to deploy one or more contracts via LinkAndDeploy
@@ -54,7 +54,7 @@ func (d *DeploymentParams) validate() error {
 // deployment made by LinkAndDeploy.
 type DeploymentResult struct {
 	// Map of contract MetaData.ID to pending deployment transaction
-	Txs map[string]*types.Transaction
+	Txs map[string]*ethtype.ETransaction
 
 	// Map of contract MetaData.ID to the address where it will be deployed
 	Addresses map[string]common.Address
@@ -62,14 +62,14 @@ type DeploymentResult struct {
 
 // DeployFn deploys a contract given a deployer and optional input.  It returns
 // the address and a pending transaction, or an error if the deployment failed.
-type DeployFn func(input, deployer []byte) (common.Address, *types.Transaction, error)
+type DeployFn func(input, deployer []byte) (common.Address, *ethtype.ETransaction, error)
 
 // depTreeDeployer is responsible for taking a dependency, deploying-and-linking
 // its components in the proper order. A depTreeDeployer cannot be used after
 // calling LinkAndDeploy other than to retrieve the deployment result.
 type depTreeDeployer struct {
 	deployedAddrs map[string]common.Address
-	deployerTxs   map[string]*types.Transaction
+	deployerTxs   map[string]*ethtype.ETransaction
 	inputs        map[string][]byte // map of the root contract pattern to the constructor input (if there is any)
 	deployFn      DeployFn
 }
@@ -86,7 +86,7 @@ func newDepTreeDeployer(deployParams *DeploymentParams, deployFn DeployFn) *depT
 	return &depTreeDeployer{
 		deployFn:      deployFn,
 		deployedAddrs: deployedAddrs,
-		deployerTxs:   make(map[string]*types.Transaction),
+		deployerTxs:   make(map[string]*ethtype.ETransaction),
 		inputs:        inputs,
 	}
 }

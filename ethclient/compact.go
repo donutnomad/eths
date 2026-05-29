@@ -7,7 +7,6 @@ import (
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/ethtype"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 var NotFound = ethereum.NotFound
@@ -93,8 +92,8 @@ type ChainIDReader interface {
 // Logs received through a streaming query subscription may have Removed set to true,
 // indicating that the log was reverted due to a chain reorganisation.
 type LogFilterer interface {
-	FilterLogs(ctx context.Context, q FilterQuery) ([]types.Log, error)
-	SubscribeFilterLogs(ctx context.Context, q FilterQuery, ch chan<- types.Log) (Subscription, error)
+	FilterLogs(ctx context.Context, q FilterQuery) ([]ethtype.ELog, error)
+	SubscribeFilterLogs(ctx context.Context, q FilterQuery, ch chan<- ethtype.ELog) (Subscription, error)
 }
 
 // A PendingStateReader provides access to the pending state, which is the result of all
@@ -141,14 +140,14 @@ type ChainStateReader interface {
 //
 // The returned error is NotFound if the requested item does not exist.
 type ChainReader interface {
-	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
-	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
-	HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
-	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
+	BlockByHash(ctx context.Context, hash common.Hash) (*ethtype.EBlock, error)
+	BlockByNumber(ctx context.Context, number *big.Int) (*ethtype.EBlock, error)
+	HeaderByHash(ctx context.Context, hash common.Hash) (*ethtype.EHeader, error)
+	HeaderByNumber(ctx context.Context, number *big.Int) (*ethtype.EHeader, error)
 	TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error)
-	TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error)
+	TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*ethtype.ETransaction, error)
 
 	// This method subscribes to notifications about changes of the head block of
 	// the canonical chain.
-	SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (Subscription, error)
+	SubscribeNewHead(ctx context.Context, ch chan<- *ethtype.EHeader) (Subscription, error)
 }

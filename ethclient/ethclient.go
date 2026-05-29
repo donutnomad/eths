@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/ecommon"
 	rpc "github.com/donutnomad/eths/ethrpc"
 	"github.com/donutnomad/eths/ethtype"
@@ -504,10 +505,10 @@ func (ec *Client) NonceAtHash(ctx context.Context, account ecommon.Address, bloc
 
 // FilterQuery contains options for contract log filtering.
 type FilterQuery struct {
-	BlockHash *ecommon.Hash     // used by eth_getLogs, return logs only from block with this hash
-	FromBlock *big.Int          // beginning of the queried range, nil means genesis block
-	ToBlock   *big.Int          // end of the range, nil means latest block
-	Addresses []ecommon.Address // restricts matches to events created by specific contracts
+	BlockHash *common.Hash     // used by eth_getLogs, return logs only from block with this hash
+	FromBlock *big.Int         // beginning of the queried range, nil means genesis block
+	ToBlock   *big.Int         // end of the range, nil means latest block
+	Addresses []common.Address // restricts matches to events created by specific contracts
 
 	// The Topic list restricts matches to particular event topics. Each event has a list
 	// of topics. Topics matches a prefix of that list. An empty element slice matches any
@@ -520,7 +521,7 @@ type FilterQuery struct {
 	// {{}, {B}}          matches any topic in first position AND B in second position
 	// {{A}, {B}}         matches topic A in first position AND B in second position
 	// {{A, B}, {C, D}}   matches topic (A OR B) in first position AND (C OR D) in second position
-	Topics [][]ecommon.Hash
+	Topics [][]common.Hash
 }
 
 // FilterLogs executes a filter query.

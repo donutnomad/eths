@@ -22,14 +22,14 @@ import (
 	"time"
 
 	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/donutnomad/eths/internal/log"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // WaitMined waits for tx to be mined on the blockchain.
 // It stops waiting when the context is canceled.
-func WaitMined(ctx context.Context, b DeployBackend, txHash common.Hash) (*types.Receipt, error) {
+func WaitMined(ctx context.Context, b DeployBackend, txHash common.Hash) (*ethtype.EReceipt, error) {
 	queryTicker := time.NewTicker(time.Second)
 	defer queryTicker.Stop()
 

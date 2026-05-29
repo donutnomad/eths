@@ -24,11 +24,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum"
-
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethclient"
+	"github.com/donutnomad/eths/ethtype"
 	"github.com/ethereum/go-ethereum/event"
 )
 
@@ -41,7 +40,7 @@ var (
 
 // SignerFn is a signer function callback when a contract requires a method to
 // sign the transaction before submission.
-type SignerFn func(common.Address, *types.Transaction) (*types.Transaction, error)
+type SignerFn func(common.Address, *ethtype.ETransaction) (*ethtype.ETransaction, error)
 
 // CallOpts is the collection of options to fine tune a contract call request.
 type CallOpts struct {
@@ -59,12 +58,12 @@ type TransactOpts struct {
 	Nonce  *big.Int       // Nonce to use for the transaction execution (nil = use pending state)
 	Signer SignerFn       // Method to use for signing the transaction (mandatory)
 
-	Value      *big.Int         // Funds to transfer along the transaction (nil = 0 = no funds)
-	GasPrice   *big.Int         // Gas price to use for the transaction execution (nil = gas price oracle)
-	GasFeeCap  *big.Int         // Gas fee cap to use for the 1559 transaction execution (nil = gas price oracle)
-	GasTipCap  *big.Int         // Gas priority fee cap to use for the 1559 transaction execution (nil = gas price oracle)
-	GasLimit   uint64           // Gas limit to set for the transaction execution (0 = estimate)
-	AccessList types.AccessList // Access list to set for the transaction execution (nil = no access list)
+	Value      *big.Int           // Funds to transfer along the transaction (nil = 0 = no funds)
+	GasPrice   *big.Int           // Gas price to use for the transaction execution (nil = gas price oracle)
+	GasFeeCap  *big.Int           // Gas fee cap to use for the 1559 transaction execution (nil = gas price oracle)
+	GasTipCap  *big.Int           // Gas priority fee cap to use for the 1559 transaction execution (nil = gas price oracle)
+	GasLimit   uint64             // Gas limit to set for the transaction execution (0 = estimate)
+	AccessList ethtype.AccessList // Access list to set for the transaction execution (nil = no access list)
 
 	Context context.Context // Network context to support cancellation and timeouts (nil = no timeout)
 
@@ -195,7 +194,7 @@ func (c *BoundContract) call(opts *CallOpts, input []byte) ([]byte, error) {
 		opts = new(CallOpts)
 	}
 	var (
-		msg    = ethereum.CallMsg{From: opts.From, To: &c.address, Data: input}
+		msg    = ethclient.CallMsg{From: opts.From, To: &c.address, Data: input}
 		ctx    = ensureContext(opts.Context)
 		code   []byte
 		output []byte
@@ -253,7 +252,7 @@ func (c *BoundContract) call(opts *CallOpts, input []byte) ([]byte, error) {
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (c *BoundContract) Transact(opts *TransactOpts, method string, params ...any) (*types.Transaction, error) {
+func (c *BoundContract) Transact(opts *TransactOpts, method string, params ...any) (*ethtype.ETransaction, error) {
 	// Otherwise pack up the parameters and invoke the contract
 	input, err := c.abi.Pack(method, params...)
 	if err != nil {
@@ -264,19 +263,19 @@ func (c *BoundContract) Transact(opts *TransactOpts, method string, params ...an
 
 // RawTransact initiates a transaction with the given raw calldata as the input.
 // It's usually used to initiate transactions for invoking **Fallback** function.
-func (c *BoundContract) RawTransact(opts *TransactOpts, calldata []byte) (*types.Transaction, error) {
+func (c *BoundContract) RawTransact(opts *TransactOpts, calldata []byte) (*ethtype.ETransaction, error) {
 	return c.transact(opts, &c.address, calldata)
 }
 
 // RawCreationTransact creates and submits a contract-creation transaction with
 // the given calldata as the input.
-func (c *BoundContract) RawCreationTransact(opts *TransactOpts, calldata []byte) (*types.Transaction, error) {
+func (c *BoundContract) RawCreationTransact(opts *TransactOpts, calldata []byte) (*ethtype.ETransaction, error) {
 	return c.transact(opts, nil, calldata)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (c *BoundContract) Transfer(opts *TransactOpts) (*types.Transaction, error) {
+func (c *BoundContract) Transfer(opts *TransactOpts) (*ethtype.ETransaction, error) {
 	// Check if payable fallback or receive is defined
 	if !c.abi.HasReceive() && !(c.abi.HasFallback() && c.abi.Fallback.IsPayable()) {
 		return nil, fmt.Errorf("contract does not have a payable fallback or receive function")
@@ -284,7 +283,7 @@ func (c *BoundContract) Transfer(opts *TransactOpts) (*types.Transaction, error)
 	return c.transact(opts, &c.address, nil)
 }
 
-func (c *BoundContract) createDynamicTx(opts *TransactOpts, contract *common.Address, input []byte, head *types.Header) (*types.Transaction, error) {
+func (c *BoundContract) createDynamicTx(opts *TransactOpts, contract *common.Address, input []byte, head *ethtype.EHeader) (*ethtype.ETransaction, error) {
 	// Normalize value
 	value := opts.Value
 	if value == nil {
@@ -324,7 +323,7 @@ func (c *BoundContract) createDynamicTx(opts *TransactOpts, contract *common.Add
 	if err != nil {
 		return nil, err
 	}
-	baseTx := &types.DynamicFeeTx{
+	baseTx := &ethtype.DynamicFeeTx{
 		To:         contract,
 		Nonce:      nonce,
 		GasFeeCap:  gasFeeCap,
@@ -334,10 +333,10 @@ func (c *BoundContract) createDynamicTx(opts *TransactOpts, contract *common.Add
 		Data:       input,
 		AccessList: opts.AccessList,
 	}
-	return types.NewTx(baseTx), nil
+	return ethtype.NewTx(baseTx), nil
 }
 
-func (c *BoundContract) createLegacyTx(opts *TransactOpts, contract *common.Address, input []byte) (*types.Transaction, error) {
+func (c *BoundContract) createLegacyTx(opts *TransactOpts, contract *common.Address, input []byte) (*ethtype.ETransaction, error) {
 	if opts.GasFeeCap != nil || opts.GasTipCap != nil || opts.AccessList != nil {
 		return nil, errors.New("maxFeePerGas or maxPriorityFeePerGas or accessList specified but london is not active yet")
 	}
@@ -369,7 +368,7 @@ func (c *BoundContract) createLegacyTx(opts *TransactOpts, contract *common.Addr
 	if err != nil {
 		return nil, err
 	}
-	baseTx := &types.LegacyTx{
+	baseTx := &ethtype.LegacyTx{
 		To:       contract,
 		Nonce:    nonce,
 		GasPrice: gasPrice,
@@ -377,7 +376,7 @@ func (c *BoundContract) createLegacyTx(opts *TransactOpts, contract *common.Addr
 		Value:    value,
 		Data:     input,
 	}
-	return types.NewTx(baseTx), nil
+	return ethtype.NewTx(baseTx), nil
 }
 
 func (c *BoundContract) estimateGasLimit(opts *TransactOpts, contract *common.Address, input []byte, gasPrice, gasTipCap, gasFeeCap, value *big.Int) (uint64, error) {
@@ -389,7 +388,7 @@ func (c *BoundContract) estimateGasLimit(opts *TransactOpts, contract *common.Ad
 			return 0, ErrNoCode
 		}
 	}
-	msg := ethereum.CallMsg{
+	msg := ethclient.CallMsg{
 		From:       opts.From,
 		To:         contract,
 		GasPrice:   gasPrice,
@@ -412,13 +411,13 @@ func (c *BoundContract) getNonce(opts *TransactOpts) (uint64, error) {
 
 // transact executes an actual transaction invocation, first deriving any missing
 // authorization fields, and then scheduling the transaction for execution.
-func (c *BoundContract) transact(opts *TransactOpts, contract *common.Address, input []byte) (*types.Transaction, error) {
+func (c *BoundContract) transact(opts *TransactOpts, contract *common.Address, input []byte) (*ethtype.ETransaction, error) {
 	if opts.GasPrice != nil && (opts.GasFeeCap != nil || opts.GasTipCap != nil) {
 		return nil, errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
 	}
 	// Create the transaction
 	var (
-		rawTx *types.Transaction
+		rawTx *ethtype.ETransaction
 		err   error
 	)
 	if opts.GasPrice != nil {
@@ -458,7 +457,7 @@ func (c *BoundContract) transact(opts *TransactOpts, contract *common.Address, i
 
 // FilterLogs filters contract logs for past blocks, returning the necessary
 // channels to construct a strongly typed bound iterator on top of them.
-func (c *BoundContract) FilterLogs(opts *FilterOpts, name string, query ...[]any) (chan types.Log, event.Subscription, error) {
+func (c *BoundContract) FilterLogs(opts *FilterOpts, name string, query ...[]any) (chan ethtype.ELog, event.Subscription, error) {
 	// Don't crash on a lazy user
 	if opts == nil {
 		opts = new(FilterOpts)
@@ -470,9 +469,9 @@ func (c *BoundContract) FilterLogs(opts *FilterOpts, name string, query ...[]any
 		return nil, nil, err
 	}
 	// Start the background filtering
-	logs := make(chan types.Log, 128)
+	logs := make(chan ethtype.ELog, 128)
 
-	config := ethereum.FilterQuery{
+	config := ethclient.FilterQuery{
 		Addresses: []common.Address{c.address},
 		Topics:    topics,
 		FromBlock: new(big.Int).SetUint64(opts.Start),
@@ -503,7 +502,7 @@ func (c *BoundContract) FilterLogs(opts *FilterOpts, name string, query ...[]any
 
 // WatchLogs filters subscribes to contract logs for future blocks, returning a
 // subscription object that can be used to tear down the watcher.
-func (c *BoundContract) WatchLogs(opts *WatchOpts, name string, query ...[]any) (chan types.Log, event.Subscription, error) {
+func (c *BoundContract) WatchLogs(opts *WatchOpts, name string, query ...[]any) (chan ethtype.ELog, event.Subscription, error) {
 	// Don't crash on a lazy user
 	if opts == nil {
 		opts = new(WatchOpts)
@@ -516,9 +515,9 @@ func (c *BoundContract) WatchLogs(opts *WatchOpts, name string, query ...[]any) 
 		return nil, nil, err
 	}
 	// Start the background filtering
-	logs := make(chan types.Log, 128)
+	logs := make(chan ethtype.ELog, 128)
 
-	config := ethereum.FilterQuery{
+	config := ethclient.FilterQuery{
 		Addresses: []common.Address{c.address},
 		Topics:    topics,
 	}
@@ -533,7 +532,7 @@ func (c *BoundContract) WatchLogs(opts *WatchOpts, name string, query ...[]any) 
 }
 
 // UnpackLog unpacks a retrieved log into the provided output structure.
-func (c *BoundContract) UnpackLog(out any, event string, log types.Log) error {
+func (c *BoundContract) UnpackLog(out any, event string, log ethtype.ELog) error {
 	// Anonymous events are not supported.
 	if len(log.Topics) == 0 {
 		return ErrNoEventSignature
@@ -556,7 +555,7 @@ func (c *BoundContract) UnpackLog(out any, event string, log types.Log) error {
 }
 
 // UnpackLogIntoMap unpacks a retrieved log into the provided map.
-func (c *BoundContract) UnpackLogIntoMap(out map[string]any, event string, log types.Log) error {
+func (c *BoundContract) UnpackLogIntoMap(out map[string]any, event string, log ethtype.ELog) error {
 	// Anonymous events are not supported.
 	if len(log.Topics) == 0 {
 		return ErrNoEventSignature

@@ -17,21 +17,11 @@ import (
 //go:generate bash ../internal/gencodec/run.sh -type SetCodeAuthorization -field-override authorizationMarshaling -out authorization_generated.go
 
 type EHeader = ethTypes.Header
+type EBlock = ethTypes.Block
 type EReceipt = ethTypes.Receipt
-
-const ReceiptStatusSuccessful = ethTypes.ReceiptStatusSuccessful
-const ReceiptStatusFailed = ethTypes.ReceiptStatusFailed
-
-type ELog = ethTypes.Log
-
-// AccessList is an EIP-2930 access list.
 type AccessList = ethTypes.AccessList
 type ETransaction = ethTypes.Transaction
-
-func NewTx(inner ethTypes.TxData) *ETransaction {
-	return ethTypes.NewTx(inner)
-}
-
+type ELog = ethTypes.Log
 type DynamicFeeTx = ethTypes.DynamicFeeTx
 type LegacyTx = ethTypes.LegacyTx
 type AccessListTx = ethTypes.AccessListTx
@@ -39,9 +29,14 @@ type BlobTx = ethTypes.BlobTx
 type SetCodeTx = ethTypes.SetCodeTx
 type TxData = ethTypes.TxData
 type BlobTxSidecar = ethTypes.BlobTxSidecar
-
-// SetCodeAuthorization is an authorization from an account to deploy code at its address.
 type SetCodeAuthorization = ethTypes.SetCodeAuthorization
+
+const ReceiptStatusSuccessful = ethTypes.ReceiptStatusSuccessful
+const ReceiptStatusFailed = ethTypes.ReceiptStatusFailed
+
+func NewTx(inner ethTypes.TxData) *ETransaction {
+	return ethTypes.NewTx(inner)
+}
 
 type TypedDataDomain = apitypes.TypedDataDomain
 type TypedDataType = apitypes.Type

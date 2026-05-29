@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 )
 

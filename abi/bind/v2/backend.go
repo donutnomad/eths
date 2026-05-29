@@ -22,8 +22,8 @@ import (
 	"math/big"
 
 	"github.com/donutnomad/eths/common"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/donutnomad/eths/ethclient"
+	"github.com/donutnomad/eths/ethtype"
 )
 
 var (
@@ -59,7 +59,7 @@ type ContractCaller interface {
 
 	// CallContract executes an Ethereum contract call with the specified data as the
 	// input.
-	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
+	CallContract(ctx context.Context, call ethclient.CallMsg, blockNumber *big.Int) ([]byte, error)
 }
 
 // PendingContractCaller defines methods to perform contract calls on the pending state.
@@ -70,7 +70,7 @@ type PendingContractCaller interface {
 	PendingCodeAt(ctx context.Context, contract common.Address) ([]byte, error)
 
 	// PendingCallContract executes an Ethereum contract call against the pending state.
-	PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error)
+	PendingCallContract(ctx context.Context, call ethclient.CallMsg) ([]byte, error)
 }
 
 // BlockHashContractCaller defines methods to perform contract calls on a specific block hash.
@@ -81,7 +81,7 @@ type BlockHashContractCaller interface {
 	CodeAtHash(ctx context.Context, contract common.Address, blockHash common.Hash) ([]byte, error)
 
 	// CallContractAtHash executes an Ethereum contract call against the state at the specified block hash.
-	CallContractAtHash(ctx context.Context, call ethereum.CallMsg, blockHash common.Hash) ([]byte, error)
+	CallContractAtHash(ctx context.Context, call ethclient.CallMsg, blockHash common.Hash) ([]byte, error)
 }
 
 // ContractTransactor defines the methods needed to allow operating with a contract
@@ -89,14 +89,14 @@ type BlockHashContractCaller interface {
 // used when the user does not provide some needed values, but rather leaves it up
 // to the transactor to decide.
 type ContractTransactor interface {
-	ethereum.GasEstimator
-	ethereum.GasPricer
-	ethereum.GasPricer1559
-	ethereum.TransactionSender
+	ethclient.GasEstimator
+	ethclient.GasPricer
+	ethclient.GasPricer1559
+	ethclient.TransactionSender
 
 	// HeaderByNumber returns a block header from the current canonical chain. If
 	// number is nil, the latest known header is returned.
-	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
+	HeaderByNumber(ctx context.Context, number *big.Int) (*ethtype.EHeader, error)
 
 	// PendingCodeAt returns the code of the given account in the pending state.
 	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
@@ -107,14 +107,14 @@ type ContractTransactor interface {
 
 // DeployBackend wraps the operations needed by WaitMined and WaitDeployed.
 type DeployBackend interface {
-	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
+	TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethtype.EReceipt, error)
 	CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error)
 }
 
 // ContractFilterer defines the methods needed to access log events using one-off
 // queries or continuous event subscriptions.
 type ContractFilterer interface {
-	ethereum.LogFilterer
+	ethclient.LogFilterer
 }
 
 // ContractBackend defines the methods needed to work with contracts on a read-write basis.
