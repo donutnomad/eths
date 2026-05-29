@@ -17,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/holiman/uint256"
 	"github.com/samber/lo"
-	"github.com/tidwall/gjson"
 )
 
 var UNREACHABLE = "unreachable"
@@ -533,10 +532,14 @@ func (t *txImpl) UnmarshalJSON(input []byte) error {
 
 	v, r, s := tx.RawSignatureValues()
 	if tx.Type() == byte(LegacyTxType) && (v.Sign() == 0 || r.Sign() == 0 || s.Sign() == 0) {
-		value := gjson.Get(string(input), "chainId")
-		chainIDUint64, err := hexutil.DecodeUint64(value.String())
-		if err == nil {
-			chainID = new(big.Int).SetUint64(chainIDUint64)
+		var fields struct {
+			ChainID string `json:"chainId"`
+		}
+		if err := json.Unmarshal(input, &fields); err == nil && fields.ChainID != "" {
+			chainIDUint64, err := hexutil.DecodeUint64(fields.ChainID)
+			if err == nil {
+				chainID = new(big.Int).SetUint64(chainIDUint64)
+			}
 		}
 	}
 	ret, err := newTxImpl(tx, chainID)
