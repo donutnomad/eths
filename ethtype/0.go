@@ -27,7 +27,6 @@ type AccessListTx = ethTypes.AccessListTx
 type BlobTx = ethTypes.BlobTx
 type SetCodeTx = ethTypes.SetCodeTx
 type TxData = ethTypes.TxData
-type BlobTxSidecar = ethTypes.BlobTxSidecar
 type SetCodeAuthorization = ethTypes.SetCodeAuthorization
 
 const ReceiptStatusSuccessful = ethTypes.ReceiptStatusSuccessful

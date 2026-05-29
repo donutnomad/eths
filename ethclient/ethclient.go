@@ -382,7 +382,7 @@ func TransactionReceiptAs[T any](ctx context.Context, ec *Client, txHash ecommon
 }
 
 // SubscribeTransactionReceipts subscribes to notifications about transaction receipts.
-func (ec *Client) SubscribeTransactionReceipts(ctx context.Context, q *TransactionReceiptsQuery, ch chan<- []*ethtype.Receipt) (Subscription, error) {
+func (ec *Client) SubscribeTransactionReceipts(ctx context.Context, q *TransactionReceiptsQuery, ch chan<- []*ethtype.EReceipt) (Subscription, error) {
 	return ec.c.EthSubscribe(ctx, ch, "transactionReceipts", q)
 }
 
@@ -547,7 +547,7 @@ func FilterLogsAs[T any](ctx context.Context, ec *Client, q FilterQuery) ([]T, e
 }
 
 // SubscribeFilterLogs subscribes to the results of a streaming filter query.
-func (ec *Client) SubscribeFilterLogs(ctx context.Context, q FilterQuery, ch chan<- ethtype.Log) (Subscription, error) {
+func (ec *Client) SubscribeFilterLogs(ctx context.Context, q FilterQuery, ch chan<- ethtype.ELog) (Subscription, error) {
 	arg, err := toFilterArg(q)
 	if err != nil {
 		return nil, err

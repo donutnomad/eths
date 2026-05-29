@@ -27,12 +27,6 @@
 package bind
 
 import (
-	"errors"
-	"math/big"
-
-	"github.com/donutnomad/eths/abi"
-	"github.com/donutnomad/eths/common"
-	"github.com/donutnomad/eths/crypto"
 	"github.com/donutnomad/eths/ethclient"
 	"github.com/donutnomad/eths/ethtype"
 	"github.com/ethereum/go-ethereum/event"
@@ -172,97 +166,58 @@ func (it *EventIterator[T]) Close() error {
 	return nil
 }
 
-// Call performs an eth_call to a contract with optional call data.
-//
-// To call a function that doesn't return any output, pass nil as the unpack
-// function. This can be useful if you just want to check that the function
-// doesn't revert.
-//
-// Call is intended to be used with contract method unpack methods in
-// bindings generated with the abigen --v2 flag. It should be
-// preferred over BoundContract.Call
-func Call[T any](c *BoundContract, opts *CallOpts, calldata []byte, unpack func([]byte) (T, error)) (T, error) {
-	var defaultResult T
-	packedOutput, err := c.CallRaw(opts, calldata)
-	if err != nil {
-		return defaultResult, err
-	}
-	if unpack == nil {
-		if len(packedOutput) > 0 {
-			return defaultResult, errors.New("contract returned data, but no unpack function was given")
-		}
-		return defaultResult, nil
-	}
-	res, err := unpack(packedOutput)
-	if err != nil {
-		return defaultResult, err
-	}
-	return res, err
-}
+// // DeployContract creates and submits a deployment transaction based on the
+// // deployer bytecode and optional ABI-encoded constructor input.  It returns
+// // the address and creation transaction of the pending contract, or an error
+// // if the creation failed.
+// //
+// // To initiate the deployment of multiple contracts with one method call, see the
+// // [LinkAndDeploy] method.
+// func DeployContract(opts *TransactOpts, bytecode []byte, backend ContractBackend, constructorInput []byte) (common.Address, *ethtype.ETransaction, error) {
+// 	c := NewBoundContract(common.Address{}, abi.ABI{}, backend, backend, backend)
 
-// Transact creates and submits a transaction to a contract with optional input
-// data.
-//
-// Transact is identical to BoundContract.RawTransact, and is provided as a
-// package-level method so that interactions with contracts whose bindings were
-// generated with the abigen --v2 flag are consistent (they do not require
-// calling methods on the BoundContract instance).
-func Transact(c *BoundContract, opt *TransactOpts, data []byte) (*ethtype.ETransaction, error) {
-	return c.RawTransact(opt, data)
-}
+// 	tx, err := c.RawCreationTransact(opts, append(bytecode, constructorInput...))
+// 	if err != nil {
+// 		return common.Address{}, nil, err
+// 	}
+// 	return crypto.CreateAddress(opts.From, tx.Nonce()), tx, nil
+// }
 
-// DeployContract creates and submits a deployment transaction based on the
-// deployer bytecode and optional ABI-encoded constructor input.  It returns
-// the address and creation transaction of the pending contract, or an error
-// if the creation failed.
-//
-// To initiate the deployment of multiple contracts with one method call, see the
-// [LinkAndDeploy] method.
-func DeployContract(opts *TransactOpts, bytecode []byte, backend ContractBackend, constructorInput []byte) (common.Address, *ethtype.ETransaction, error) {
-	c := NewBoundContract(common.Address{}, abi.ABI{}, backend, backend, backend)
+// // DefaultDeployer returns a DeployFn that signs and submits creation transactions
+// // using the given signer.
+// //
+// // The DeployFn returned by DefaultDeployer should be used by LinkAndDeploy in
+// // almost all cases, unless a custom DeployFn implementation is needed.
+// func DefaultDeployer(opts *TransactOpts, backend ContractBackend) DeployFn {
+// 	return func(input []byte, deployer []byte) (common.Address, *ethtype.ETransaction, error) {
+// 		addr, tx, err := DeployContract(opts, deployer, backend, input)
+// 		if err != nil {
+// 			return common.Address{}, nil, err
+// 		}
+// 		return addr, tx, nil
+// 	}
+// }
 
-	tx, err := c.RawCreationTransact(opts, append(bytecode, constructorInput...))
-	if err != nil {
-		return common.Address{}, nil, err
-	}
-	return crypto.CreateAddress(opts.From, tx.Nonce()), tx, nil
-}
-
-// DefaultDeployer returns a DeployFn that signs and submits creation transactions
-// using the given signer.
-//
-// The DeployFn returned by DefaultDeployer should be used by LinkAndDeploy in
-// almost all cases, unless a custom DeployFn implementation is needed.
-func DefaultDeployer(opts *TransactOpts, backend ContractBackend) DeployFn {
-	return func(input []byte, deployer []byte) (common.Address, *ethtype.ETransaction, error) {
-		addr, tx, err := DeployContract(opts, deployer, backend, input)
-		if err != nil {
-			return common.Address{}, nil, err
-		}
-		return addr, tx, nil
-	}
-}
-
-// DeployerWithNonceAssignment is basically identical to DefaultDeployer,
-// but it additionally tracks the nonce to enable automatic assignment.
-//
-// This is especially useful when deploying multiple contracts
-// from the same address — whether they are independent contracts
-// or part of a dependency chain that must be deployed in order.
-func DeployerWithNonceAssignment(opts *TransactOpts, backend ContractBackend) DeployFn {
-	var pendingNonce int64
-	if opts.Nonce != nil {
-		pendingNonce = opts.Nonce.Int64()
-	}
-	return func(input []byte, deployer []byte) (common.Address, *ethtype.ETransaction, error) {
-		if pendingNonce != 0 {
-			opts.Nonce = big.NewInt(pendingNonce)
-		}
-		addr, tx, err := DeployContract(opts, deployer, backend, input)
-		if err != nil {
-			return common.Address{}, nil, err
-		}
-		pendingNonce = int64(tx.Nonce() + 1)
-		return addr, tx, nil
-	}
-}
+// // DeployerWithNonceAssignment is basically identical to DefaultDeployer,
+// // but it additionally tracks the nonce to enable automatic assignment.
+// //
+// // This is especially useful when deploying multiple contracts
+// // from the same address — whether they are independent contracts
+// // or part of a dependency chain that must be deployed in order.
+// func DeployerWithNonceAssignment(opts *TransactOpts, backend ContractBackend) DeployFn {
+// 	var pendingNonce int64
+// 	if opts.Nonce != nil {
+// 		pendingNonce = opts.Nonce.Int64()
+// 	}
+// 	return func(input []byte, deployer []byte) (common.Address, *ethtype.ETransaction, error) {
+// 		if pendingNonce != 0 {
+// 			opts.Nonce = big.NewInt(pendingNonce)
+// 		}
+// 		addr, tx, err := DeployContract(opts, deployer, backend, input)
+// 		if err != nil {
+// 			return common.Address{}, nil, err
+// 		}
+// 		pendingNonce = int64(tx.Nonce() + 1)
+// 		return addr, tx, nil
+// 	}
+// }

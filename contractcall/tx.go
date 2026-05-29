@@ -27,18 +27,6 @@ type TxWrapper = Tx
 
 type Tx = txImpl
 
-// NewTxWrapperDynamic
-// Deprecated: Use NewTx
-func NewTxWrapperDynamic(tx *ethtype.DynamicFeeTx, chainID *big.Int) *Tx {
-	return NewTx(tx, chainID).(*Tx)
-}
-
-// NewTxWrapperLegacy
-// Deprecated: Use NewTxImpl
-func NewTxWrapperLegacy(tx *ethtype.LegacyTx, chainID *big.Int) *Tx {
-	return NewTx(tx, chainID).(*Tx)
-}
-
 type AccessListSetter interface {
 	AccessList() ethtype.AccessList
 	SetAccessList(accessList ethtype.AccessList) bool
@@ -630,7 +618,7 @@ func txImplToTx(t *txImpl) ethtype.TxData {
 			AccessList: t.accessList,
 			BlobFeeCap: t.maxFeePerBlobGas,
 			BlobHashes: t.blobHashes,
-			Sidecar:    t.sidecar,
+			Sidecar:    nil, //TODO: add sidecar
 			V:          t.getV(),
 			R:          t.getR(),
 			S:          t.getS(),

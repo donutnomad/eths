@@ -38,6 +38,21 @@ type Log struct {
 	Removed bool `json:"removed" rlp:"-"`
 }
 
+func (l *Log) FromEthLog(log *ELog) {
+	l.Address = ecommon.Address(log.Address)
+	l.Topics = lo.Map(log.Topics, func(item common.Hash, index int) ecommon.Hash {
+		return ecommon.Hash(item)
+	})
+	l.Data = log.Data
+	l.BlockNumber = log.BlockNumber
+	l.TxHash = ecommon.Hash(log.TxHash)
+	l.TxIndex = log.TxIndex
+	l.BlockHash = ecommon.Hash(log.BlockHash)
+	l.BlockTimestamp = log.BlockTimestamp
+	l.Index = log.Index
+	l.Removed = log.Removed
+}
+
 func (l Log) ToEthLog() *ELog {
 	return &ELog{
 		Address: common.Address(l.Address),

@@ -6,7 +6,7 @@ import (
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/ethtype"
 	"github.com/donutnomad/eths/hexutil"
-	"github.com/ethereum/go-ethereum/crypto/kzg4844"
+	"github.com/donutnomad/eths/internal/kzg4844"
 	"github.com/samber/lo"
 )
 
