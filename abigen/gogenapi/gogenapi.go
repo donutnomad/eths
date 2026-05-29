@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	ethabi "github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/abigen/abigen2/abigen"
-	ethabi "github.com/ethereum/go-ethereum/accounts/abi"
 )
 
 type InputKind int

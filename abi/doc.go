@@ -1,4 +1,4 @@
-// Copyright 2024 The go-ethereum Authors
+// Copyright 2015 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,22 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package ethclient_test
-
-import (
-	"github.com/ethereum/go-ethereum/node"
-)
-
-var exampleNode *node.Node
-
-// launch example server
-func init() {
-	config := &node.Config{
-		HTTPHost: "127.0.0.1",
-	}
-	n, _, err := newTestBackend(config)
-	if err != nil {
-		panic("can't launch node: " + err.Error())
-	}
-	exampleNode = n
-}
+// Package abi implements the Ethereum ABI (Application Binary
+// Interface).
+//
+// The Ethereum ABI is strongly typed, known at compile time
+// and static. This ABI will handle basic type casting; unsigned
+// to signed and visa versa. It does not handle slice casting such
+// as unsigned slice to signed slice. Bit size type casting is also
+// handled. ints with a bit size of 32 will be properly cast to int256,
+// etc.
+package abi

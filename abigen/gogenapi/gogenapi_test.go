@@ -46,7 +46,7 @@ func TestLoadInputArtifactAndGenerate(t *testing.T) {
 		"package aaa",
 		"type Escrow struct",
 		`Bin: "0x60016002"`,
-		`github.com/ethereum/go-ethereum/accounts/abi/bind/v2`,
+		`github.com/donutnomad/eths/abi/bind/v2`,
 	} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("generated code missing %q", want)

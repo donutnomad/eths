@@ -649,11 +649,10 @@ func TestFilterLogs_Sepolia(t *testing.T) {
 	ctx, cancel := sepoliaCtx()
 	defer cancel()
 
-	blockHash := knownBlockHash.To()
-	logs, err := ec.FilterLogs(ctx, ethereum.FilterQuery{
-		BlockHash: &blockHash,
-		Addresses: []common.Address{knownTxTo.To()},
-		Topics:    [][]common.Hash{{transferTopic.To()}},
+	logs, err := ec.FilterLogs(ctx, FilterQuery{
+		BlockHash: &knownBlockHash,
+		Addresses: []ecommon.Address{knownTxTo},
+		Topics:    [][]ecommon.Hash{{transferTopic}},
 	})
 	if err != nil {
 		t.Fatal(err)

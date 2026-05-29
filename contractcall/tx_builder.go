@@ -6,8 +6,8 @@ import (
 	"math/big"
 
 	"github.com/donutnomad/blockchain-alg/xsecp256k1"
+	"github.com/donutnomad/eths/abi/bind/v2"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )

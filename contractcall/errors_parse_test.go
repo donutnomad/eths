@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/contracts_pack"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"

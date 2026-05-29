@@ -1,9 +1,9 @@
 package eip712
 
 import (
+	"github.com/donutnomad/eths/abi/bind/v2"
 	"github.com/donutnomad/eths/hexutil"
 	"github.com/donutnomad/eths/multiread"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"

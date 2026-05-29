@@ -7,8 +7,8 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/contracts_pack"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/samber/lo"
 )

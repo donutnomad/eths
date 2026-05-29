@@ -249,7 +249,7 @@ func buildImports(needsHexutil bool, isFullCode bool) string {
 		imports = append(imports,
 			``,
 			`"github.com/donutnomad/eths/eip/eip712"`,
-			`"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"`,
+			`"github.com/donutnomad/eths/abi/bind/v2"`,
 		)
 	}
 

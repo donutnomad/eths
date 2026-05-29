@@ -16,7 +16,6 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
-	"golang.org/x/exp/constraints"
 )
 
 func covertGweiToWei(gwei string) *big.Int {
@@ -150,7 +149,12 @@ func newInt(i *big.Int) *uint256.Int {
 	return d
 }
 
-func newIntBy[I constraints.Integer](i I) *uint256.Int {
+type Integer interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
+}
+
+func newIntBy[I Integer](i I) *uint256.Int {
 	d := new(uint256.Int)
 	d.SetUint64(uint64(i))
 	return d

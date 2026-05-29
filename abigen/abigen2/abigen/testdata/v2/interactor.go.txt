@@ -10,8 +10,8 @@ import (
 	"math/big"
 
 	"github.com/donutnomad/eths/contractcall"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
+	"github.com/donutnomad/eths/abi"
+	"github.com/donutnomad/eths/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )

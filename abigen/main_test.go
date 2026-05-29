@@ -57,6 +57,41 @@ func TestReadABIInputPlainFile(t *testing.T) {
 	}
 }
 
+func TestParseAbigenArgsTracksExplicitFlags(t *testing.T) {
+	cfg, err := parseAbigenArgs([]string{
+		"abigen",
+		"--pkg", "aaa",
+		"--type", "EscrowPkg",
+		"--abi", "Escrow.abi",
+		"--out", "escrow.go",
+		"--v2",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := cfg.pkg, "aaa"; got != want {
+		t.Fatalf("pkg mismatch: got %q, want %q", got, want)
+	}
+	if got, want := cfg.kind, "EscrowPkg"; got != want {
+		t.Fatalf("type mismatch: got %q, want %q", got, want)
+	}
+	if got, want := cfg.abi, "Escrow.abi"; got != want {
+		t.Fatalf("abi mismatch: got %q, want %q", got, want)
+	}
+	if got, want := cfg.out, "escrow.go"; got != want {
+		t.Fatalf("out mismatch: got %q, want %q", got, want)
+	}
+	if !cfg.v2 {
+		t.Fatalf("v2 mismatch: got false, want true")
+	}
+	for _, name := range []string{"pkg", "type", "abi", "out", "v2"} {
+		if !cfg.isSet(name) {
+			t.Fatalf("expected %s to be tracked as explicitly set", name)
+		}
+	}
+}
+
 func TestGenerateUsesArtifactBytecode(t *testing.T) {
 	dir := t.TempDir()
 	artifact := filepath.Join(dir, "Escrow2.json")
