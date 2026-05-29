@@ -8,7 +8,7 @@ import (
 
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/internal/kzg4844"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/donutnomad/eths/rlp"
 )
 
 // BlobTxSidecar contains the blobs of a blob transaction.

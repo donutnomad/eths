@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/donutnomad/eths/common"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/donutnomad/eths/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

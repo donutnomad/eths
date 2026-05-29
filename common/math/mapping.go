@@ -16,6 +16,12 @@ const (
 // HexOrDecimal256 marshals big.Int as hex or decimal.
 type HexOrDecimal256 = math.HexOrDecimal256
 
+// BigPow returns a ** b as a big integer.
+func BigPow(a, b int64) *big.Int {
+	r := big.NewInt(a)
+	return r.Exp(r, big.NewInt(b), nil)
+}
+
 // NewHexOrDecimal256 creates a new HexOrDecimal256
 func NewHexOrDecimal256(x int64) *HexOrDecimal256 {
 	return math.NewHexOrDecimal256(x)

@@ -11,9 +11,9 @@ import (
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/donutnomad/eths/abi"
 	"github.com/donutnomad/eths/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/donutnomad/eths/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/event"
+	"github.com/donutnomad/eths/event"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

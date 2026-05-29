@@ -14,7 +14,7 @@ import (
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/ethtype"
 	"github.com/donutnomad/eths/hexutil"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/donutnomad/eths/rlp"
 	"github.com/holiman/uint256"
 	"github.com/samber/lo"
 )

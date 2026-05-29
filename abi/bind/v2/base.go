@@ -27,7 +27,7 @@ import (
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/ethclient"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/ethereum/go-ethereum/event"
+	"github.com/donutnomad/eths/event"
 )
 
 const basefeeWiggleMultiplier = 2

@@ -12,7 +12,7 @@ import (
 	secp256k1ecdsa "github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/common/math"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/donutnomad/eths/rlp"
 	"golang.org/x/crypto/sha3"
 )
 
