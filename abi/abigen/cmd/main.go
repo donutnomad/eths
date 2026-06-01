@@ -28,9 +28,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/donutnomad/eths/abigen/abigen2/abigen"
-	"github.com/donutnomad/eths/abigen/abigen2/compiler"
-	"github.com/donutnomad/eths/abigen/gogenapi"
+	"github.com/donutnomad/eths/abi/abigen"
+	"github.com/donutnomad/eths/abi/compiler"
+	"github.com/donutnomad/eths/abi/gogenapi"
 	"golang.org/x/crypto/sha3"
 )
 

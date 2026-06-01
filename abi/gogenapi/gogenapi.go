@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	ethabi "github.com/donutnomad/eths/abi"
-	"github.com/donutnomad/eths/abigen/abigen2/abigen"
+	"github.com/donutnomad/eths/abi/abigen"
 )
 
 type InputKind int
