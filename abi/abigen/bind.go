@@ -122,7 +122,7 @@ func Bind(types []string, abis []string, bytecodes []string, fsigs []map[string]
 
 		for _, input := range evmABI.Constructor.Inputs {
 			if hasStruct(input.Type) {
-				bindStructType(input.Type, structs)
+				bindStructType(input.Type, structs, "")
 			}
 		}
 
@@ -156,7 +156,7 @@ func Bind(types []string, abis []string, bytecodes []string, fsigs []map[string]
 					normalized.Inputs[j].Name = fmt.Sprintf("arg%d", j)
 				}
 				if hasStruct(input.Type) {
-					bindStructType(input.Type, structs)
+					bindStructType(input.Type, structs, "")
 				}
 			}
 			normalized.Outputs = make([]abi.Argument, len(original.Outputs))
@@ -166,7 +166,7 @@ func Bind(types []string, abis []string, bytecodes []string, fsigs []map[string]
 					normalized.Outputs[j].Name = abi.ToCamelCase(output.Name)
 				}
 				if hasStruct(output.Type) {
-					bindStructType(output.Type, structs)
+					bindStructType(output.Type, structs, "")
 				}
 			}
 			// Append the methods to the call or transact lists
@@ -217,7 +217,7 @@ func Bind(types []string, abis []string, bytecodes []string, fsigs []map[string]
 					normalized.Inputs[j].Name = fmt.Sprintf("%s%d", normalized.Inputs[j].Name, index)
 				}
 				if hasStruct(input.Type) {
-					bindStructType(input.Type, structs)
+					bindStructType(input.Type, structs, "")
 				}
 			}
 			// Append the event to the accumulator list
@@ -357,7 +357,14 @@ func bindTopicType(kind abi.Type, structs map[string]*tmplStruct) string {
 // bindStructType converts a Solidity tuple type to a Go one and records the mapping
 // in the given map. Notably, this function will resolve and record nested struct
 // recursively.
-func bindStructType(kind abi.Type, structs map[string]*tmplStruct) string {
+//
+// typeName is the Go type name of the contract currently being bound. When it is
+// non-empty, the contract/library prefix of a named struct (the part before the
+// dot in the Solidity internalType) is replaced with typeName, so a struct such
+// as "Escrow.Instruction" generated under type "Escrow22" becomes
+// "Escrow22Instruction" instead of "EscrowInstruction". An empty typeName keeps
+// the legacy behaviour of using the raw Solidity name.
+func bindStructType(kind abi.Type, structs map[string]*tmplStruct, typeName string) string {
 	switch kind.T {
 	case abi.TupleTy:
 		// We compose a raw struct name and a canonical parameter expression
@@ -379,12 +386,18 @@ func bindStructType(kind abi.Type, structs map[string]*tmplStruct) string {
 			name = abi.ResolveNameConflict(name, func(s string) bool { return names[s] })
 			names[name] = true
 			fields = append(fields, &tmplField{
-				Type:    bindStructType(*elem, structs),
+				Type:    bindStructType(*elem, structs, typeName),
 				Name:    name,
 				SolKind: *elem,
 			})
 		}
+		// Prefer the contract Go type name over the Solidity contract prefix so
+		// that structs defined in different contracts don't collide on the
+		// Solidity contract name.
 		name := kind.TupleRawName
+		if typeName != "" && kind.TupleRawStructName != "" {
+			name = typeName + abi.ToCamelCase(kind.TupleRawStructName)
+		}
 		if name == "" {
 			name = fmt.Sprintf("Struct%d", len(structs))
 		}
@@ -396,9 +409,9 @@ func bindStructType(kind abi.Type, structs map[string]*tmplStruct) string {
 		}
 		return name
 	case abi.ArrayTy:
-		return fmt.Sprintf("[%d]", kind.Size) + bindStructType(*kind.Elem, structs)
+		return fmt.Sprintf("[%d]", kind.Size) + bindStructType(*kind.Elem, structs, typeName)
 	case abi.SliceTy:
-		return "[]" + bindStructType(*kind.Elem, structs)
+		return "[]" + bindStructType(*kind.Elem, structs, typeName)
 	default:
 		return bindBasicType(kind)
 	}

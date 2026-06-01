@@ -55,10 +55,11 @@ type Type struct {
 	stringKind string // holds the unparsed string for deriving signatures
 
 	// Tuple relative fields
-	TupleRawName  string       // Raw struct name defined in source code, may be empty.
-	TupleElems    []*Type      // Type information of all tuple fields
-	TupleRawNames []string     // Raw field name of all tuple fields
-	TupleType     reflect.Type // Underlying struct of the tuple
+	TupleRawName       string       // Raw struct name defined in source code, may be empty.
+	TupleRawStructName string       // Struct name without the contract/library prefix (the part after the dot in internalType), may be empty.
+	TupleElems         []*Type      // Type information of all tuple fields
+	TupleRawNames      []string     // Raw field name of all tuple fields
+	TupleType          reflect.Type // Underlying struct of the tuple
 }
 
 var (
@@ -212,7 +213,16 @@ func NewType(t string, internalType string, components []ArgumentMarshaling) (ty
 		if internalType != "" && strings.HasPrefix(internalType, structPrefix) {
 			// Foo.Bar type definition is not allowed in golang,
 			// convert the format to FooBar
-			typ.TupleRawName = strings.ReplaceAll(internalType[len(structPrefix):], ".", "")
+			rawName := internalType[len(structPrefix):]
+			typ.TupleRawName = strings.ReplaceAll(rawName, ".", "")
+			// Keep the struct name without the contract/library prefix (the part
+			// after the last dot), so generators can re-prefix it with a custom
+			// Go type name instead of the Solidity contract name.
+			if i := strings.LastIndex(rawName, "."); i != -1 {
+				typ.TupleRawStructName = rawName[i+1:]
+			} else {
+				typ.TupleRawStructName = rawName
+			}
 		}
 
 	case "function":

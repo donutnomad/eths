@@ -13,7 +13,7 @@ import (
 	"github.com/donutnomad/eths/abi/bind"
 	"github.com/donutnomad/eths/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/donutnomad/eths/event"
+	"github.com/donutnomad/eths/ethclient/event"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

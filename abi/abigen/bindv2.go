@@ -158,9 +158,9 @@ type binder struct {
 }
 
 // BindStructType registers the type to be emitted as a struct in the
-// bindings.
-func (b *binder) BindStructType(typ abi.Type) {
-	bindStructType(typ, b.structs)
+// bindings, prefixing named structs with the contract's Go type name.
+func (cb *contractBinder) BindStructType(typ abi.Type) {
+	bindStructType(typ, cb.binder.structs, cb.typeName)
 }
 
 // contractBinder holds state for binding of a single contract. It is a type
@@ -168,6 +168,11 @@ func (b *binder) BindStructType(typ abi.Type) {
 // bindings.
 type contractBinder struct {
 	binder *binder
+
+	// typeName is the Go type name of the contract being bound. It is used to
+	// prefix named struct types so they don't collide on the Solidity contract
+	// name across multiple contracts in the same package.
+	typeName string
 
 	// all maps are keyed by the original (non-normalized) name of the symbol in question
 	// from the provided ABI definition.
@@ -179,15 +184,16 @@ type contractBinder struct {
 	errorIdentifiers map[string]bool
 }
 
-func newContractBinder(binder *binder) *contractBinder {
+func newContractBinder(binder *binder, typeName string) *contractBinder {
 	return &contractBinder{
-		binder,
-		make(map[string]*tmplMethod),
-		make(map[string]*tmplEvent),
-		make(map[string]*tmplError),
-		make(map[string]bool),
-		make(map[string]bool),
-		make(map[string]bool),
+		binder:           binder,
+		typeName:         typeName,
+		calls:            make(map[string]*tmplMethod),
+		events:           make(map[string]*tmplEvent),
+		errors:           make(map[string]*tmplError),
+		callIdentifiers:  make(map[string]bool),
+		eventIdentifiers: make(map[string]bool),
+		errorIdentifiers: make(map[string]bool),
 	}
 }
 
@@ -227,13 +233,13 @@ func (cb *contractBinder) bindMethod(original abi.Method) error {
 	normalized.Inputs = normalizeArgs(original.Inputs)
 	for _, input := range normalized.Inputs {
 		if hasStruct(input.Type) {
-			cb.binder.BindStructType(input.Type)
+			cb.BindStructType(input.Type)
 		}
 	}
 	normalized.Outputs = normalizeArgs(original.Outputs)
 	for _, output := range normalized.Outputs {
 		if hasStruct(output.Type) {
-			cb.binder.BindStructType(output.Type)
+			cb.BindStructType(output.Type)
 		}
 	}
 
@@ -285,7 +291,7 @@ func (cb *contractBinder) normalizeErrorOrEventFields(originalInputs abi.Argumen
 	normalizedArguments := normalizeArgs(originalInputs)
 	for _, input := range normalizedArguments {
 		if hasStruct(input.Type) {
-			cb.binder.BindStructType(input.Type)
+			cb.BindStructType(input.Type)
 		}
 	}
 	return normalizedArguments
@@ -371,13 +377,13 @@ func BindV2(types []string, abis []string, bytecodes []string, pkg string, libs 
 			return "", err
 		}
 
+		cb := newContractBinder(&b, types[i])
 		for _, input := range evmABI.Constructor.Inputs {
 			if hasStruct(input.Type) {
-				bindStructType(input.Type, b.structs)
+				cb.BindStructType(input.Type)
 			}
 		}
 
-		cb := newContractBinder(&b)
 		err = iterSorted(evmABI.Methods, func(_ string, original abi.Method) error {
 			return cb.bindMethod(original)
 		})
