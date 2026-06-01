@@ -27,23 +27,6 @@ var (
 	_ = abi.ConvertType
 )
 
-var (
-	errNoEventSignature       = errors.New("missing event signature")
-	errEventSignatureMismatch = errors.New("event signature mismatch")
-	errMethodSignatureMismatch = errors.New("method signature mismatch")
-	errErrorSignatureMismatch  = errors.New("error signature mismatch")
-)
-
-type ContractEvent interface {
-	Name() string
-	Topic0() common.Hash
-}
-
-type ContractError interface {
-	Name() string
-	ErrorID() common.Hash
-}
-
 {{$structs := .Structs}}
 {{range $structs}}
 	// {{.Name}} is an auto generated low-level Go binding around an user-defined struct.
@@ -158,11 +141,11 @@ type ContractError interface {
 	}
 		{{- else if .Normalized.Inputs}}
 		func (m {{methodtypename $contract.Type .Normalized.Name}}) UnpackInput(callData []byte) ({{range .Normalized.Inputs}} {{.Name}} {{bindtype .Type $structs}}, {{end}} err error) {
-			input, err := {{decapitalise $contract.Type}}UnpackInput[{{inputtypename $contract.Type .Normalized.Name}}](m.Name(), callData)
+			parsed, err := {{decapitalise $contract.Type}}UnpackInput[{{inputtypename $contract.Type .Normalized.Name}}](m.Name(), callData)
 			if err != nil {
 				return {{range .Normalized.Inputs}}{{if ispointertype .Type}}new({{underlyingbindtype .Type }}), {{else}}*new({{bindtype .Type $structs}}), {{end}}{{end}} err
 			}
-			return {{range .Normalized.Inputs}}input.{{inputfieldname .Name}}, {{end}} nil
+			return {{range .Normalized.Inputs}}parsed.{{inputfieldname .Name}}, {{end}} nil
 			}
 	{{- end}}
 	{{- if methodisconstant .}}
@@ -283,7 +266,7 @@ type ContractError interface {
 	// UnpackInput attempts to decode the provided call data using contract method definitions.
 	func ({{ decapitalise $contract.Type}} *{{$contract.Type}}) UnpackInput(callData []byte) (any, error) {
 		if len(callData) < 4 {
-			return nil, errMethodSignatureMismatch
+			return nil, abi.ErrMethodSignatureMismatch
 		}
 		{{- range .Calls}}
 		if bytes.Equal(callData[:4], _{{$contract.Type}}ABI.Methods["{{.Original.Name}}"].ID[:4]) {
@@ -294,7 +277,7 @@ type ContractError interface {
 			{{- end}}
 		}
 		{{- end}}
-		return nil, errMethodSignatureMismatch
+		return nil, abi.ErrMethodSignatureMismatch
 	}
 	{{ end }}
 
@@ -352,14 +335,14 @@ type ContractError interface {
 	// UnpackEvent unpacks event log based on topic0.
 		func ({{ decapitalise $contract.Type}} *{{$contract.Type}}) UnpackEvent(log *ethtype.ELog) (any, error) {
 				if len(log.Topics) == 0 {
-					return nil, errNoEventSignature
+					return nil, abi.ErrNoEventSignature
 				}
 		for _, item := range {{decapitalise $contract.Type}}EventUnpackers {
 			if item.id == log.Topics[0] {
 				return item.unpack(log)
 			}
 		}
-			return nil, errEventSignatureMismatch
+			return nil, abi.ErrEventSignatureMismatch
 		}
 	{{ end }}
 
@@ -368,7 +351,7 @@ type ContractError interface {
 	// error definitions.
 		func ({{ decapitalise $contract.Type}} *{{$contract.Type}}) UnpackError(raw []byte) (any, error) {
 			if len(raw) < 4 {
-				return nil, errErrorSignatureMismatch
+				return nil, abi.ErrErrorSignatureMismatch
 			}
 			var id [4]byte
 			copy(id[:], raw[:4])
@@ -377,7 +360,7 @@ type ContractError interface {
 					return item.unpack(raw[4:])
 				}
 			}
-			return nil, errErrorSignatureMismatch
+			return nil, abi.ErrErrorSignatureMismatch
 		}
 	{{ end }}
 
@@ -437,7 +420,7 @@ type ContractError interface {
 			return nil, errors.New("method '" + name + "' not found")
 		}
 		if len(callData) < 4 || !bytes.Equal(callData[:4], method.ID[:4]) {
-			return nil, errMethodSignatureMismatch
+			return nil, abi.ErrMethodSignatureMismatch
 		}
 		arguments, err := method.Inputs.Unpack(callData[4:])
 		if err != nil {
@@ -454,10 +437,10 @@ type ContractError interface {
 			return nil, errors.New("event '" + name + "' not found")
 		}
 		if len(log.Topics) == 0 {
-			return nil, errNoEventSignature
+			return nil, abi.ErrNoEventSignature
 		}
 		if log.Topics[0] != event.ID {
-			return nil, errEventSignatureMismatch
+			return nil, abi.ErrEventSignatureMismatch
 		}
 		var values []any
 		if len(log.Data) > 0 {
