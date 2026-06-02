@@ -256,7 +256,7 @@ func buildImports(needsHexutil bool, isFullCode bool) string {
 	imports = append(imports, `"github.com/donutnomad/eths/common"`)
 
 	if needsHexutil {
-		imports = append(imports, `"github.com/donutnomad/eths/hexutil"`)
+		imports = append(imports, `"github.com/donutnomad/eths/common/hexutil"`)
 	}
 
 	if isFullCode {
