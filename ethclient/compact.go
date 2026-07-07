@@ -2,22 +2,38 @@ package ethclient
 
 import (
 	"context"
+	"errors"
 	"math/big"
 
 	"github.com/donutnomad/eths/common"
+	"github.com/donutnomad/eths/ecommon"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
-var NotFound = ethereum.NotFound
+// NotFound is returned by API methods if the requested item does not exist.
+var NotFound = errors.New("not found")
 
-type CallMsg = ethereum.CallMsg
-type Subscription = ethereum.Subscription
-type TransactionReceiptsQuery = ethereum.TransactionReceiptsQuery
-type SyncProgress = ethereum.SyncProgress
-type FeeHistory = ethereum.FeeHistory
-type BlockOverrides = ethereum.BlockOverrides
-type OverrideAccount = ethereum.OverrideAccount
+// CallMsg contains parameters for contract calls.
+type CallMsg struct {
+	From      common.Address  // the sender of the 'transaction'
+	To        *common.Address // the destination contract (nil for contract creation)
+	Gas       uint64          // if 0, the call executes with near-infinite gas
+	GasPrice  *big.Int        // wei <-> gas exchange ratio
+	GasFeeCap *big.Int        // EIP-1559 fee cap per gas.
+	GasTipCap *big.Int        // EIP-1559 tip per gas.
+	Value     *big.Int        // amount of wei sent along with the call
+	Data      []byte          // input data, usually an ABI-encoded contract method invocation
+
+	AccessList types.AccessList // EIP-2930 access list.
+
+	// For BlobTxType
+	BlobGasFeeCap *big.Int
+	BlobHashes    []common.Hash
+
+	// For SetCodeTxType
+	AuthorizationList []types.SetCodeAuthorization
+}
 
 // GasEstimator wraps EstimateGas, which tries to estimate the gas needed to execute a
 // specific transaction based on the pending state. There is no guarantee that this is the
@@ -42,6 +58,17 @@ type TransactionSender interface {
 // BlockNumberReader provides access to the current block number.
 type BlockNumberReader interface {
 	BlockNumber(ctx context.Context) (uint64, error)
+}
+
+type BlockReader interface {
+	GetBlock(ctx context.Context, blockNrOrHash ethtype.BlockNumberOrHash) (*ethtype.Block, error)
+	BlockByHash(ctx context.Context, hash common.Hash) (*ethtype.EBlock, error)
+	BlockByNumber(ctx context.Context, number *big.Int) (*ethtype.EBlock, error)
+}
+
+type LiteBlockReader interface {
+	LiteBlockByNumber(ctx context.Context, number *big.Int) (*ethtype.LiteBlock, error)
+	LiteBlockByHash(ctx context.Context, hash ecommon.Hash) (*ethtype.LiteBlock, error)
 }
 
 // TransactionReader provides access to past transactions and their receipts.

@@ -16,7 +16,15 @@
 
 package rpc
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+var (
+	ErrNoResult             = errors.New("JSON-RPC response has no result")
+	ErrMissingBatchResponse = errors.New("response batch did not contain a response to this call")
+)
 
 // HTTPError is returned by client operations when the HTTP status code of the
 // response is not a 2xx status.

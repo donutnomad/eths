@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 func TestUnmarshalBatchResponse_StandardArray(t *testing.T) {
@@ -86,7 +88,7 @@ func TestApplyBatchResponse_WholeBatchRejected(t *testing.T) {
 		if elem.Error == nil {
 			t.Fatalf("element %d: expected an error, got nil", i)
 		}
-		rpcErr, ok := elem.Error.(Error)
+		rpcErr, ok := elem.Error.(rpc.Error)
 		if !ok {
 			t.Fatalf("element %d: expected an rpc.Error, got %T", i, elem.Error)
 		}

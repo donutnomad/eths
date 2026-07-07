@@ -17,6 +17,7 @@
 package rpc
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -32,57 +33,16 @@ import (
 	"time"
 )
 
-var (
-	ErrNoResult             = errors.New("JSON-RPC response has no result")
-	ErrMissingBatchResponse = errors.New("response batch did not contain a response to this call")
-)
-
-// BatchElem is an element in a batch request.
-type BatchElem struct {
-	Method string
-	Args   []any
-	// The result is unmarshaled into this field. Result must be set to a
-	// non-nil pointer value of the desired type, otherwise the response will be
-	// discarded.
-	Result any
-	// Error is set if the server returns an error for this request, or if
-	// unmarshalling into Result fails. It is not set for I/O errors.
-	Error error
-}
-
-// Client represents a connection to an RPC server over HTTP.
-type Client struct {
-	idCounter atomic.Uint32
-	client    *http.Client
-	url       string
-	closeOnce sync.Once
-	closeCh   chan any
-	mu        sync.Mutex // protects headers
-	headers   http.Header
-	auth      HTTPAuth
-}
-
-func DialContext(_ context.Context, rawurl string, options ...ClientOption) (*Client, error) {
-	return Dial(rawurl, options...)
-}
-
-// Dial creates a new RPC client for the given URL. You can supply any of the
-// pre-defined client options to configure the underlying transport.
-//
-// The context is used to cancel or time out the initial connection establishment. It does
-// not affect subsequent interactions with the client.
-func Dial(rawurl string, options ...ClientOption) (*Client, error) {
-	u, err := url.Parse(rawurl)
+// DialHTTP creates a new RPC client for the given URL.
+func DialHTTP(endpoint string, options ...ClientOption) (*HttpClient, error) {
+	_, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, err
 	}
+
 	cfg := new(clientConfig)
 	for _, opt := range options {
 		opt.applyOption(cfg)
-	}
-
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return nil, fmt.Errorf("no known transport for URL scheme %q, only support http and https", u.Scheme)
 	}
 	headers := make(http.Header, 2+len(cfg.httpHeaders))
 	headers.Set("accept", "application/json")
@@ -96,52 +56,56 @@ func Dial(rawurl string, options ...ClientOption) (*Client, error) {
 		client = new(http.Client)
 	}
 
-	return &Client{
+	return &HttpClient{
 		client:  client,
 		headers: headers,
-		url:     rawurl,
+		url:     endpoint,
 		auth:    cfg.httpAuth,
 		closeCh: make(chan any),
 	}, nil
 }
 
+// HttpClient represents a connection to an RPC server over HTTP.
+type HttpClient struct {
+	idCounter atomic.Uint32
+	client    *http.Client
+	url       string
+	closeOnce sync.Once
+	closeCh   chan any
+	mu        sync.Mutex // protects headers
+	headers   http.Header
+	auth      HTTPAuth
+}
+
 // SupportedModules calls the rpc_modules method, retrieving the list of
 // APIs that are available on the server.
-func (c *Client) SupportedModules() (map[string]string, error) {
-	var result map[string]string
+func (c *HttpClient) SupportedModules() (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	err := c.CallContext(ctx, &result, "rpc_modules")
+
+	var result map[string]string
+	err := c.Call(ctx, &result, "rpc_modules")
 	return result, err
 }
 
 // Close closes the client, aborting any in-flight requests.
-func (c *Client) Close() {
+func (c *HttpClient) Close() {
 	c.closeOnce.Do(func() { close(c.closeCh) })
 }
 
 // SetHeader adds a custom HTTP header to the client's requests.
-func (c *Client) SetHeader(key, value string) {
+func (c *HttpClient) SetHeader(key, value string) {
 	c.mu.Lock()
 	c.headers.Set(key, value)
 	c.mu.Unlock()
 }
 
-// Call performs a JSON-RPC call with the given arguments and unmarshals into
-// result if no error occurred.
-//
-// The result must be a pointer so that package json can unmarshal into it. You
-// can also pass nil, in which case the result is ignored.
-func (c *Client) Call(result any, method string, args ...any) error {
-	return c.CallContext(context.Background(), result, method, args...)
-}
-
-// CallContext performs a JSON-RPC call with the given arguments. If the context is
+// Call performs a JSON-RPC call with the given arguments. If the context is
 // canceled before the call has successfully returned, CallContext returns immediately.
 //
 // The result must be a pointer so that package json can unmarshal into it. You
 // can also pass nil, in which case the result is ignored.
-func (c *Client) CallContext(ctx context.Context, result any, method string, args ...any) error {
+func (c *HttpClient) Call(ctx context.Context, result any, method string, args ...any) error {
 	if result != nil && reflect.TypeOf(result).Kind() != reflect.Ptr {
 		return fmt.Errorf("call result parameter must be pointer or nil interface: %v", result)
 	}
@@ -149,36 +113,20 @@ func (c *Client) CallContext(ctx context.Context, result any, method string, arg
 	if err != nil {
 		return err
 	}
-
 	resp, err := c.sendHTTP(ctx, msg)
 	if err != nil {
 		return err
-	}
-	switch {
-	case resp.Error != nil:
+	} else if resp.Error != nil {
 		return resp.Error
-	case len(resp.Result) == 0:
+	} else if len(resp.Result) == 0 {
 		return ErrNoResult
-	default:
-		if result == nil {
-			return nil
-		}
-		return json.Unmarshal(resp.Result, result)
+	} else if result == nil {
+		return nil
 	}
+	return json.Unmarshal(resp.Result, result)
 }
 
 // BatchCall sends all given requests as a single batch and waits for the server
-// to return a response for all of them.
-//
-// In contrast to Call, BatchCall only returns I/O errors. Any error specific to
-// a request is reported through the Error field of the corresponding BatchElem.
-//
-// Note that batch calls may not be executed atomically on the server side.
-func (c *Client) BatchCall(b []BatchElem) error {
-	return c.BatchCallContext(context.Background(), b)
-}
-
-// BatchCallContext sends all given requests as a single batch and waits for the server
 // to return a response for all of them. The wait duration is bounded by the
 // context's deadline.
 //
@@ -187,7 +135,7 @@ func (c *Client) BatchCall(b []BatchElem) error {
 // Error field of the corresponding BatchElem.
 //
 // Note that batch calls may not be executed atomically on the server side.
-func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
+func (c *HttpClient) BatchCall(ctx context.Context, b []BatchElem) error {
 	var (
 		msgs = make([]*jsonrpcMessage, len(b))
 		byID = make(map[string]int, len(b))
@@ -262,7 +210,7 @@ func applyBatchResponse(b []BatchElem, byID map[string]int, batchresp []*jsonrpc
 }
 
 // Notify sends a notification, i.e. a method call that doesn't expect a response.
-func (c *Client) Notify(ctx context.Context, method string, args ...any) error {
+func (c *HttpClient) Notify(ctx context.Context, method string, args ...any) error {
 	msg, err := c.newMessage(method, args...)
 	if err != nil {
 		return err
@@ -273,7 +221,7 @@ func (c *Client) Notify(ctx context.Context, method string, args ...any) error {
 	return err
 }
 
-func (c *Client) newMessage(method string, paramsIn ...any) (*jsonrpcMessage, error) {
+func (c *HttpClient) newMessage(method string, paramsIn ...any) (*jsonrpcMessage, error) {
 	msg := &jsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
 	if paramsIn != nil { // prevent sending "params":null
 		var err error
@@ -284,12 +232,12 @@ func (c *Client) newMessage(method string, paramsIn ...any) (*jsonrpcMessage, er
 	return msg, nil
 }
 
-func (c *Client) nextID() json.RawMessage {
+func (c *HttpClient) nextID() json.RawMessage {
 	id := c.idCounter.Add(1)
 	return strconv.AppendUint(nil, uint64(id), 10)
 }
 
-func (c *Client) doRequest(ctx context.Context, body []byte) (io.ReadCloser, error) {
+func (c *HttpClient) doRequest(ctx context.Context, body []byte) (io.ReadCloser, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.url, io.NopCloser(bytes.NewReader(body)))
 	if err != nil {
 		return nil, &RequestError{URL: c.url, RequestBody: string(body), Err: err}
@@ -341,7 +289,7 @@ func (c *Client) doRequest(ctx context.Context, body []byte) (io.ReadCloser, err
 // errors can include a preview of what the server actually sent.
 const peekBufSize = 300
 
-func (c *Client) sendHTTP(ctx context.Context, msg any) (*jsonrpcMessage, error) {
+func (c *HttpClient) sendHTTP(ctx context.Context, msg any) (*jsonrpcMessage, error) {
 	body, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
@@ -360,7 +308,7 @@ func (c *Client) sendHTTP(ctx context.Context, msg any) (*jsonrpcMessage, error)
 	return &resp, nil
 }
 
-func (c *Client) sendBatchHTTP(ctx context.Context, msg any) ([]*jsonrpcMessage, error) {
+func (c *HttpClient) sendBatchHTTP(ctx context.Context, msg any) ([]*jsonrpcMessage, error) {
 	body, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
@@ -383,25 +331,50 @@ func (c *Client) sendBatchHTTP(ctx context.Context, msg any) ([]*jsonrpcMessage,
 // expected to be a JSON array of messages (`[{...}, {...}]`). Some
 // non-conforming servers instead respond with a single JSON-RPC error object
 // (`{...}`) when the whole batch is rejected upfront; this is accepted as a
-// fallback and wrapped into a single-element slice.
+// fallback and wrapped into a single-element slice. The response is decoded
+// incrementally rather than buffered in full, so this is safe to use on
+// arbitrarily large response bodies.
 func unmarshalBatchResponse(r io.Reader) ([]*jsonrpcMessage, error) {
-	full, err := io.ReadAll(r)
+	br := bufio.NewReader(r)
+	isObject, err := peekIsJSONObject(br)
 	if err != nil {
 		return nil, err
 	}
 
+	if isObject {
+		var single jsonrpcMessage
+		if err := json.NewDecoder(br).Decode(&single); err != nil {
+			return nil, err
+		}
+		if single.Error != nil {
+			return []*jsonrpcMessage{&single}, nil
+		}
+		return nil, errors.New("batch response is a single object without an error")
+	}
+
 	var respmsgs []*jsonrpcMessage
-	arrErr := json.Unmarshal(full, &respmsgs)
-	if arrErr == nil {
-		return respmsgs, nil
+	if err := json.NewDecoder(br).Decode(&respmsgs); err != nil {
+		return nil, err
 	}
+	return respmsgs, nil
+}
 
-	var single jsonrpcMessage
-	if err := json.Unmarshal(full, &single); err == nil && single.Error != nil {
-		return []*jsonrpcMessage{&single}, nil
+// peekIsJSONObject reports whether the next JSON value on br is an object
+// ('{') as opposed to an array ('['), without consuming any bytes beyond
+// leading whitespace.
+func peekIsJSONObject(br *bufio.Reader) (bool, error) {
+	for {
+		b, err := br.Peek(1)
+		if err != nil {
+			return false, err
+		}
+		switch b[0] {
+		case ' ', '\t', '\n', '\r':
+			br.Discard(1)
+		default:
+			return b[0] == '{', nil
+		}
 	}
-
-	return nil, arrErr
 }
 
 // cleanlyCloseBody avoids sending unnecessary RST_STREAM and PING frames by

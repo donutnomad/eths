@@ -19,16 +19,10 @@ package rpc
 import (
 	"container/list"
 	"context"
-	crand "crypto/rand"
-	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"math/rand"
 	"reflect"
-	"strings"
 	"sync"
-	"time"
 )
 
 var (
@@ -42,168 +36,12 @@ var (
 	//	}
 	//
 	ErrNotificationsUnsupported = notificationsUnsupportedError{}
-
-	// ErrSubscriptionNotFound is returned when the notification for the given id is not found
-	ErrSubscriptionNotFound = errors.New("subscription not found")
 )
-
-var globalGen = randomIDGenerator()
-
-// ID defines a pseudo random number that is used to identify RPC subscriptions.
-type ID string
-
-// NewID returns a new, random ID.
-func NewID() ID {
-	return globalGen()
-}
-
-// randomIDGenerator returns a function generates a random IDs.
-func randomIDGenerator() func() ID {
-	var buf = make([]byte, 8)
-	var seed int64
-	if _, err := crand.Read(buf); err == nil {
-		seed = int64(binary.BigEndian.Uint64(buf))
-	} else {
-		seed = int64(time.Now().Nanosecond())
-	}
-
-	var (
-		mu  sync.Mutex
-		rng = rand.New(rand.NewSource(seed))
-	)
-	return func() ID {
-		mu.Lock()
-		defer mu.Unlock()
-		id := make([]byte, 16)
-		rng.Read(id)
-		return encodeID(id)
-	}
-}
-
-func encodeID(b []byte) ID {
-	id := hex.EncodeToString(b)
-	id = strings.TrimLeft(id, "0")
-	if id == "" {
-		id = "0" // ID's are RPC quantities, no leading zero's and 0 is 0x0.
-	}
-	return ID("0x" + id)
-}
-
-type notifierKey struct{}
-
-// NotifierFromContext returns the Notifier value stored in ctx, if any.
-func NotifierFromContext(ctx context.Context) (*Notifier, bool) {
-	n, ok := ctx.Value(notifierKey{}).(*Notifier)
-	return n, ok
-}
-
-// Notifier is tied to an RPC connection that supports subscriptions.
-// Server callbacks use the notifier to send notifications.
-type Notifier struct {
-	h         *handler
-	namespace string
-
-	mu           sync.Mutex
-	sub          *Subscription
-	buffer       []any
-	callReturned bool
-	activated    bool
-}
-
-// CreateSubscription returns a new subscription that is coupled to the
-// RPC connection. By default subscriptions are inactive and notifications
-// are dropped until the subscription is marked as active. This is done
-// by the RPC server after the subscription ID is send to the client.
-func (n *Notifier) CreateSubscription() *Subscription {
-	n.mu.Lock()
-	defer n.mu.Unlock()
-
-	if n.sub != nil {
-		panic("can't create multiple subscriptions with Notifier")
-	} else if n.callReturned {
-		panic("can't create subscription after subscribe call has returned")
-	}
-	n.sub = &Subscription{ID: n.h.idgen(), namespace: n.namespace, err: make(chan error, 1)}
-	return n.sub
-}
-
-// Notify sends a notification to the client with the given data as payload.
-// If an error occurs the RPC connection is closed and the error is returned.
-func (n *Notifier) Notify(id ID, data any) error {
-	n.mu.Lock()
-	defer n.mu.Unlock()
-
-	if n.sub == nil {
-		panic("can't Notify before subscription is created")
-	} else if n.sub.ID != id {
-		panic("Notify with wrong ID")
-	}
-	if n.activated {
-		return n.send(n.sub, data)
-	}
-	n.buffer = append(n.buffer, data)
-	return nil
-}
-
-// takeSubscription returns the subscription (if one has been created). No subscription can
-// be created after this call.
-func (n *Notifier) takeSubscription() *Subscription {
-	n.mu.Lock()
-	defer n.mu.Unlock()
-	n.callReturned = true
-	return n.sub
-}
-
-// activate is called after the subscription ID was sent to client. Notifications are
-// buffered before activation. This prevents notifications being sent to the client before
-// the subscription ID is sent to the client.
-func (n *Notifier) activate() error {
-	n.mu.Lock()
-	defer n.mu.Unlock()
-
-	for _, data := range n.buffer {
-		if err := n.send(n.sub, data); err != nil {
-			return err
-		}
-	}
-	n.activated = true
-	return nil
-}
-
-func (n *Notifier) send(sub *Subscription, data any) error {
-	msg := jsonrpcSubscriptionNotification{
-		Version: vsn,
-		Method:  n.namespace + notificationMethodSuffix,
-		Params: subscriptionResultEnc{
-			ID:     string(sub.ID),
-			Result: data,
-		},
-	}
-	return n.h.conn.writeJSON(context.Background(), &msg, false)
-}
-
-// A Subscription is created by a notifier and tied to that notifier. The client can use
-// this subscription to wait for an unsubscribe request for the client, see Err().
-type Subscription struct {
-	ID        ID
-	namespace string
-	err       chan error // closed on unsubscribe
-}
-
-// Err returns a channel that is closed when the client send an unsubscribe request.
-func (s *Subscription) Err() <-chan error {
-	return s.err
-}
-
-// MarshalJSON marshals a subscription as its ID.
-func (s *Subscription) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.ID)
-}
 
 // ClientSubscription is a subscription established through the Client's Subscribe or
 // EthSubscribe methods.
 type ClientSubscription struct {
-	client    *Client
+	client    *WsClient
 	etype     reflect.Type
 	channel   reflect.Value
 	namespace string
@@ -228,7 +66,7 @@ type ClientSubscription struct {
 // This is the sentinel value sent on sub.quit when Unsubscribe is called.
 var errUnsubscribed = errors.New("unsubscribed")
 
-func newClientSubscription(c *Client, namespace string, channel reflect.Value) *ClientSubscription {
+func newClientSubscription(c *WsClient, namespace string, channel reflect.Value) *ClientSubscription {
 	sub := &ClientSubscription{
 		client:      c,
 		namespace:   namespace,
@@ -304,7 +142,7 @@ func (sub *ClientSubscription) run() {
 
 	// Send the error.
 	if err != nil {
-		if err == ErrClientQuit {
+		if errors.Is(err, ErrClientQuit) {
 			// ErrClientQuit gets here when Client.Close is called. This is reported as a
 			// nil error because it's not an error, but we can't close sub.err here.
 			err = nil

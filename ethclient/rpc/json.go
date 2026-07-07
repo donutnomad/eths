@@ -1,19 +1,3 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package rpc
 
 import (
@@ -34,15 +18,35 @@ type jsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
+func (msg *jsonrpcMessage) isNotification() bool {
+	return msg.hasValidVersion() && msg.ID == nil && msg.Method != ""
+}
+
+func (msg *jsonrpcMessage) isCall() bool {
+	return msg.hasValidVersion() && msg.hasValidID() && msg.Method != ""
+}
+
+func (msg *jsonrpcMessage) isResponse() bool {
+	return msg.hasValidVersion() && msg.hasValidID() && msg.Method == "" && msg.Params == nil && (msg.Result != nil || msg.Error != nil)
+}
+
+func (msg *jsonrpcMessage) hasValidID() bool {
+	return len(msg.ID) > 0 && msg.ID[0] != '{' && msg.ID[0] != '['
+}
+
+func (msg *jsonrpcMessage) hasValidVersion() bool {
+	return msg.Version == vsn
+}
+
 func (msg *jsonrpcMessage) String() string {
 	b, _ := json.Marshal(msg)
 	return string(b)
 }
 
-// hasValidID reports whether id is a usable JSON-RPC request/response ID,
-// i.e. not absent and not JSON null.
-func hasValidID(id json.RawMessage) bool {
-	return len(id) > 0 && string(id) != "null"
+func (msg *jsonrpcMessage) errorResponse(err error) *jsonrpcMessage {
+	resp := errorMessage(err)
+	resp.ID = msg.ID
+	return resp
 }
 
 type jsonError struct {
@@ -66,10 +70,24 @@ func (err *jsonError) Error() string {
 	return fmt.Sprintf("code: %d, message: %s, data: %s", err.Code, msg, data)
 }
 
+//
+//func (err *jsonError) Error() string {
+//	if err.Message == "" {
+//		return fmt.Sprintf("json-rpc error %d", err.Code)
+//	}
+//	return err.Message
+//}
+
 func (err *jsonError) ErrorCode() int {
 	return err.Code
 }
 
-func (err *jsonError) ErrorData() interface{} {
+func (err *jsonError) ErrorData() any {
 	return err.Data
+}
+
+// hasValidID reports whether id is a usable JSON-RPC request/response ID,
+// i.e. not absent and not JSON null.
+func hasValidID(id json.RawMessage) bool {
+	return len(id) > 0 && string(id) != "null"
 }

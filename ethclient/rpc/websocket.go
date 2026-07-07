@@ -55,43 +55,7 @@ func (e wsHandshakeError) Unwrap() error {
 	return e.err
 }
 
-// DialWebsocketWithDialer creates a new RPC client using WebSocket.
-//
-// The context is used for the initial connection establishment. It does not
-// affect subsequent interactions with the client.
-//
-// Deprecated: use DialOptions and the WithWebsocketDialer option.
-func DialWebsocketWithDialer(ctx context.Context, endpoint, origin string, dialer websocket.Dialer) (*Client, error) {
-	cfg := new(clientConfig)
-	cfg.wsDialer = &dialer
-	if origin != "" {
-		cfg.setHeader("origin", origin)
-	}
-	connect, err := newClientTransportWS(endpoint, cfg)
-	if err != nil {
-		return nil, err
-	}
-	return newClient(ctx, cfg, connect)
-}
-
-// DialWebsocket creates a new RPC client that communicates with a JSON-RPC server
-// that is listening on the given endpoint.
-//
-// The context is used for the initial connection establishment. It does not
-// affect subsequent interactions with the client.
-func DialWebsocket(ctx context.Context, endpoint, origin string) (*Client, error) {
-	cfg := new(clientConfig)
-	if origin != "" {
-		cfg.setHeader("origin", origin)
-	}
-	connect, err := newClientTransportWS(endpoint, cfg)
-	if err != nil {
-		return nil, err
-	}
-	return newClient(ctx, cfg, connect)
-}
-
-func newClientTransportWS(endpoint string, cfg *clientConfig) (reconnectFunc, error) {
+func newClientTransportWS(endpoint string, cfg *wsclientConfig) (reconnectFunc, error) {
 	dialer := cfg.wsDialer
 	if dialer == nil {
 		dialer = &websocket.Dialer{
@@ -129,7 +93,7 @@ func newClientTransportWS(endpoint string, cfg *clientConfig) (reconnectFunc, er
 		if cfg.wsMessageSizeLimit != nil && *cfg.wsMessageSizeLimit >= 0 {
 			messageSizeLimit = *cfg.wsMessageSizeLimit
 		}
-		return newWebsocketCodec(conn, dialURL, header, messageSizeLimit), nil
+		return newWebsocketCodec(conn, messageSizeLimit), nil
 	}
 	return connect, nil
 }
@@ -154,14 +118,13 @@ func wsClientHeaders(endpoint, origin string) (string, http.Header, error) {
 type websocketCodec struct {
 	*jsonCodec
 	conn *websocket.Conn
-	info PeerInfo
 
 	wg           sync.WaitGroup
 	pingReset    chan struct{}
 	pongReceived chan struct{}
 }
 
-func newWebsocketCodec(conn *websocket.Conn, host string, req http.Header, readLimit int64) ServerCodec {
+func newWebsocketCodec(conn *websocket.Conn, readLimit int64) ServerCodec {
 	conn.SetReadLimit(readLimit)
 	encode := func(v interface{}, isErrorResponse bool) error {
 		return conn.WriteJSON(v)
@@ -171,15 +134,7 @@ func newWebsocketCodec(conn *websocket.Conn, host string, req http.Header, readL
 		conn:         conn,
 		pingReset:    make(chan struct{}, 1),
 		pongReceived: make(chan struct{}),
-		info: PeerInfo{
-			Transport:  "ws",
-			RemoteAddr: conn.RemoteAddr().String(),
-		},
 	}
-	// Fill in connection details.
-	wc.info.HTTP.Host = host
-	wc.info.HTTP.Origin = req.Get("Origin")
-	wc.info.HTTP.UserAgent = req.Get("User-Agent")
 	// Start pinger.
 	conn.SetPongHandler(func(appData string) error {
 		select {
@@ -206,10 +161,6 @@ func (wc *websocketCodec) close() {
 
 	wc.jsonCodec.close()
 	wc.wg.Wait()
-}
-
-func (wc *websocketCodec) peerInfo() PeerInfo {
-	return wc.info
 }
 
 func (wc *websocketCodec) writeJSON(ctx context.Context, v interface{}, isError bool) error {

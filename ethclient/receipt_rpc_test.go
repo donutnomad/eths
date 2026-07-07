@@ -9,7 +9,7 @@ import (
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ecommon"
-	rpc "github.com/donutnomad/eths/ethclient/ethrpc2"
+	rpc "github.com/donutnomad/eths/ethclient/rpc"
 	"github.com/donutnomad/eths/ethtype"
 )
 
@@ -29,13 +29,11 @@ var (
 
 func dialSepolia(t *testing.T) *Client {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	c, err := rpc.DialContext(ctx, sepoliaRPC)
+	c, err := rpc.DialHTTP(sepoliaRPC)
 	if err != nil {
 		t.Skipf("cannot connect to Sepolia RPC: %v", err)
 	}
-	return NewClient(c)
+	return NewHTTPClient(c)
 }
 
 func sepoliaCtx() (context.Context, context.CancelFunc) {

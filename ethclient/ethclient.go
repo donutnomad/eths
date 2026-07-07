@@ -24,68 +24,20 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"slices"
 	"time"
 
+	"github.com/donutnomad/eths/common"
 	hexutil2 "github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ecommon"
-	ethrpc2 "github.com/donutnomad/eths/ethclient/ethrpc"
-	ethrpc "github.com/donutnomad/eths/ethclient/ethrpc2"
+	ethrpc "github.com/donutnomad/eths/ethclient/rpc"
 	"github.com/donutnomad/eths/ethtype"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/samber/lo"
 )
 
-// Client defines typed wrappers for the Ethereum RPC API.
-type Client struct {
-	c  *ethrpc.Client
-	rt *headerCapture
-	od *overloadDetector
-}
-
-// WSClient defines typed wrappers for the Ethereum RPC API.
-type WSClient struct {
-	wc *ethrpc2.Client
-	rt *headerCapture
-	od *overloadDetector
-}
-
-// Option configures the Client created by DialContext.
-type Option func(*dialConfig)
-type OptionWs func(*dialWsConfig)
-
-type dialConfig struct {
-	httpClient *http.Client
-	rpcOpts    []ethrpc.ClientOption
-}
-
-type dialWsConfig struct {
-	httpClient *http.Client
-	rpcOpts    []ethrpc2.ClientOption
-}
-
-// WithHTTPClient configures the base http.Client used by the RPC client.
-// The Client will wrap the provided http.Client's Transport with a
-// headerCapture layer to capture response headers from non-2xx responses.
-// If not provided, a default http.Client with http.DefaultTransport is used.
-func WithHTTPClient(c *http.Client) Option {
-	return func(cfg *dialConfig) {
-		cfg.httpClient = c
-	}
-}
-
-// WithRPCOptions passes additional rpc.ClientOption to the underlying rpc.DialOptions.
-func WithRPCOptions(opts ...ethrpc.ClientOption) Option {
-	return func(cfg *dialConfig) {
-		cfg.rpcOpts = append(cfg.rpcOpts, opts...)
-	}
-}
-
-// DialContext connects a client to the given URL with context.
-func DialContext(_ context.Context, rawurl string, opts ...Option) (*Client, error) {
-	return Dial(rawurl, opts...)
-}
-
-func Dial(rawurl string, opts ...Option) (*Client, error) {
+func DialHTTP(endpoint string, opts ...Option) (*Client, error) {
 	var cfg dialConfig
 	for _, o := range opts {
 		o(&cfg)
@@ -109,7 +61,7 @@ func Dial(rawurl string, opts ...Option) (*Client, error) {
 	allOpts := make([]ethrpc.ClientOption, 0, len(cfg.rpcOpts)+1)
 	allOpts = append(allOpts, ethrpc.WithHTTPClient(httpClient))
 	allOpts = append(allOpts, cfg.rpcOpts...)
-	c, err := ethrpc.Dial(rawurl, allOpts...)
+	c, err := ethrpc.DialHTTP(endpoint, allOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -117,42 +69,76 @@ func Dial(rawurl string, opts ...Option) (*Client, error) {
 	return &Client{c: c, rt: hc, od: newOverloadDetector(50, 0.5)}, nil
 }
 
-// DialWSContext connects a client to the given URL with context.
-func DialWSContext(ctx context.Context, rawurl string, opts ...OptionWs) (*WSClient, error) {
+// DialWebsocket connects a client to the given URL with context.
+func DialWebsocket(ctx context.Context, endpoint string, opts ...OptionWs) (*WSClient, error) {
 	var cfg dialWsConfig
 	for _, o := range opts {
 		o(&cfg)
 	}
-
-	var hc *headerCapture
-	var httpClient *http.Client
-	if cfg.httpClient != nil {
-		hc = &headerCapture{base: lo.Ternary(cfg.httpClient.Transport == nil, http.DefaultTransport, cfg.httpClient.Transport)}
-		httpClient = &http.Client{
-			Transport:     hc,
-			CheckRedirect: cfg.httpClient.CheckRedirect,
-			Jar:           cfg.httpClient.Jar,
-			Timeout:       cfg.httpClient.Timeout,
-		}
-	} else {
-		hc = &headerCapture{base: http.DefaultTransport}
-		httpClient = &http.Client{Transport: hc}
-	}
-
-	allOpts := make([]ethrpc2.ClientOption, 0, len(cfg.rpcOpts)+1)
-	allOpts = append(allOpts, ethrpc2.WithHTTPClient(httpClient))
-	allOpts = append(allOpts, cfg.rpcOpts...)
-	wc, err := ethrpc2.DialOptions(ctx, rawurl, allOpts...)
+	wc, err := ethrpc.DialWebsocket(ctx, endpoint, slices.Clone(cfg.rpcOpts)...)
 	if err != nil {
 		return nil, err
 	}
-
-	return &WSClient{wc: wc, rt: hc, od: newOverloadDetector(50, 0.5)}, nil
+	return &WSClient{wc: wc}, nil
 }
 
-// NewClient creates a client that uses the given RPC client.
-func NewClient(c *ethrpc.Client) *Client {
+// NewHTTPClient creates a client that uses the given RPC client.
+func NewHTTPClient(c *ethrpc.HttpClient) *Client {
 	return &Client{c: c, od: newOverloadDetector(50, 0.5)}
+}
+
+// NewWebsocketClient creates a client that uses the given RPC client.
+func NewWebsocketClient(c *ethrpc.WsClient) *WSClient {
+	return &WSClient{wc: c}
+}
+
+// Client defines typed wrappers for the Ethereum RPC API.
+type Client struct {
+	c  *ethrpc.HttpClient
+	rt *headerCapture
+	od *overloadDetector
+}
+
+// WSClient defines typed wrappers for the Ethereum RPC API.
+type WSClient struct {
+	wc *ethrpc.WsClient
+}
+
+// Option configures the Client created by DialContext.
+type Option func(*dialConfig)
+type OptionWs func(*dialWsConfig)
+
+type dialConfig struct {
+	httpClient *http.Client
+	rpcOpts    []ethrpc.ClientOption
+}
+
+type dialWsConfig struct {
+	rpcOpts []ethrpc.WsClientOption
+}
+
+// WithHTTPClient configures the base http.Client used by the RPC client.
+// The Client will wrap the provided http.Client's Transport with a
+// headerCapture layer to capture response headers from non-2xx responses.
+// If not provided, a default http.Client with http.DefaultTransport is used.
+func WithHTTPClient(c *http.Client) Option {
+	return func(cfg *dialConfig) {
+		cfg.httpClient = c
+	}
+}
+
+// WithHttpOptions passes additional rpc.ClientOption to the underlying rpc.DialOptions.
+func WithHttpOptions(opts ...ethrpc.ClientOption) Option {
+	return func(cfg *dialConfig) {
+		cfg.rpcOpts = append(cfg.rpcOpts, opts...)
+	}
+}
+
+// WithWebsocketOptions passes additional rpc.ClientOption to the underlying rpc.DialOptions.
+func WithWebsocketOptions(opts ...ethrpc.WsClientOption) OptionWs {
+	return func(cfg *dialWsConfig) {
+		cfg.rpcOpts = append(cfg.rpcOpts, opts...)
+	}
 }
 
 // Close closes the underlying RPC connection.
@@ -161,21 +147,21 @@ func (ec *Client) Close() {
 }
 
 // Client gets the underlying RPC client.
-func (ec *Client) Client() *ethrpc.Client {
+func (ec *Client) Client() *ethrpc.HttpClient {
 	return ec.c
 }
 
 // callContext wraps rpc.Client.CallContext and enriches HTTP errors with
 // captured response headers when the client was created via DialContext.
 func (ec *Client) callContext(ctx context.Context, result any, method string, args ...any) error {
-	err := wrapErr(ec.rt, ec.c.CallContext(ctx, result, method, args...))
+	err := wrapErr(ec.rt, ec.c.Call(ctx, result, method, args...))
 	ec.od.record(IsRateLimited(err))
 	return err
 }
 
 // batchCallContext wraps rpc.Client.BatchCallContext and enriches HTTP errors.
 func (ec *Client) batchCallContext(ctx context.Context, b []ethrpc.BatchElem) error {
-	err := wrapErr(ec.rt, ec.c.BatchCallContext(ctx, b))
+	err := wrapErr(ec.rt, ec.c.BatchCall(ctx, b))
 	ec.od.record(IsRateLimited(err))
 	return err
 }
@@ -433,6 +419,51 @@ func TransactionReceiptAs[T any](ctx context.Context, ec *Client, txHash ecommon
 	return Call[T](ec, ctx, "eth_getTransactionReceipt", txHash)
 }
 
+// SyncProgress gives progress indications when the node is synchronising with
+// the Ethereum network.
+type SyncProgress struct {
+	StartingBlock uint64 // Block number where sync began
+	CurrentBlock  uint64 // Current block number where sync is at
+	HighestBlock  uint64 // Highest alleged block number in the chain
+
+	// "fast sync" fields. These used to be sent by geth, but are no longer used
+	// since version v1.10.
+	PulledStates uint64 // Number of state trie entries already downloaded
+	KnownStates  uint64 // Total number of state trie entries known about
+
+	// "snap sync" fields.
+	SyncedAccounts      uint64 // Number of accounts downloaded
+	SyncedAccountBytes  uint64 // Number of account trie bytes persisted to disk
+	SyncedBytecodes     uint64 // Number of bytecodes downloaded
+	SyncedBytecodeBytes uint64 // Number of bytecode bytes downloaded
+	SyncedStorage       uint64 // Number of storage slots downloaded
+	SyncedStorageBytes  uint64 // Number of storage trie bytes persisted to disk
+
+	HealedTrienodes     uint64 // Number of state trie nodes downloaded
+	HealedTrienodeBytes uint64 // Number of state trie bytes persisted to disk
+	HealedBytecodes     uint64 // Number of bytecodes downloaded
+	HealedBytecodeBytes uint64 // Number of bytecodes persisted to disk
+
+	HealingTrienodes uint64 // Number of state trie nodes pending
+	HealingBytecode  uint64 // Number of bytecodes pending
+
+	// "transaction indexing" fields
+	TxIndexFinishedBlocks  uint64 // Number of blocks whose transactions are already indexed
+	TxIndexRemainingBlocks uint64 // Number of blocks whose transactions are not indexed yet
+
+	// "historical data indexing" fields
+	StateIndexRemaining    uint64 // Number of states remain unindexed
+	TrienodeIndexRemaining uint64 // Number of trienodes remain unindexed
+}
+
+// Done returns the indicator if the initial sync is finished or not.
+func (prog SyncProgress) Done() bool {
+	if prog.CurrentBlock < prog.HighestBlock {
+		return false
+	}
+	return prog.TxIndexRemainingBlocks == 0 && prog.StateIndexRemaining == 0 && prog.TrienodeIndexRemaining == 0
+}
+
 // SyncProgress retrieves the current progress of the sync algorithm. If there's
 // no sync currently running, it returns nil.
 //
@@ -576,6 +607,21 @@ func (ec *Client) SubscribeFilterLogs(ctx context.Context, q FilterQuery, ch cha
 	return nil, errors.New("not implemented, please use ws client")
 }
 
+//////////////////////////////////////////// Subscribe ///////////////////////////////////////////////////////////////
+
+// Subscription represents an event subscription where events are
+// delivered on a data channel.
+type Subscription interface {
+	// Unsubscribe cancels the sending of events to the data channel
+	// and closes the error channel.
+	Unsubscribe()
+	// Err returns the subscription error channel. The error channel receives
+	// a value if there is an issue with the subscription (e.g. the network connection
+	// delivering the events has been closed). Only one value will ever be sent.
+	// The error channel is closed by Unsubscribe.
+	Err() <-chan error
+}
+
 // SubscribeNewHead subscribes to notifications about the current blockchain head
 // on the given channel.
 func (ec *WSClient) SubscribeNewHead(ctx context.Context, ch chan<- *ethtype.Header) (Subscription, error) {
@@ -587,6 +633,13 @@ func (ec *WSClient) SubscribeNewHead(ctx context.Context, ch chan<- *ethtype.Hea
 		return nil, err
 	}
 	return sub, nil
+}
+
+// TransactionReceiptsQuery defines criteria for transaction receipts subscription.
+// If TransactionHashes is empty, receipts for all transactions included in new blocks will be delivered.
+// Otherwise, only receipts for the specified transactions will be delivered.
+type TransactionReceiptsQuery struct {
+	TransactionHashes []common.Hash
 }
 
 // SubscribeTransactionReceipts subscribes to notifications about transaction receipts.
@@ -733,6 +786,15 @@ type feeHistoryResultMarshaling struct {
 	Reward       [][]*hexutil2.Big `json:"reward,omitempty"`
 	BaseFee      []*hexutil2.Big   `json:"baseFeePerGas,omitempty"`
 	GasUsedRatio []float64         `json:"gasUsedRatio"`
+}
+
+// FeeHistory provides recent fee market data that consumers can use to determine
+// a reasonable maxPriorityFeePerGas value.
+type FeeHistory struct {
+	OldestBlock  *big.Int     // block corresponding to first response value
+	Reward       [][]*big.Int // list every txs priority fee per block
+	BaseFee      []*big.Int   // list of each block's base fee
+	GasUsedRatio []float64    // ratio of gas used out of the total available limit
 }
 
 // FeeHistory retrieves the fee market history.
@@ -997,6 +1059,101 @@ func (s SimulateBlock) MarshalJSON() ([]byte, error) {
 		StateOverrides: s.StateOverrides,
 		Calls:          calls,
 	})
+}
+
+// OverrideAccount specifies the state of an account to be overridden.
+type OverrideAccount struct {
+	// Nonce sets nonce of the account. Note: the nonce override will only
+	// be applied when it is set to a non-zero value.
+	Nonce uint64
+
+	// Code sets the contract code. The override will be applied
+	// when the code is non-nil, i.e. setting empty code is possible
+	// using an empty slice.
+	Code []byte
+
+	// Balance sets the account balance.
+	Balance *big.Int
+
+	// State sets the complete storage. The override will be applied
+	// when the given map is non-nil. Using an empty map wipes the
+	// entire contract storage during the call.
+	State map[common.Hash]common.Hash
+
+	// StateDiff allows overriding individual storage slots.
+	StateDiff map[common.Hash]common.Hash
+}
+
+func (a OverrideAccount) MarshalJSON() ([]byte, error) {
+	type acc struct {
+		Nonce     hexutil.Uint64              `json:"nonce,omitempty"`
+		Code      string                      `json:"code,omitempty"`
+		Balance   *hexutil.Big                `json:"balance,omitempty"`
+		State     interface{}                 `json:"state,omitempty"`
+		StateDiff map[common.Hash]common.Hash `json:"stateDiff,omitempty"`
+	}
+
+	output := acc{
+		Nonce:     hexutil.Uint64(a.Nonce),
+		Balance:   (*hexutil.Big)(a.Balance),
+		StateDiff: a.StateDiff,
+	}
+	if a.Code != nil {
+		output.Code = hexutil.Encode(a.Code)
+	}
+	if a.State != nil {
+		output.State = a.State
+	}
+	return json.Marshal(output)
+}
+
+// BlockOverrides specifies the set of header fields to override.
+type BlockOverrides struct {
+	// Number overrides the block number.
+	Number *big.Int
+	// Difficulty overrides the block difficulty.
+	Difficulty *big.Int
+	// Time overrides the block timestamp. Time is applied only when
+	// it is non-zero.
+	Time uint64
+	// GasLimit overrides the block gas limit. GasLimit is applied only when
+	// it is non-zero.
+	GasLimit uint64
+	// Coinbase overrides the block coinbase. Coinbase is applied only when
+	// it is different from the zero address.
+	Coinbase common.Address
+	// Random overrides the block extra data which feeds into the RANDOM opcode.
+	// Random is applied only when it is a non-zero hash.
+	Random common.Hash
+	// BaseFee overrides the block base fee.
+	BaseFee *big.Int
+}
+
+func (o BlockOverrides) MarshalJSON() ([]byte, error) {
+	type override struct {
+		Number     *hexutil.Big    `json:"number,omitempty"`
+		Difficulty *hexutil.Big    `json:"difficulty,omitempty"`
+		Time       hexutil.Uint64  `json:"time,omitempty"`
+		GasLimit   hexutil.Uint64  `json:"gasLimit,omitempty"`
+		Coinbase   *common.Address `json:"feeRecipient,omitempty"`
+		Random     *common.Hash    `json:"prevRandao,omitempty"`
+		BaseFee    *hexutil.Big    `json:"baseFeePerGas,omitempty"`
+	}
+
+	output := override{
+		Number:     (*hexutil.Big)(o.Number),
+		Difficulty: (*hexutil.Big)(o.Difficulty),
+		Time:       hexutil.Uint64(o.Time),
+		GasLimit:   hexutil.Uint64(o.GasLimit),
+		BaseFee:    (*hexutil.Big)(o.BaseFee),
+	}
+	if o.Coinbase != (common.Address{}) {
+		output.Coinbase = &o.Coinbase
+	}
+	if o.Random != (common.Hash{}) {
+		output.Random = &o.Random
+	}
+	return json.Marshal(output)
 }
 
 //go:generate go run github.com/fjl/gencodec -type SimulateCallResult -field-override simulateCallResultMarshaling -out gen_simulate_call_result.go

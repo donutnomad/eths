@@ -27,14 +27,34 @@ import (
 	"sync/atomic"
 	"time"
 
-	ethrpc "github.com/donutnomad/eths/ethclient/ethrpc2"
 	"github.com/donutnomad/eths/internal/log"
 )
 
+// DialWebsocket creates a new RPC client for the given URL. You can supply any of the
+// pre-defined client options to configure the underlying transport.
+//
+// The context is used to cancel or time out the initial connection establishment. It does
+// not affect subsequent interactions with the client.
+//
+// The client reconnects automatically when the connection is lost.
+func DialWebsocket(ctx context.Context, endpoint string, options ...WsClientOption) (*WsClient, error) {
+	_, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	cfg := new(wsclientConfig)
+	for _, opt := range options {
+		opt.applyOption(cfg)
+	}
+	rc, err := newClientTransportWS(endpoint, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return newClient(ctx, rc)
+}
+
 var (
 	ErrClientQuit                = errors.New("client is closed")
-	ErrNoResult                  = errors.New("JSON-RPC response has no result")
-	ErrMissingBatchResponse      = errors.New("response batch did not contain a response to this call")
 	ErrSubscriptionQueueOverflow = errors.New("subscription queue overflow")
 	errClientReconnected         = errors.New("client reconnected")
 	errDead                      = errors.New("connection lost")
@@ -61,23 +81,12 @@ const (
 	maxClientSubscriptionBuffer = 20000
 )
 
-// BatchElem is an element in a batch request.
-type BatchElem = ethrpc.BatchElem
-
-// Client represents a connection to an RPC server.
-type Client struct {
-	idgen    func() ID // for subscriptions
-	isHTTP   bool      // connection type: http, ws or ipc
-	services *serviceRegistry
-
+// WsClient represents a connection to an RPC server.
+type WsClient struct {
 	idCounter atomic.Uint32
 
 	// This function, if non-nil, is called when the connection is lost.
 	reconnectFunc reconnectFunc
-
-	// config fields
-	batchItemLimit       int
-	batchResponseMaxSize int
 
 	// writeConn is used for writing to the connection on the caller's goroutine. It should
 	// only be accessed outside of dispatch, with the write lock held. The write lock is
@@ -98,19 +107,13 @@ type Client struct {
 
 type reconnectFunc func(context.Context) (ServerCodec, error)
 
-type clientContextKey struct{}
-
 type clientConn struct {
 	codec   ServerCodec
 	handler *handler
 }
 
-func (c *Client) newClientConn(conn ServerCodec) *clientConn {
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, clientContextKey{}, c)
-	ctx = context.WithValue(ctx, peerInfoContextKey{}, conn.peerInfo())
-	handler := newHandler(ctx, conn, c.idgen, c.services, c.batchItemLimit, c.batchResponseMaxSize, nil)
-	return &clientConn{conn, handler}
+func (c *WsClient) newClientConn(conn ServerCodec) *clientConn {
+	return &clientConn{conn, newHandler(context.Background(), conn)}
 }
 
 func (cc *clientConn) close(err error, inflightReq *requestOp) {
@@ -133,15 +136,13 @@ type requestOp struct {
 	hadResponse bool                   // true when the request was responded to
 }
 
-func (op *requestOp) wait(ctx context.Context, c *Client) ([]*jsonrpcMessage, error) {
+func (op *requestOp) wait(ctx context.Context, c *WsClient) ([]*jsonrpcMessage, error) {
 	select {
 	case <-ctx.Done():
 		// Send the timeout to dispatch so it can remove the request IDs.
-		if !c.isHTTP {
-			select {
-			case c.reqTimeout <- op:
-			case <-c.closing:
-			}
+		select {
+		case c.reqTimeout <- op:
+		case <-c.closing:
 		}
 		return nil, ctx.Err()
 	case resp := <-op.resp:
@@ -149,130 +150,37 @@ func (op *requestOp) wait(ctx context.Context, c *Client) ([]*jsonrpcMessage, er
 	}
 }
 
-// Dial creates a new client for the given URL.
-//
-// The currently supported URL schemes are "http", "https", "ws" and "wss". If rawurl is a
-// file name with no URL scheme, a local socket connection is established using UNIX
-// domain sockets on supported platforms and named pipes on Windows.
-//
-// If you want to further configure the transport, use DialOptions instead of this
-// function.
-//
-// For websocket connections, the origin is set to the local host name.
-//
-// The client reconnects automatically when the connection is lost.
-func Dial(rawurl string) (*Client, error) {
-	return DialOptions(context.Background(), rawurl)
-}
-
-// DialContext creates a new RPC client, just like Dial.
-//
-// The context is used to cancel or time out the initial connection establishment. It does
-// not affect subsequent interactions with the client.
-func DialContext(ctx context.Context, rawurl string) (*Client, error) {
-	return DialOptions(ctx, rawurl)
-}
-
-// DialOptions creates a new RPC client for the given URL. You can supply any of the
-// pre-defined client options to configure the underlying transport.
-//
-// The context is used to cancel or time out the initial connection establishment. It does
-// not affect subsequent interactions with the client.
-//
-// The client reconnects automatically when the connection is lost.
-func DialOptions(ctx context.Context, rawurl string, options ...ClientOption) (*Client, error) {
-	u, err := url.Parse(rawurl)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg := new(clientConfig)
-	for _, opt := range options {
-		opt.applyOption(cfg)
-	}
-
-	var reconnect reconnectFunc
-	switch u.Scheme {
-	case "http", "https":
-		reconnect = newClientTransportHTTP(rawurl, cfg)
-	case "ws", "wss":
-		rc, err := newClientTransportWS(rawurl, cfg)
-		if err != nil {
-			return nil, err
-		}
-		reconnect = rc
-	default:
-		return nil, fmt.Errorf("no known transport for URL scheme %q", u.Scheme)
-	}
-
-	return newClient(ctx, cfg, reconnect)
-}
-
-// ClientFromContext retrieves the client from the context, if any. This can be used to perform
-// 'reverse calls' in a handler method.
-func ClientFromContext(ctx context.Context) (*Client, bool) {
-	client, ok := ctx.Value(clientContextKey{}).(*Client)
-	return client, ok
-}
-
-func newClient(initctx context.Context, cfg *clientConfig, connect reconnectFunc) (*Client, error) {
+func newClient(initctx context.Context, connect reconnectFunc) (*WsClient, error) {
 	conn, err := connect(initctx)
 	if err != nil {
 		return nil, err
 	}
-	c := initClient(conn, new(serviceRegistry), cfg)
+	c := &WsClient{
+		writeConn:   conn,
+		close:       make(chan struct{}),
+		closing:     make(chan struct{}),
+		didClose:    make(chan struct{}),
+		reconnected: make(chan ServerCodec),
+		readOp:      make(chan readOp),
+		readErr:     make(chan error),
+		reqInit:     make(chan *requestOp),
+		reqSent:     make(chan error, 1),
+		reqTimeout:  make(chan *requestOp),
+	}
+	// Launch the main loop.
+	go c.dispatch(conn)
 	c.reconnectFunc = connect
 	return c, nil
 }
 
-func initClient(conn ServerCodec, services *serviceRegistry, cfg *clientConfig) *Client {
-	_, isHTTP := conn.(*httpConn)
-	c := &Client{
-		isHTTP:               isHTTP,
-		services:             services,
-		idgen:                cfg.idgen,
-		batchItemLimit:       cfg.batchItemLimit,
-		batchResponseMaxSize: cfg.batchResponseLimit,
-		writeConn:            conn,
-		close:                make(chan struct{}),
-		closing:              make(chan struct{}),
-		didClose:             make(chan struct{}),
-		reconnected:          make(chan ServerCodec),
-		readOp:               make(chan readOp),
-		readErr:              make(chan error),
-		reqInit:              make(chan *requestOp),
-		reqSent:              make(chan error, 1),
-		reqTimeout:           make(chan *requestOp),
-	}
-
-	// Set defaults.
-	if c.idgen == nil {
-		c.idgen = randomIDGenerator()
-	}
-
-	// Launch the main loop.
-	if !isHTTP {
-		go c.dispatch(conn)
-	}
-	return c
-}
-
-// RegisterName creates a service for the given receiver type under the given name. When no
-// methods on the given receiver match the criteria to be either a RPC method or a
-// subscription an error is returned. Otherwise a new service is created and added to the
-// service collection this client provides to the server.
-func (c *Client) RegisterName(name string, receiver interface{}) error {
-	return c.services.registerName(name, receiver)
-}
-
-func (c *Client) nextID() json.RawMessage {
+func (c *WsClient) nextID() json.RawMessage {
 	id := c.idCounter.Add(1)
 	return strconv.AppendUint(nil, uint64(id), 10)
 }
 
 // SupportedModules calls the rpc_modules method, retrieving the list of
 // APIs that are available on the server.
-func (c *Client) SupportedModules() (map[string]string, error) {
+func (c *WsClient) SupportedModules() (map[string]string, error) {
 	var result map[string]string
 	ctx, cancel := context.WithTimeout(context.Background(), subscribeTimeout)
 	defer cancel()
@@ -281,10 +189,7 @@ func (c *Client) SupportedModules() (map[string]string, error) {
 }
 
 // Close closes the client, aborting any in-flight requests.
-func (c *Client) Close() {
-	if c.isHTTP {
-		return
-	}
+func (c *WsClient) Close() {
 	select {
 	case c.close <- struct{}{}:
 		<-c.didClose
@@ -292,25 +197,12 @@ func (c *Client) Close() {
 	}
 }
 
-// SetHeader adds a custom HTTP header to the client's requests.
-// This method only works for clients using HTTP, it doesn't have
-// any effect for clients using another transport.
-func (c *Client) SetHeader(key, value string) {
-	if !c.isHTTP {
-		return
-	}
-	conn := c.writeConn.(*httpConn)
-	conn.mu.Lock()
-	conn.headers.Set(key, value)
-	conn.mu.Unlock()
-}
-
 // Call performs a JSON-RPC call with the given arguments and unmarshals into
 // result if no error occurred.
 //
 // The result must be a pointer so that package json can unmarshal into it. You
 // can also pass nil, in which case the result is ignored.
-func (c *Client) Call(result interface{}, method string, args ...interface{}) error {
+func (c *WsClient) Call(result interface{}, method string, args ...interface{}) error {
 	ctx := context.Background()
 	return c.CallContext(ctx, result, method, args...)
 }
@@ -320,7 +212,7 @@ func (c *Client) Call(result interface{}, method string, args ...interface{}) er
 //
 // The result must be a pointer so that package json can unmarshal into it. You
 // can also pass nil, in which case the result is ignored.
-func (c *Client) CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error {
+func (c *WsClient) CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error {
 	if result != nil && reflect.TypeOf(result).Kind() != reflect.Ptr {
 		return fmt.Errorf("call result parameter must be pointer or nil interface: %v", result)
 	}
@@ -333,11 +225,7 @@ func (c *Client) CallContext(ctx context.Context, result interface{}, method str
 		resp: make(chan []*jsonrpcMessage, 1),
 	}
 
-	if c.isHTTP {
-		err = c.sendHTTP(ctx, op, msg)
-	} else {
-		err = c.send(ctx, op, msg)
-	}
+	err = c.send(ctx, op, msg)
 	if err != nil {
 		return err
 	}
@@ -368,7 +256,7 @@ func (c *Client) CallContext(ctx context.Context, result interface{}, method str
 // a request is reported through the Error field of the corresponding BatchElem.
 //
 // Note that batch calls may not be executed atomically on the server side.
-func (c *Client) BatchCall(b []BatchElem) error {
+func (c *WsClient) BatchCall(b []BatchElem) error {
 	ctx := context.Background()
 	return c.BatchCallContext(ctx, b)
 }
@@ -382,7 +270,7 @@ func (c *Client) BatchCall(b []BatchElem) error {
 // Error field of the corresponding BatchElem.
 //
 // Note that batch calls may not be executed atomically on the server side.
-func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
+func (c *WsClient) BatchCallContext(ctx context.Context, b []BatchElem) error {
 	var (
 		msgs = make([]*jsonrpcMessage, len(b))
 		byID = make(map[string]int, len(b))
@@ -401,12 +289,7 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
 		byID[string(msg.ID)] = i
 	}
 
-	var err error
-	if c.isHTTP {
-		err = c.sendBatchHTTP(ctx, op, msgs)
-	} else {
-		err = c.send(ctx, op, msgs)
-	}
+	err := c.send(ctx, op, msgs)
 	if err != nil {
 		return err
 	}
@@ -453,7 +336,7 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
 }
 
 // Notify sends a notification, i.e. a method call that doesn't expect a response.
-func (c *Client) Notify(ctx context.Context, method string, args ...interface{}) error {
+func (c *WsClient) Notify(ctx context.Context, method string, args ...interface{}) error {
 	op := new(requestOp)
 	msg, err := c.newMessage(method, args...)
 	if err != nil {
@@ -461,14 +344,11 @@ func (c *Client) Notify(ctx context.Context, method string, args ...interface{})
 	}
 	msg.ID = nil
 
-	if c.isHTTP {
-		return c.sendHTTP(ctx, op, msg)
-	}
 	return c.send(ctx, op, msg)
 }
 
 // EthSubscribe registers a subscription under the "eth" namespace.
-func (c *Client) EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
+func (c *WsClient) EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
 	return c.Subscribe(ctx, "eth", channel, args...)
 }
 
@@ -484,7 +364,7 @@ func (c *Client) EthSubscribe(ctx context.Context, channel interface{}, args ...
 // before considering the subscriber dead. The subscription Err channel will receive
 // ErrSubscriptionQueueOverflow. Use a sufficiently large buffer on the channel or ensure
 // that the channel usually has at least one reader to prevent this issue.
-func (c *Client) Subscribe(ctx context.Context, namespace string, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
+func (c *WsClient) Subscribe(ctx context.Context, namespace string, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
 	// Check type of channel first.
 	chanVal := reflect.ValueOf(channel)
 	if chanVal.Kind() != reflect.Chan || chanVal.Type().ChanDir()&reflect.SendDir == 0 {
@@ -492,9 +372,6 @@ func (c *Client) Subscribe(ctx context.Context, namespace string, channel interf
 	}
 	if chanVal.IsNil() {
 		panic("channel given to Subscribe must not be nil")
-	}
-	if c.isHTTP {
-		return nil, ErrNotificationsUnsupported
 	}
 
 	msg, err := c.newMessage(namespace+subscribeMethodSuffix, args...)
@@ -521,11 +398,11 @@ func (c *Client) Subscribe(ctx context.Context, namespace string, channel interf
 // SupportsSubscriptions reports whether subscriptions are supported by the client
 // transport. When this returns false, Subscribe and related methods will return
 // ErrNotificationsUnsupported.
-func (c *Client) SupportsSubscriptions() bool {
-	return !c.isHTTP
+func (c *WsClient) SupportsSubscriptions() bool {
+	return true
 }
 
-func (c *Client) newMessage(method string, paramsIn ...interface{}) (*jsonrpcMessage, error) {
+func (c *WsClient) newMessage(method string, paramsIn ...interface{}) (*jsonrpcMessage, error) {
 	msg := &jsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
 	if paramsIn != nil { // prevent sending "params":null
 		var err error
@@ -538,7 +415,7 @@ func (c *Client) newMessage(method string, paramsIn ...interface{}) (*jsonrpcMes
 
 // send registers op with the dispatch loop, then sends msg on the connection.
 // if sending fails, op is deregistered.
-func (c *Client) send(ctx context.Context, op *requestOp, msg interface{}) error {
+func (c *WsClient) send(ctx context.Context, op *requestOp, msg interface{}) error {
 	select {
 	case c.reqInit <- op:
 		err := c.write(ctx, msg, false)
@@ -553,7 +430,7 @@ func (c *Client) send(ctx context.Context, op *requestOp, msg interface{}) error
 	}
 }
 
-func (c *Client) write(ctx context.Context, msg interface{}, retry bool) error {
+func (c *WsClient) write(ctx context.Context, msg interface{}, retry bool) error {
 	if c.writeConn == nil {
 		// The previous write failed. Try to establish a new connection.
 		if err := c.reconnect(ctx); err != nil {
@@ -570,7 +447,7 @@ func (c *Client) write(ctx context.Context, msg interface{}, retry bool) error {
 	return err
 }
 
-func (c *Client) reconnect(ctx context.Context) error {
+func (c *WsClient) reconnect(ctx context.Context) error {
 	if c.reconnectFunc == nil {
 		return errDead
 	}
@@ -598,7 +475,7 @@ func (c *Client) reconnect(ctx context.Context) error {
 // dispatch is the main loop of the client.
 // It sends read messages to waiting calls to Call and BatchCall
 // and subscription notifications to registered subscriptions.
-func (c *Client) dispatch(codec ServerCodec) {
+func (c *WsClient) dispatch(codec ServerCodec) {
 	var (
 		lastOp      *requestOp  // tracks last send operation
 		reqInitLock = c.reqInit // nil while the send lock is held
@@ -678,7 +555,7 @@ func (c *Client) dispatch(codec ServerCodec) {
 }
 
 // drainRead drops read messages until an error occurs.
-func (c *Client) drainRead() {
+func (c *WsClient) drainRead() {
 	for {
 		select {
 		case <-c.readOp:
@@ -689,13 +566,9 @@ func (c *Client) drainRead() {
 }
 
 // read decodes RPC messages from a codec, feeding them into dispatch.
-func (c *Client) read(codec ServerCodec) {
+func (c *WsClient) read(codec ServerCodec) {
 	for {
 		msgs, batch, err := codec.readBatch()
-		if _, ok := err.(*json.SyntaxError); ok {
-			msg := errorMessage(&parseError{err.Error()})
-			codec.writeJSON(context.Background(), msg, true)
-		}
 		if err != nil {
 			c.readErr <- err
 			return

@@ -17,7 +17,6 @@
 package rpc
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,41 +24,21 @@ import (
 	"strings"
 
 	"github.com/donutnomad/eths/common"
-	hexutil2 "github.com/donutnomad/eths/common/hexutil"
+	"github.com/donutnomad/eths/common/hexutil"
 )
 
-// API describes the set of methods offered over the RPC interface
-type API struct {
-	Namespace     string      // namespace under which the rpc methods of Service are exposed
-	Version       string      // deprecated - this field is no longer used, but retained for compatibility
-	Service       interface{} // receiver instance which holds the methods
-	Public        bool        // deprecated - this field is no longer used, but retained for compatibility
-	Authenticated bool        // whether the api should only be available behind authentication.
+// BatchElem is an element in a batch request.
+type BatchElem struct {
+	Method string
+	Args   []any
+	// The result is unmarshaled into this field. Result must be set to a
+	// non-nil pointer value of the desired type, otherwise the response will be
+	// discarded.
+	Result any
+	// Error is set if the server returns an error for this request, or if
+	// unmarshalling into Result fails. It is not set for I/O errors.
+	Error error
 }
-
-// ServerCodec implements reading, parsing and writing RPC messages for the server side of
-// an RPC session. Implementations must be go-routine safe since the codec can be called in
-// multiple go-routines concurrently.
-type ServerCodec interface {
-	peerInfo() PeerInfo
-	readBatch() (msgs []*jsonrpcMessage, isBatch bool, err error)
-	close()
-
-	jsonWriter
-}
-
-// jsonWriter can write JSON messages to its underlying connection.
-// Implementations must be safe for concurrent use.
-type jsonWriter interface {
-	// writeJSON writes a message to the connection.
-	writeJSON(ctx context.Context, msg interface{}, isError bool) error
-
-	// Closed returns a channel which is closed when the connection is closed.
-	closed() <-chan interface{}
-	// RemoteAddr returns the peer address of the connection.
-	remoteAddr() string
-}
-
 type BlockNumber int64
 
 const (
@@ -100,7 +79,7 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	blckNum, err := hexutil2.DecodeUint64(input)
+	blckNum, err := hexutil.DecodeUint64(input)
 	if err != nil {
 		return err
 	}
@@ -139,7 +118,7 @@ func (bn BlockNumber) String() string {
 		if bn < 0 {
 			return fmt.Sprintf("<invalid %d>", bn)
 		}
-		return hexutil2.Uint64(bn).String()
+		return hexutil.Uint64(bn).String()
 	}
 }
 
@@ -197,18 +176,17 @@ func (bnh *BlockNumberOrHash) UnmarshalJSON(data []byte) error {
 			}
 			bnh.BlockHash = &hash
 			return nil
-		} else {
-			blckNum, err := hexutil2.DecodeUint64(input)
-			if err != nil {
-				return err
-			}
-			if blckNum > math.MaxInt64 {
-				return errors.New("blocknumber too high")
-			}
-			bn := BlockNumber(blckNum)
-			bnh.BlockNumber = &bn
-			return nil
 		}
+		blckNum, err := hexutil.DecodeUint64(input)
+		if err != nil {
+			return err
+		}
+		if blckNum > math.MaxInt64 {
+			return errors.New("blocknumber too high")
+		}
+		bn := BlockNumber(blckNum)
+		bnh.BlockNumber = &bn
+		return nil
 	}
 }
 

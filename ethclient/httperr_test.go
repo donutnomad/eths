@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	rpc "github.com/donutnomad/eths/ethclient/ethrpc"
+	rpc "github.com/donutnomad/eths/ethclient/rpc"
 	"github.com/donutnomad/eths/ethtype"
 )
 
@@ -368,7 +368,7 @@ func TestRateLimitEndToEnd(t *testing.T) {
 	defer srv.Close()
 
 	ctx := t.Context()
-	ec, err := DialContext(ctx, srv.URL)
+	ec, err := DialHTTP(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -461,7 +461,7 @@ func TestRateLimitAlchemy(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	ec, err := DialContext(ctx, alchemySepoliaRPC)
+	ec, err := DialHTTP(alchemySepoliaRPC)
 	if err != nil {
 		t.Skipf("cannot connect: %v", err)
 	}
@@ -620,7 +620,7 @@ func TestOverloadEndToEnd(t *testing.T) {
 	defer srv.Close()
 
 	ctx := t.Context()
-	ec, err := DialContext(ctx, srv.URL)
+	ec, err := DialHTTP(srv.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -649,7 +649,7 @@ func TestOverloadAlchemy(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	ec, err := DialContext(ctx, alchemySepoliaRPC)
+	ec, err := DialHTTP(alchemySepoliaRPC)
 	if err != nil {
 		t.Skipf("cannot connect: %v", err)
 	}
@@ -689,7 +689,7 @@ func TestOverloadAlchemyBlockReceipts(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	ec, err := DialContext(ctx, alchemySepoliaRPC)
+	ec, err := DialHTTP(alchemySepoliaRPC)
 	if err != nil {
 		t.Skipf("cannot connect: %v", err)
 	}
