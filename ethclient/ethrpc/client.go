@@ -27,6 +27,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	ethrpc "github.com/donutnomad/eths/ethclient/ethrpc2"
 	"github.com/donutnomad/eths/internal/log"
 )
 
@@ -61,17 +62,7 @@ const (
 )
 
 // BatchElem is an element in a batch request.
-type BatchElem struct {
-	Method string
-	Args   []interface{}
-	// The result is unmarshaled into this field. Result must be set to a
-	// non-nil pointer value of the desired type, otherwise the response will be
-	// discarded.
-	Result interface{}
-	// Error is set if the server returns an error for this request, or if
-	// unmarshalling into Result fails. It is not set for I/O errors.
-	Error error
-}
+type BatchElem = ethrpc.BatchElem
 
 // Client represents a connection to an RPC server.
 type Client struct {

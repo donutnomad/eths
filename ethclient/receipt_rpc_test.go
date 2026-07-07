@@ -9,7 +9,7 @@ import (
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ecommon"
-	"github.com/donutnomad/eths/ethclient/ethrpc"
+	rpc "github.com/donutnomad/eths/ethclient/ethrpc2"
 	"github.com/donutnomad/eths/ethtype"
 )
 

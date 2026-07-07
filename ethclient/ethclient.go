@@ -28,7 +28,8 @@ import (
 
 	hexutil2 "github.com/donutnomad/eths/common/hexutil"
 	"github.com/donutnomad/eths/ecommon"
-	rpc2 "github.com/donutnomad/eths/ethclient/ethrpc"
+	ethrpc2 "github.com/donutnomad/eths/ethclient/ethrpc"
+	ethrpc "github.com/donutnomad/eths/ethclient/ethrpc2"
 	"github.com/donutnomad/eths/ethtype"
 	"github.com/ethereum/go-ethereum"
 	"github.com/samber/lo"
@@ -36,17 +37,30 @@ import (
 
 // Client defines typed wrappers for the Ethereum RPC API.
 type Client struct {
-	c  *rpc2.Client
+	c  *ethrpc.Client
+	rt *headerCapture
+	od *overloadDetector
+}
+
+// WSClient defines typed wrappers for the Ethereum RPC API.
+type WSClient struct {
+	wc *ethrpc2.Client
 	rt *headerCapture
 	od *overloadDetector
 }
 
 // Option configures the Client created by DialContext.
 type Option func(*dialConfig)
+type OptionWs func(*dialWsConfig)
 
 type dialConfig struct {
 	httpClient *http.Client
-	rpcOpts    []rpc2.ClientOption
+	rpcOpts    []ethrpc.ClientOption
+}
+
+type dialWsConfig struct {
+	httpClient *http.Client
+	rpcOpts    []ethrpc2.ClientOption
 }
 
 // WithHTTPClient configures the base http.Client used by the RPC client.
@@ -60,14 +74,18 @@ func WithHTTPClient(c *http.Client) Option {
 }
 
 // WithRPCOptions passes additional rpc.ClientOption to the underlying rpc.DialOptions.
-func WithRPCOptions(opts ...rpc2.ClientOption) Option {
+func WithRPCOptions(opts ...ethrpc.ClientOption) Option {
 	return func(cfg *dialConfig) {
 		cfg.rpcOpts = append(cfg.rpcOpts, opts...)
 	}
 }
 
 // DialContext connects a client to the given URL with context.
-func DialContext(ctx context.Context, rawurl string, opts ...Option) (*Client, error) {
+func DialContext(_ context.Context, rawurl string, opts ...Option) (*Client, error) {
+	return Dial(rawurl, opts...)
+}
+
+func Dial(rawurl string, opts ...Option) (*Client, error) {
 	var cfg dialConfig
 	for _, o := range opts {
 		o(&cfg)
@@ -88,18 +106,52 @@ func DialContext(ctx context.Context, rawurl string, opts ...Option) (*Client, e
 		httpClient = &http.Client{Transport: hc}
 	}
 
-	allOpts := make([]rpc2.ClientOption, 0, len(cfg.rpcOpts)+1)
-	allOpts = append(allOpts, rpc2.WithHTTPClient(httpClient))
+	allOpts := make([]ethrpc.ClientOption, 0, len(cfg.rpcOpts)+1)
+	allOpts = append(allOpts, ethrpc.WithHTTPClient(httpClient))
 	allOpts = append(allOpts, cfg.rpcOpts...)
-	c, err := rpc2.DialOptions(ctx, rawurl, allOpts...)
+	c, err := ethrpc.Dial(rawurl, allOpts...)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Client{c: c, rt: hc, od: newOverloadDetector(50, 0.5)}, nil
 }
 
+// DialWSContext connects a client to the given URL with context.
+func DialWSContext(ctx context.Context, rawurl string, opts ...OptionWs) (*WSClient, error) {
+	var cfg dialWsConfig
+	for _, o := range opts {
+		o(&cfg)
+	}
+
+	var hc *headerCapture
+	var httpClient *http.Client
+	if cfg.httpClient != nil {
+		hc = &headerCapture{base: lo.Ternary(cfg.httpClient.Transport == nil, http.DefaultTransport, cfg.httpClient.Transport)}
+		httpClient = &http.Client{
+			Transport:     hc,
+			CheckRedirect: cfg.httpClient.CheckRedirect,
+			Jar:           cfg.httpClient.Jar,
+			Timeout:       cfg.httpClient.Timeout,
+		}
+	} else {
+		hc = &headerCapture{base: http.DefaultTransport}
+		httpClient = &http.Client{Transport: hc}
+	}
+
+	allOpts := make([]ethrpc2.ClientOption, 0, len(cfg.rpcOpts)+1)
+	allOpts = append(allOpts, ethrpc2.WithHTTPClient(httpClient))
+	allOpts = append(allOpts, cfg.rpcOpts...)
+	wc, err := ethrpc2.DialOptions(ctx, rawurl, allOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &WSClient{wc: wc, rt: hc, od: newOverloadDetector(50, 0.5)}, nil
+}
+
 // NewClient creates a client that uses the given RPC client.
-func NewClient(c *rpc2.Client) *Client {
+func NewClient(c *ethrpc.Client) *Client {
 	return &Client{c: c, od: newOverloadDetector(50, 0.5)}
 }
 
@@ -109,7 +161,7 @@ func (ec *Client) Close() {
 }
 
 // Client gets the underlying RPC client.
-func (ec *Client) Client() *rpc2.Client {
+func (ec *Client) Client() *ethrpc.Client {
 	return ec.c
 }
 
@@ -122,7 +174,7 @@ func (ec *Client) callContext(ctx context.Context, result any, method string, ar
 }
 
 // batchCallContext wraps rpc.Client.BatchCallContext and enriches HTTP errors.
-func (ec *Client) batchCallContext(ctx context.Context, b []rpc2.BatchElem) error {
+func (ec *Client) batchCallContext(ctx context.Context, b []ethrpc.BatchElem) error {
 	err := wrapErr(ec.rt, ec.c.BatchCallContext(ctx, b))
 	ec.od.record(IsRateLimited(err))
 	return err
@@ -381,11 +433,6 @@ func TransactionReceiptAs[T any](ctx context.Context, ec *Client, txHash ecommon
 	return Call[T](ec, ctx, "eth_getTransactionReceipt", txHash)
 }
 
-// SubscribeTransactionReceipts subscribes to notifications about transaction receipts.
-func (ec *Client) SubscribeTransactionReceipts(ctx context.Context, q *TransactionReceiptsQuery, ch chan<- []*ethtype.EReceipt) (Subscription, error) {
-	return ec.c.EthSubscribe(ctx, ch, "transactionReceipts", q)
-}
-
 // SyncProgress retrieves the current progress of the sync algorithm. If there's
 // no sync currently running, it returns nil.
 //
@@ -405,19 +452,6 @@ func (ec *Client) SyncProgress(ctx context.Context) (*SyncProgress, error) {
 		return nil, err
 	}
 	return p.toSyncProgress(), nil
-}
-
-// SubscribeNewHead subscribes to notifications about the current blockchain head
-// on the given channel.
-func (ec *Client) SubscribeNewHead(ctx context.Context, ch chan<- *ethtype.Header) (Subscription, error) {
-	sub, err := ec.c.EthSubscribe(ctx, ch, "newHeads")
-	if err != nil {
-		// Defensively prefer returning nil interface explicitly on error-path, instead
-		// of letting default golang behavior wrap it with non-nil interface that stores
-		// nil concrete type value.
-		return nil, err
-	}
-	return sub, nil
 }
 
 // State Access
@@ -528,13 +562,45 @@ func FilterLogsAs[T any](ctx context.Context, ec *Client, q FilterQuery) ([]T, e
 	return Call[[]T](ec, ctx, "eth_getLogs", arg)
 }
 
+func (ec *Client) SubscribeNewHead(ctx context.Context, ch chan<- *ethtype.Header) (Subscription, error) {
+	return nil, errors.New("not implemented, please use ws client")
+}
+
+// SubscribeTransactionReceipts subscribes to notifications about transaction receipts.
+func (ec *Client) SubscribeTransactionReceipts(ctx context.Context, q *TransactionReceiptsQuery, ch chan<- []*ethtype.EReceipt) (Subscription, error) {
+	return nil, errors.New("not implemented, please use ws client")
+}
+
 // SubscribeFilterLogs subscribes to the results of a streaming filter query.
 func (ec *Client) SubscribeFilterLogs(ctx context.Context, q FilterQuery, ch chan<- ethtype.ELog) (Subscription, error) {
+	return nil, errors.New("not implemented, please use ws client")
+}
+
+// SubscribeNewHead subscribes to notifications about the current blockchain head
+// on the given channel.
+func (ec *WSClient) SubscribeNewHead(ctx context.Context, ch chan<- *ethtype.Header) (Subscription, error) {
+	sub, err := ec.wc.EthSubscribe(ctx, ch, "newHeads")
+	if err != nil {
+		// Defensively prefer returning nil interface explicitly on error-path, instead
+		// of letting default golang behavior wrap it with non-nil interface that stores
+		// nil concrete type value.
+		return nil, err
+	}
+	return sub, nil
+}
+
+// SubscribeTransactionReceipts subscribes to notifications about transaction receipts.
+func (ec *WSClient) SubscribeTransactionReceipts(ctx context.Context, q *TransactionReceiptsQuery, ch chan<- []*ethtype.EReceipt) (Subscription, error) {
+	return ec.wc.EthSubscribe(ctx, ch, "transactionReceipts", q)
+}
+
+// SubscribeFilterLogs subscribes to the results of a streaming filter query.
+func (ec *WSClient) SubscribeFilterLogs(ctx context.Context, q FilterQuery, ch chan<- ethtype.ELog) (Subscription, error) {
 	arg, err := toFilterArg(q)
 	if err != nil {
 		return nil, err
 	}
-	sub, err := ec.c.EthSubscribe(ctx, ch, "logs", arg)
+	sub, err := ec.wc.EthSubscribe(ctx, ch, "logs", arg)
 	if err != nil {
 		// Defensively prefer returning nil interface explicitly on error-path, instead
 		// of letting default golang behavior wrap it with non-nil interface that stores
@@ -780,8 +846,8 @@ func (ec *Client) SendRawTransactionSync(
 //
 // This can be used with CallContract and EstimateGas, and only when the server is Geth.
 func RevertErrorData(err error) ([]byte, bool) {
-	var ec rpc2.Error
-	var ed rpc2.DataError
+	var ec ethrpc.Error
+	var ed ethrpc.DataError
 	if errors.As(err, &ec) && errors.As(err, &ed) && ec.ErrorCode() == 3 {
 		if eds, ok := ed.ErrorData().(string); ok {
 			revertData, err := hexutil2.Decode(eds)
@@ -802,7 +868,7 @@ func toBlockNumArg(number *big.Int) string {
 	}
 	// It's negative.
 	if number.IsInt64() {
-		return rpc2.BlockNumber(number.Int64()).String()
+		return ethrpc.BlockNumber(number.Int64()).String()
 	}
 	// It's negative and large, which is invalid.
 	return fmt.Sprintf("<invalid %d>", number)
@@ -982,7 +1048,7 @@ type simulateBlockResultMarshaling struct {
 // SimulateV1 executes transactions on top of a base state.
 //
 // RPC: https://ethereum.github.io/execution-apis/api-documentation/ (eth_simulateV1)
-func (ec *Client) SimulateV1(ctx context.Context, opts SimulateOptions, blockNrOrHash *rpc2.BlockNumberOrHash) ([]SimulateBlockResult, error) {
+func (ec *Client) SimulateV1(ctx context.Context, opts SimulateOptions, blockNrOrHash *ethrpc.BlockNumberOrHash) ([]SimulateBlockResult, error) {
 	return Call[[]SimulateBlockResult](ec, ctx, "eth_simulateV1", opts, blockNrOrHash)
 }
 
