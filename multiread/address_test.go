@@ -52,8 +52,8 @@ func TestRegisterAndGetAddress(t *testing.T) {
 
 func TestGetAddress_FallbackDefault(t *testing.T) {
 	got := GetAddress(99999)
-	if got != Address {
-		t.Errorf("GetAddress(99999) = %s, want default %s", got.Hex(), Address.Hex())
+	if got != defaultAddress {
+		t.Errorf("GetAddress(99999) = %s, want default %s", got.Hex(), defaultAddress.Hex())
 	}
 }
 
@@ -78,16 +78,16 @@ func TestGetAddress_WithChainIDReader(t *testing.T) {
 func TestGetAddress_WithoutChainIDReader(t *testing.T) {
 	client := &mockContractCaller{}
 	got := getAddress(client)
-	if got != Address {
-		t.Errorf("getAddress() = %s, want default %s", got.Hex(), Address.Hex())
+	if got != defaultAddress {
+		t.Errorf("getAddress() = %s, want default %s", got.Hex(), defaultAddress.Hex())
 	}
 }
 
 func TestGetAddress_UnregisteredChainID(t *testing.T) {
 	client := &mockChainIDCaller{chainID: big.NewInt(88888)}
 	got := getAddress(client)
-	if got != Address {
-		t.Errorf("getAddress() = %s, want default %s", got.Hex(), Address.Hex())
+	if got != defaultAddress {
+		t.Errorf("getAddress() = %s, want default %s", got.Hex(), defaultAddress.Hex())
 	}
 }
 

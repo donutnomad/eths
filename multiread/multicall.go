@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"slices"
 	"sync"
 
 	"github.com/donutnomad/eths/abi"
@@ -19,13 +20,11 @@ import (
 type Multicall3Call3 = contracts_pack.Multicall3Call3
 type Multicall3Result = contracts_pack.Multicall3Result
 
-// Address is the default Multicall3 address: https://www.multicall3.com/abi#ethers-js
-var Address = common.HexToAddress("0xcA11bde05977b3631167028862bE2a173976CA11")
-
-var (
-	addressMu  sync.RWMutex
-	addressMap = map[uint64]common.Address{}
-)
+func SetDefaultAddress(addr common.Address) {
+	addressMu.Lock()
+	defaultAddress = addr
+	addressMu.Unlock()
+}
 
 // RegisterAddress registers a Multicall3 address for a specific chain ID.
 func RegisterAddress(chainID uint64, addr common.Address) {
@@ -36,15 +35,50 @@ func RegisterAddress(chainID uint64, addr common.Address) {
 
 // GetAddress returns the Multicall3 address for a specific chain ID.
 // If no address is registered, it returns the default Address.
-func GetAddress(chainID uint64) common.Address {
+func GetAddress[T *big.Int | int | uint | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64](chainID T) common.Address {
+	var chainId uint64
+	switch v := any(chainID).(type) {
+	case *big.Int:
+		chainId = v.Uint64()
+	case uint:
+		chainId = uint64(v)
+	case uint8:
+		chainId = uint64(v)
+	case uint16:
+		chainId = uint64(v)
+	case uint32:
+		chainId = uint64(v)
+	case uint64:
+		chainId = v
+	case int:
+		chainId = uint64(v)
+	case int8:
+		chainId = uint64(v)
+	case int16:
+		chainId = uint64(v)
+	case int32:
+		chainId = uint64(v)
+	case int64:
+		chainId = uint64(v)
+	default:
+		panic("unknown chainID type")
+	}
+
 	addressMu.RLock()
-	addr, found := addressMap[chainID]
+	addr, found := addressMap[chainId]
 	addressMu.RUnlock()
 	if found {
 		return addr
 	}
-	return Address
+	return defaultAddress
 }
+
+var (
+	// the default Multicall3 address: https://www.multicall3.com/abi#ethers-js
+	defaultAddress = common.HexToAddress("0xcA11bde05977b3631167028862bE2a173976CA11")
+	addressMu      sync.RWMutex
+	addressMap     = map[uint64]common.Address{}
+)
 
 // getAddress resolves the Multicall3 address for the given client.
 // If the client implements ethclient.ChainIDReader and the chain ID has a registered address, use it.
@@ -55,7 +89,7 @@ func getAddress(client bind.ContractCaller) common.Address {
 			return GetAddress(chainID.Uint64())
 		}
 	}
-	return Address
+	return defaultAddress
 }
 
 var multiCallPack = contracts_pack.NewMulticall()
@@ -74,12 +108,12 @@ func (t Func1[T]) Downcast() Func2 {
 func (t Func1[T]) prepareMultiCallArg() (Multicall3Call3, ReturnUnPackFunc[any]) {
 	a1, a2, a3 := t()
 	return Multicall3Call3{
-			Target:       a1,
-			AllowFailure: true,
-			CallData:     a2,
-		}, func(bytes []byte) (any, error) {
-			return a3(bytes)
-		}
+		Target:       a1,
+		AllowFailure: true,
+		CallData:     a2,
+	}, func(bytes []byte) (any, error) {
+		return a3(bytes)
+	}
 }
 
 func (t Func1[T]) Any() Func1[any] {
@@ -115,7 +149,7 @@ func addrOrDefault(addr []common.Address) common.Address {
 	if len(addr) > 0 {
 		return addr[0]
 	}
-	return Address
+	return defaultAddress
 }
 
 func GetChainID(addr ...common.Address) Func1[*big.Int] {
@@ -171,12 +205,7 @@ func GetLastBlockHash(addr ...common.Address) Func1[common.Hash] {
 }
 
 func AllSuccess(args ...any) bool {
-	for _, item := range args {
-		if lo.IsNil(item) {
-			return false
-		}
-	}
-	return true
+	return !slices.ContainsFunc(args, lo.IsNil)
 }
 
 func CALLSlice[A1 any](

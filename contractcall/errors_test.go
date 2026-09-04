@@ -1,27 +1,9 @@
 package contractcall
 
 import (
-	"bytes"
-	"context"
-	"crypto/rand"
-	"encoding/json"
-	"fmt"
-	"io"
-	"math/big"
-	"net/http"
 	"testing"
-
-	"github.com/davecgh/go-spew/spew"
-	"github.com/donutnomad/blockchain-alg/xecdsa"
-	"github.com/donutnomad/eths/common"
-	"github.com/donutnomad/eths/common/hexutil"
-	"github.com/donutnomad/eths/ecommon"
-	"github.com/donutnomad/eths/ethclient"
-	"github.com/donutnomad/eths/ethtype"
-	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/pkg/errors"
-	"testing"
 )
 
 func TestErrEstimateGasError(t *testing.T) {

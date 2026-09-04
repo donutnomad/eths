@@ -122,10 +122,70 @@ func (bn BlockNumber) String() string {
 	}
 }
 
+type BlockID = BlockNumberOrHash
+
 type BlockNumberOrHash struct {
 	BlockNumber      *BlockNumber  `json:"blockNumber,omitempty"`
 	BlockHash        *ecommon.Hash `json:"blockHash,omitempty"`
 	RequireCanonical bool          `json:"requireCanonical,omitempty"`
+}
+
+func BlockNumberOrHashWithNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64](blockNr T) BlockNumberOrHash {
+	return *BlockNum(blockNr)
+}
+
+func BlockNum[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64](blockNr T) *BlockNumberOrHash {
+	b := BlockNumber(blockNr)
+	return &BlockNumberOrHash{
+		BlockNumber:      &b,
+		BlockHash:        nil,
+		RequireCanonical: false,
+	}
+}
+
+func BlockHash(hash ecommon.Hash, canonical ...bool) *BlockNumberOrHash {
+	return &BlockNumberOrHash{
+		BlockNumber:      nil,
+		BlockHash:        &hash,
+		RequireCanonical: len(canonical) > 0 && canonical[0],
+	}
+}
+
+func blockNumberOrHashWithTag(bn BlockNumber) *BlockNumberOrHash {
+	return &BlockNumberOrHash{
+		BlockNumber:      &bn,
+		BlockHash:        nil,
+		RequireCanonical: false,
+	}
+}
+
+// EarliestBlock returns a BlockNumberOrHash selecting the genesis (earliest) block.
+func EarliestBlock() *BlockNumberOrHash {
+	return blockNumberOrHashWithTag(EarliestBlockNumber)
+}
+
+// SafeBlock returns a BlockNumberOrHash selecting the latest safe head block.
+func SafeBlock() *BlockNumberOrHash {
+	return blockNumberOrHashWithTag(SafeBlockNumber)
+}
+
+// FinalizedBlock returns a BlockNumberOrHash selecting the latest finalized block.
+func FinalizedBlock() *BlockNumberOrHash {
+	return blockNumberOrHashWithTag(FinalizedBlockNumber)
+}
+
+// LatestBlock returns a BlockNumberOrHash selecting the most recently included block.
+func LatestBlock() *BlockNumberOrHash {
+	return blockNumberOrHashWithTag(LatestBlockNumber)
+}
+
+// PendingBlock returns a BlockNumberOrHash selecting the pending block.
+func PendingBlock() *BlockNumberOrHash {
+	return blockNumberOrHashWithTag(PendingBlockNumber)
+}
+
+func BlockNumberOrHashWithHash(hash ecommon.Hash, canonical bool) BlockNumberOrHash {
+	return *BlockHash(hash, canonical)
 }
 
 func (bnh *BlockNumberOrHash) UnmarshalJSON(data []byte) error {
@@ -213,20 +273,4 @@ func (bnh *BlockNumberOrHash) Hash() (ecommon.Hash, bool) {
 		return *bnh.BlockHash, true
 	}
 	return ecommon.Hash{}, false
-}
-
-func BlockNumberOrHashWithNumber(blockNr BlockNumber) BlockNumberOrHash {
-	return BlockNumberOrHash{
-		BlockNumber:      &blockNr,
-		BlockHash:        nil,
-		RequireCanonical: false,
-	}
-}
-
-func BlockNumberOrHashWithHash(hash ecommon.Hash, canonical bool) BlockNumberOrHash {
-	return BlockNumberOrHash{
-		BlockNumber:      nil,
-		BlockHash:        &hash,
-		RequireCanonical: canonical,
-	}
 }
