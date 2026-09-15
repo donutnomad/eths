@@ -37,6 +37,18 @@ import (
 	"github.com/samber/lo"
 )
 
+// FilterQuery contains options for contract log filtering.
+type FilterQuery = ethereum.FilterQuery
+
+// Subscription represents an event subscription where events are
+// delivered on a data channel.
+type Subscription = ethereum.Subscription
+
+// TransactionReceiptsQuery defines criteria for transaction receipts subscription.
+// If TransactionHashes is empty, receipts for all transactions included in new blocks will be delivered.
+// Otherwise, only receipts for the specified transactions will be delivered.
+type TransactionReceiptsQuery = ethereum.TransactionReceiptsQuery
+
 func DialHTTP(endpoint string, opts ...Option) (*Client, error) {
 	var cfg dialConfig
 	for _, o := range opts {
@@ -568,9 +580,6 @@ func (ec *Client) NonceAtHash(ctx context.Context, account ecommon.Address, bloc
 
 // Filters
 
-// FilterQuery contains options for contract log filtering.
-type FilterQuery = ethereum.FilterQuery
-
 // FilterLogs executes a filter query.
 //
 // RPC: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getlogs
@@ -609,19 +618,6 @@ func (ec *Client) SubscribeFilterLogs(ctx context.Context, q FilterQuery, ch cha
 
 //////////////////////////////////////////// Subscribe ///////////////////////////////////////////////////////////////
 
-// Subscription represents an event subscription where events are
-// delivered on a data channel.
-type Subscription interface {
-	// Unsubscribe cancels the sending of events to the data channel
-	// and closes the error channel.
-	Unsubscribe()
-	// Err returns the subscription error channel. The error channel receives
-	// a value if there is an issue with the subscription (e.g. the network connection
-	// delivering the events has been closed). Only one value will ever be sent.
-	// The error channel is closed by Unsubscribe.
-	Err() <-chan error
-}
-
 // SubscribeNewHead subscribes to notifications about the current blockchain head
 // on the given channel.
 func (ec *WSClient) SubscribeNewHead(ctx context.Context, ch chan<- *ethtype.Header) (Subscription, error) {
@@ -633,13 +629,6 @@ func (ec *WSClient) SubscribeNewHead(ctx context.Context, ch chan<- *ethtype.Hea
 		return nil, err
 	}
 	return sub, nil
-}
-
-// TransactionReceiptsQuery defines criteria for transaction receipts subscription.
-// If TransactionHashes is empty, receipts for all transactions included in new blocks will be delivered.
-// Otherwise, only receipts for the specified transactions will be delivered.
-type TransactionReceiptsQuery struct {
-	TransactionHashes []common.Hash
 }
 
 // SubscribeTransactionReceipts subscribes to notifications about transaction receipts.

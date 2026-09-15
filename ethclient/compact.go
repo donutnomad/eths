@@ -8,32 +8,34 @@ import (
 	"github.com/donutnomad/eths/common"
 	"github.com/donutnomad/eths/ecommon"
 	"github.com/donutnomad/eths/ethtype"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum"
 )
 
 // NotFound is returned by API methods if the requested item does not exist.
 var NotFound = errors.New("not found")
 
 // CallMsg contains parameters for contract calls.
-type CallMsg struct {
-	From      common.Address  // the sender of the 'transaction'
-	To        *common.Address // the destination contract (nil for contract creation)
-	Gas       uint64          // if 0, the call executes with near-infinite gas
-	GasPrice  *big.Int        // wei <-> gas exchange ratio
-	GasFeeCap *big.Int        // EIP-1559 fee cap per gas.
-	GasTipCap *big.Int        // EIP-1559 tip per gas.
-	Value     *big.Int        // amount of wei sent along with the call
-	Data      []byte          // input data, usually an ABI-encoded contract method invocation
+//type CallMsg struct {
+//	From      common.Address  // the sender of the 'transaction'
+//	To        *common.Address // the destination contract (nil for contract creation)
+//	Gas       uint64          // if 0, the call executes with near-infinite gas
+//	GasPrice  *big.Int        // wei <-> gas exchange ratio
+//	GasFeeCap *big.Int        // EIP-1559 fee cap per gas.
+//	GasTipCap *big.Int        // EIP-1559 tip per gas.
+//	Value     *big.Int        // amount of wei sent along with the call
+//	Data      []byte          // input data, usually an ABI-encoded contract method invocation
+//
+//	AccessList types.AccessList // EIP-2930 access list.
+//
+//	// For BlobTxType
+//	BlobGasFeeCap *big.Int
+//	BlobHashes    []common.Hash
+//
+//	// For SetCodeTxType
+//	AuthorizationList []types.SetCodeAuthorization
+//}
 
-	AccessList types.AccessList // EIP-2930 access list.
-
-	// For BlobTxType
-	BlobGasFeeCap *big.Int
-	BlobHashes    []common.Hash
-
-	// For SetCodeTxType
-	AuthorizationList []types.SetCodeAuthorization
-}
+type CallMsg = ethereum.CallMsg
 
 // GasEstimator wraps EstimateGas, which tries to estimate the gas needed to execute a
 // specific transaction based on the pending state. There is no guarantee that this is the
