@@ -66,8 +66,12 @@ func getResult[T any](ctx context.Context,
 		}
 	}
 	if !response.IsSuccess() && !strings.Contains(response.Message, "No records found") {
-		// example: etherscan api returned error: https://api.etherscan.io/v2/api?action=getLogs&apikey=xxx&chainid=1&module=logs&offset=10&page=1 NOTOK
-		return nil, fmt.Errorf("etherscan api returned error: %s %s", resp.Request.URL, response.Message)
+		// example: etherscan api returned error: https://api.etherscan.io/v2/api?action=getLogs&apikey=xxx&chainid=1&module=logs&offset=10&page=1 NOTOK: Max calls per sec rate limit reached
+		msg := response.Message
+		if response.ErrorResult != "" {
+			msg = msg + ": " + response.ErrorResult
+		}
+		return nil, fmt.Errorf("etherscan api returned error: %s %s", resp.Request.URL, msg)
 	}
 	return &response, nil
 }

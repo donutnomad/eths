@@ -12,6 +12,9 @@ type Response[T any] struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
 	Result  T      `json:"result"`
+	// On failure Etherscan puts the human-readable reason in `result` as a string
+	// (e.g. "Max calls per sec rate limit reached"); captured here since it is not a T.
+	ErrorResult string `json:"-"`
 }
 
 func (r *Response[T]) IsSuccess() bool {
@@ -38,6 +41,15 @@ func (r *Response[T]) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		r.Result = tmp2.Result
+	} else {
+		// `result` is a string on error, not a T; parse it separately so callers
+		// can surface the real reason instead of only the generic "NOTOK" message.
+		var tmp3 struct {
+			Result string `json:"result"`
+		}
+		if json.Unmarshal(data, &tmp3) == nil {
+			r.ErrorResult = tmp3.Result
+		}
 	}
 	return nil
 }
